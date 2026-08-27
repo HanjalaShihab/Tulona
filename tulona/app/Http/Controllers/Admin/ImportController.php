@@ -13,6 +13,7 @@ use App\Services\Scraping\UrlScrapeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /** Import flow (§67): upload → validate → preview → confirm → background job → results. */
@@ -75,11 +76,11 @@ class ImportController extends Controller
         $request->validate([
             'merchant_id' => 'required|exists:merchants,id',
             'source_url' => 'required|url|max:2048',
-            'category_id' => 'nullable|exists:categories,id',
+            'category' => 'nullable|string|max:255',
         ]);
 
-        $category = $request->category_id
-            ? Category::find($request->category_id)
+        $category = $request->filled('category')
+            ? $this->resolveOrCreateCategory($request->input('category'))
             : null;
 
         $batch = ImportBatch::create([
@@ -104,6 +105,28 @@ class ImportController extends Controller
 
             return back()->withErrors(['scrape' => $e->getMessage()]);
         }
+    }
+
+    /** Resolve a category by slug/name, merging with an existing one or creating it. */
+    protected function resolveOrCreateCategory(string $input): ?Category
+    {
+        $name = trim($input);
+        if ($name === '') {
+            return null;
+        }
+
+        $slug = Str::slug($name);
+
+        $category = Category::where('slug', $slug)
+            ->orWhereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->first();
+
+        return $category ?? Category::create([
+            'name' => $name,
+            'slug' => $slug,
+            'is_active' => true,
+            'sort_order' => 0,
+        ]);
     }
 
     /** §16 import only selected staged items. */

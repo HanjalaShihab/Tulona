@@ -9,7 +9,6 @@ use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\CatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /** Landing page CMS (§38, §47) — admin create → public render. */

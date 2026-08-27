@@ -38,12 +38,13 @@ Product Generator
     </div>
     <div class="field">
       <label>Category (applied to imported products)</label>
-      <select name="category_id">
-        <option value="">— no category (rows without one are skipped) —</option>
+      <input type="text" name="category" placeholder="e.g. Gaming Mice" list="category-options">
+      <datalist id="category-options">
         @foreach($categories as $c)
-          <option value="{{ $c->id }}">{{ $c->name }}</option>
+          <option value="{{ $c->name }}">{{ $c->name }}</option>
         @endforeach
-      </select>
+      </datalist>
+      <small style="color:var(--ink-3)">Type a category name. If it matches an existing category it will be merged (reused); otherwise a new category is created.</small>
     </div>
     <div class="field"><label>Product-list URL (JSON feed / JSON-LD / HTML page)</label><input type="url" name="source_url" placeholder="https://merchant.example/products" required></div>
     <button class="btn btn-primary btn-sm" style="margin-top:10px">Scrape & preview live</button>

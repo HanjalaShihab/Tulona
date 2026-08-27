@@ -151,10 +151,28 @@ class HtmlProductParser implements ProductParser
         return $blocks;
     }
 
+    public function defaultHtmlConfig(): array
+    {
+        return [
+            'product_selector' => '.product, .product-item, .product-card, .card-product, .product-list-item, li.product, li.item, .item.product, .product-box, tr.latest-product, .latest-product, [class*="product-card"], [class*="product-tile"], [class*="product-list"] > [class*="product"]',
+            'name' => '.product-name, .p-name, .product-name a, .product-title, .product-title a, .name, .title, h2, h3, h4, a[title], a[aria-label]',
+            'price' => '.price, .p-price, .product-price, .amount, .current-price, .offer-price, .sale-price, .now-price, [class*="price"]',
+            'original_price' => '.old-price, .original-price, .compare-price, .regular-price, .price-before, del, s, .old, [class*="old-price"], [class*="regular-price"]',
+            'link' => 'a',
+        ];
+    }
+
     protected function parseDom(string $raw, array $config): iterable
     {
-        $productSel = $config['html']['product_selector'] ?? null;
-        if (empty($productSel) || (strlen($raw) > 4000000)) {
+        if (strlen($raw) > 4000000) {
+            return;
+        }
+
+        $defaults = $this->defaultHtmlConfig();
+        $htmlConf = array_merge($defaults, $config['html'] ?? []);
+
+        $productSel = $htmlConf['product_selector'] ?? null;
+        if (empty($productSel)) {
             return;
         }
 
@@ -171,7 +189,7 @@ class HtmlProductParser implements ProductParser
         $nodes = $this->queryAll($xpath, $productSel);
 
         foreach ($nodes as $node) {
-            $row = $this->rowFromNode($xpath, $node, $config['html'] ?? []);
+            $row = $this->rowFromNode($xpath, $node, $htmlConf);
             if (isset($row['name'])) {
                 yield $row;
             }
@@ -212,9 +230,26 @@ class HtmlProductParser implements ProductParser
         if (! $selector) {
             return '';
         }
-        $el = $this->queryAll($xpath, $selector, $node)[0] ?? null;
 
-        return trim((string) ($el instanceof DOMElement ? $el->textContent : ''));
+        // Prefer the most specific/leaf match: among all elements matched by the
+        // selector alternatives, return the shortest text. This avoids grabbing a
+        // container whose textContent concatenates nested values (e.g. a price
+        // wrapper holding both the current and original price).
+        $best = null;
+        foreach ($this->queryAll($xpath, $selector, $node) as $el) {
+            if (! $el instanceof DOMElement) {
+                continue;
+            }
+            $text = trim((string) $el->textContent);
+            if ($text === '') {
+                continue;
+            }
+            if ($best === null || strlen($text) < strlen($best)) {
+                $best = $text;
+            }
+        }
+
+        return $best ?? '';
     }
 
     protected function queryHref(DOMXPath $xpath, DOMElement $node, ?string $selector): ?string

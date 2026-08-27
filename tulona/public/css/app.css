@@ -910,7 +910,8 @@ table.compare-stores {
 .topbar a:hover { color: #fff }
 .site-header { border-bottom: 1px solid var(--line); box-shadow: 0 1px 0 rgba(0,0,0,.02) }
 .header-in { padding: 12px 20px; gap: 18px }
-.logo { display: inline-flex; align-items: center; gap: 8px }
+.logo { display: inline-flex; align-items: center }
+.logo:has(.logo-mark) { gap: 8px }
 .logo-mark {
   width: 30px; height: 30px; border-radius: 8px; background: var(--brand);
   color: #fff; display: inline-flex; align-items: center; justify-content: center;

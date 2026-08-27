@@ -69,8 +69,7 @@
     <div class="footer-grid">
       <div>
         <h4>Tulona</h4>
-        <p>Find the right product at the right price. We compare products, prices and deals from trusted stores so you can buy with confidence.<br><br>
-        <strong style="color:#cbd5e1">Disclosure:</strong> we may earn a commission when you purchase through links on our website.</p>
+        <p>Find the right product at the right price. We compare products, prices and deals from trusted stores so you can buy with confidence.</p>
       </div>
       <div>
         <h4>Explore</h4>
