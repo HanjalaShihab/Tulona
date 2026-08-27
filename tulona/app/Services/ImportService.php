@@ -152,18 +152,26 @@ class ImportService
             return 'skipped_count';
         }
 
-        $product = Product::withTrashed()->updateOrCreate(
-            ['slug' => Str::slug($data['name'])],
-            [
-                'category_id' => $category->id,
-                'brand_id' => $brand?->id,
-                'name' => $data['name'],
-                'short_description' => $data['description'] ?? null,
-                'gtin' => $data['gtin'] ?? null,
-                'status' => 'published',
-            ]
-        );
-        $wasCreated = $product->wasRecentlyCreated;
+        $product = Product::withTrashed()->firstOrNew(['slug' => Str::slug($data['name'])]);
+
+        $wasCreated = ! $product->exists;
+
+        if ($wasCreated) {
+            // New product: seed from scraped/raw data and default to published.
+            $product->category_id = $category->id;
+            $product->brand_id = $brand?->id;
+            $product->name = $data['name'];
+            $product->short_description = $data['description'] ?? null;
+            $product->gtin = $data['gtin'] ?? null;
+            $product->status = 'published';
+        } else {
+            // Existing product: preserve admin-curated content (name, description,
+            // gtin, publication status). Only refresh relational mappings.
+            $product->category_id = $category->id;
+            $product->brand_id = $brand?->id;
+        }
+
+        $product->save();
 
         $price = is_numeric($p = str_replace([',', '৳'], '', $data['price'] ?? '')) ? (float) $p : null;
 

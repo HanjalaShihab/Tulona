@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Merchant;
 use App\Models\Offer;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Services\PriceTrackingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,14 +21,28 @@ class ProductController extends Controller
 {
     public function index(Request $request): View
     {
+        $query = $request->query();
+
         $products = Product::with(['brand:id,name', 'category:id,name'])
             ->withCount('offers')
-            ->when($request->query('q'), fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            ->withTrashed()
+            ->when($query['q'] ?? null, fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            ->when($query['category_id'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
+            ->when($query['brand_id'] ?? null, fn ($q, $id) => $q->where('brand_id', $id))
+            ->when($query['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
+            ->when(isset($query['merchant_id']) && $query['merchant_id'] !== '', fn ($q) => $q->whereHas('offers', fn ($o) => $o->where('merchant_id', $query['merchant_id'])))
+            ->when(($query['price_min'] ?? '') !== '', fn ($q) => $q->whereHas('offers', fn ($o) => $o->where('current_price', '>=', $query['price_min'])))
+            ->when(($query['price_max'] ?? '') !== '', fn ($q) => $q->whereHas('offers', fn ($o) => $o->where('current_price', '<=', $query['price_max'])))
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.products.index', compact('products'));
+        return view('admin.products.index', [
+            'products' => $products,
+            'categories' => Category::orderBy('name')->get(),
+            'brands' => Brand::orderBy('name')->get(),
+            'merchants' => Merchant::orderBy('name')->get(),
+        ]);
     }
 
     public function create(): View
@@ -135,6 +150,9 @@ class ProductController extends Controller
     protected function syncAffiliateOffer(Offer $offer, array $data): void
     {
         $offer->affiliateOffer()->updateOrCreate([], [
+            'offer_id' => $offer->id,
+            'product_id' => $offer->product_id,
+            'merchant_id' => $offer->merchant_id,
             'normal_product_url' => $data['external_url'] ?? $offer->external_url,
             'affiliate_url' => $data['affiliate_url'] ?? $offer->affiliate_url,
             'status' => 'manual',
@@ -193,13 +211,108 @@ class ProductController extends Controller
                 ['attribute_definition_id' => $definitionId],
                 match ($def->data_type) {
                     'number' => ['value_number' => is_numeric($value) ? (float) $value : null, 'value_text' => (string) $value],
-                    'boolean' => ['value_boolean' => (bool) $value, 'value_text' => $value ? 'Yes' : 'No'],
+                    'boolean' => ['value_boolean' => in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'y', 'checked', 'on'], true), 'value_text' => in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'y', 'checked', 'on'], true) ? 'Yes' : 'No'],
                     default => ['value_text' => (string) $value],
                 }
             );
         }
 
         return back()->with('status', 'Specifications saved.');
+    }
+
+    // ── Images ──────────────────────────────────────────────────────────────
+
+    /** Add an image by URL or storage path (§9). First image becomes main. */
+    public function storeImage(Request $request, Product $product): RedirectResponse
+    {
+        $data = $request->validate([
+            'path' => 'required|string|max:2048',
+            'alt_text' => 'nullable|string|max:255',
+        ]);
+
+        $isMain = $product->images()->where('is_main', true)->doesntExist();
+        $sortOrder = (int) ($product->images()->max('sort_order') ?? 0) + 1;
+
+        $image = $product->images()->create([
+            'path' => $data['path'],
+            'alt_text' => $data['alt_text'] ?? null,
+            'is_main' => $isMain,
+            'sort_order' => $sortOrder,
+        ]);
+
+        AuditLog::record('product.image_added', $product, ['image_id' => $image->id]);
+
+        return back()->with('status', 'Image added.');
+    }
+
+    /** Update alt text or main-flag on an existing image. */
+    public function updateImage(Request $request, ProductImage $image): RedirectResponse
+    {
+        $data = $request->validate([
+            'alt_text' => 'nullable|string|max:255',
+            'is_main' => 'nullable|boolean',
+        ]);
+
+        $image->update([
+            'alt_text' => $data['alt_text'] ?? null,
+            'is_main' => isset($data['is_main']) ? (bool) $data['is_main'] : $image->is_main,
+        ]);
+
+        if ($image->is_main) {
+            $image->product->images()->whereKeyNot($image->id)->update(['is_main' => false]);
+        }
+
+        AuditLog::record('product.image_updated', $image->product, ['image_id' => $image->id]);
+
+        return back()->with('status', 'Image updated.');
+    }
+
+    public function makeMainImage(ProductImage $image): RedirectResponse
+    {
+        $image->product->images()->update(['is_main' => false]);
+        $image->update(['is_main' => true]);
+
+        AuditLog::record('product.image_main', $image->product, ['image_id' => $image->id]);
+
+        return back()->with('status', 'Primary image set.');
+    }
+
+    /** Reorder an image up/down within its product. */
+    public function moveImage(Request $request, ProductImage $image): RedirectResponse
+    {
+        $direction = $request->query('dir') === 'up' ? -1 : 1;
+        $product = $image->product;
+        $siblings = $product->images()->orderBy('sort_order')->get();
+
+        $index = $siblings->search(fn ($i) => $i->id === $image->id);
+        $swap = $index + $direction;
+
+        if ($swap < 0 || $swap >= $siblings->count()) {
+            return back();
+        }
+
+        $other = $siblings[$swap];
+        $tmp = $image->sort_order;
+        $image->update(['sort_order' => $other->sort_order]);
+        $other->update(['sort_order' => $tmp]);
+
+        return back();
+    }
+
+    /** Remove an image; reassign main to the next available if needed. */
+    public function destroyImage(ProductImage $image): RedirectResponse
+    {
+        $product = $image->product;
+        $wasMain = $image->is_main;
+        $image->delete();
+
+        if ($wasMain) {
+            $product->images()->orderBy('sort_order')->first()?->update(['is_main' => true]);
+        }
+
+        AuditLog::record('product.image_removed', $product, ['image_id' => $image->id]);
+
+        return back()->with('status', 'Image removed.');
     }
 
     protected function offerValidated(Request $request): array

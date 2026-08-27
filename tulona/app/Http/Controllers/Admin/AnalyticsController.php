@@ -26,7 +26,7 @@ class AnalyticsController extends Controller
                 'clicks_total' => Click::count(),
                 'clicks_today' => $clicksToday,
                 'clicks_week' => $clicksWeek,
-                'clicks_month' => Click::whereMonth('clicked_at', now()->month)->count(),
+                'clicks_month' => Click::whereBetween('clicked_at', [now()->startOfMonth(), now()])->count(),
                 'price_drops' => DB::table('price_drop_events')->count(),
                 'revenue_approved' => (float) AffiliateConversion::where('status', 'approved')->sum('commission_amount'),
                 'revenue_pending' => (float) AffiliateConversion::where('status', 'pending')->sum('commission_amount'),

@@ -38,7 +38,7 @@ class DealsController extends Controller
                     ->whereColumn('offers.original_price', '>', 'offers.current_price');
             })
             ->groupBy('products.id')
-            ->selectRaw('products.*, MIN(offers.current_price) as best_price, MAX(offers.current_price/original_price) as best_ratio')
+            ->selectRaw('products.*, MIN(offers.current_price) as best_price, MAX(offers.current_price/original_price) as best_ratio, MAX(offers.original_price) as max_original')
             ->orderByRaw('best_ratio ASC')
             ->with(['brand', 'activeOffers'])
             ->selectRaw('(SELECT COUNT(*) FROM offers WHERE offers.product_id = products.id AND offers.status = "active") AS offers_count');

@@ -11,6 +11,7 @@ use App\Http\Controllers\CompareController;
 use App\Http\Controllers\DealsController;
 use App\Http\Controllers\GoController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\MerchantController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PriceDropController;
@@ -47,6 +48,9 @@ Route::get('/go/{product}/{merchant}', [GoController::class, 'redirect'])
     ->name('go.redirect');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.index');
+
+// Landing pages (§38) — dedicated /landing/{slug} namespace, resolved before the comparison catch-all.
+Route::get('/landing/{slug}', [LandingPageController::class, 'show'])->name('landing-pages.show');
 
 // Published comparisons — clean slugs (§37); resolved before the trust-page catch-all.
 Route::get('/{comparison}', [PublicComparisonController::class, 'show'])

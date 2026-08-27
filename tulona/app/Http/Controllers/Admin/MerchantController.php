@@ -63,6 +63,10 @@ class MerchantController extends Controller
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:merchants,slug,'.($request->route('merchant')?->id ?? ''),
             'affiliate_network_id' => 'nullable|exists:affiliate_networks,id',
+            'connector_type' => 'nullable|string|in:generic,url',
+            'product_import_method' => 'nullable|string|in:csv,feed,api,url,scrape,html',
+            'affiliate_link_method' => 'nullable|string|in:manual,automated',
+            'affiliate_enabled' => 'nullable|boolean',
             'logo_path' => 'nullable|url|max:2048',
             'description' => 'nullable|string|max:5000',
             'website_url' => 'nullable|url|max:2048',
@@ -78,15 +82,18 @@ class MerchantController extends Controller
             'seo_description' => 'nullable|string|max:500',
         ]);
         $data['currencies'] = array_map('strtoupper', $data['currencies'] ?? ['BDT']);
+        $data['affiliate_enabled'] = $request->boolean('affiliate_enabled');
 
         // Feed/API config comes from env-backed JSON fields; secrets stay in .env (§79)
-        if ($request->filled('feed_config')) {
-            $decoded = json_decode((string) $request->input('feed_config'), true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                unset($data['feed_config']);
-                abort(422, 'Feed config must be valid JSON.');
-            } else {
-                $data['feed_config'] = $decoded;
+        foreach (['feed_config', 'configuration'] as $jsonField) {
+            if ($request->filled($jsonField)) {
+                $decoded = json_decode((string) $request->input($jsonField), true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    unset($data[$jsonField]);
+                    abort(422, ucfirst($jsonField).' must be valid JSON.');
+                } else {
+                    $data[$jsonField] = $decoded;
+                }
             }
         }
 

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ComparisonController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ImportController;
+use App\Http\Controllers\Admin\LandingPageController;
 use App\Http\Controllers\Admin\MerchantController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SettingController;
@@ -37,6 +38,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::put('offers/{offer}', [ProductController::class, 'updateOffer'])->name('offers.update');
         Route::delete('offers/{offer}', [ProductController::class, 'destroyOffer'])->name('offers.destroy');
         Route::post('products/{product}/attributes', [ProductController::class, 'updateAttributes'])->name('products.attributes');
+        Route::post('products/{product}/images', [ProductController::class, 'storeImage'])->name('products.images.store');
+        Route::put('images/{image}', [ProductController::class, 'updateImage'])->name('images.update');
+        Route::post('images/{image}/main', [ProductController::class, 'makeMainImage'])->name('images.main');
+        Route::post('images/{image}/move', [ProductController::class, 'moveImage'])->name('images.move');
+        Route::delete('images/{image}', [ProductController::class, 'destroyImage'])->name('images.destroy');
         Route::resource('categories', CategoryController::class)->except('show');
         Route::resource('brands', BrandController::class)->except('show');
     });
@@ -62,6 +68,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
     // Content
     Route::middleware('can:manage-content')->group(function () {
         Route::resource('articles', ArticleController::class)->except('show');
+        Route::resource('landing-pages', LandingPageController::class)->except('show');
         Route::put('settings/homepage', [SettingController::class, 'updateHomepage'])->name('settings.homepage');
     });
 

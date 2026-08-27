@@ -6,6 +6,7 @@ use App\Models\Article;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Comparison;
+use App\Models\LandingPage;
 use App\Models\Merchant;
 use App\Models\Product;
 use Illuminate\Http\Response;
@@ -26,6 +27,7 @@ class SitemapController extends Controller
         Product::published()->latest('updated_at')->limit(5000)->each(fn ($p) => $e->push(route('product.show', $p->slug)));
         Article::published()->each(fn ($a) => $e->push(route('articles.show', $a->slug)));
         Comparison::published()->each(fn ($c) => $e->push(route('comparisons.show', $c->slug)));
+        LandingPage::published()->each(fn ($l) => $e->push(route('landing-pages.show', $l->slug)));
 
         $entries = $e->unique()->values();
 

@@ -30,6 +30,7 @@
     <div class="nav-group-title">Content</div>
     <a href="{{ route('admin.articles.index') }}" class="{{ request()->routeIs('admin.articles.*') ? 'active' : '' }}"><span class="side-ico">✎</span><span>Articles</span></a>
     <a href="{{ route('admin.comparisons.index') }}" class="{{ request()->routeIs('admin.comparisons.*') ? 'active' : '' }}"><span class="side-ico">⚖</span><span>Comparisons</span></a>
+    <a href="{{ route('admin.landing-pages.index') }}" class="{{ request()->routeIs('admin.landing-pages.*') ? 'active' : '' }}"><span class="side-ico">▤</span><span>Landing Pages</span></a>
 
     <div class="nav-group-title">Insights</div>
     <a href="{{ route('admin.analytics') }}" class="{{ request()->routeIs('admin.analytics') ? 'active' : '' }}"><span class="side-ico">◔</span><span>Analytics</span></a>

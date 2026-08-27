@@ -59,14 +59,23 @@ class UrlProductParser implements ProductParser
             return $forced;
         }
 
-        $trimmed = ltrim($raw);
+        $trimmed = trim($raw);
         $first = substr($trimmed, 0, 1);
 
         if (in_array($first, ['{', '['], true)) {
             return 'json';
         }
 
-        if (str_starts_with(strtolower($trimmed), '<!doctype') || str_starts_with(strtolower($trimmed), '<html')) {
+        // HTML can begin with a DOCTYPE, <html>, an XML declaration, a comment,
+        // or any other tag — only fall through to CSV when it's clearly tabular.
+        $lower = strtolower($trimmed);
+        if (
+            str_starts_with($lower, '<!doctype')
+            || str_starts_with($lower, '<html')
+            || str_starts_with($lower, '<?xml')
+            || str_starts_with($lower, '<!--')
+            || preg_match('/^<\s*[a-z!\/]/i', $trimmed)
+        ) {
             return 'html';
         }
 

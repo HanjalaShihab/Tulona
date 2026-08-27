@@ -74,11 +74,22 @@ class SyncService
 
     protected function credentialsFor(Merchant $merchant): array
     {
-        $key = strtoupper($merchant->slug);
+        $slugs = array_values(array_filter([$merchant->slug, $merchant->network?->slug, 'default']));
 
         return [
-            'key' => config("services.feeds.{$merchant->slug}.key") ?? config("services.feeds.{$merchant->slug}.key"),
-            'secret' => config("services.feeds.{$merchant->slug}.secret") ?? config("services.feeds.{$merchant->slug}.secret"),
+            'key' => $this->firstConfigured('key', $slugs),
+            'secret' => $this->firstConfigured('secret', $slugs),
         ];
+    }
+
+    protected function firstConfigured(string $part, array $slugs): ?string
+    {
+        foreach ($slugs as $slug) {
+            if ($value = config("services.feeds.{$slug}.{$part}")) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 }

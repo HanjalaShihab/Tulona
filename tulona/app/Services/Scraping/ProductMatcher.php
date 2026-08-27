@@ -43,7 +43,7 @@ class ProductMatcher
             return null;
         }
 
-        return Product::where('slug', 'like', "{$name}%")
+        return Product::withTrashed()->where('slug', 'like', "{$name}%")
             ->orWhere('slug', 'like', "%{$name}%")
             ->first();
     }

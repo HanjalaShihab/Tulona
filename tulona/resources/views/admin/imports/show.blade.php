@@ -36,7 +36,7 @@ Generator: {{ $batch->source_type === 'url' ? 'URL scrape #'.$batch->id : $batch
     <div style="margin-top:16px;display:flex;gap:8px">
       <form method="POST" action="{{ route('admin.imports.confirm', $batch) }}">
         @csrf
-        <button class="btn btn-primary">Import All ({{ number_format($batch->items->whereNotIn('status', ['error','skipped'])->count()) }})</button>
+        <button class="btn btn-primary">Import All ({{ number_format($batch->items->whereIn('status', ['new','matched'])->count()) }})</button>
       </form>
       <form method="POST" action="{{ route('admin.imports.cancel', $batch) }}">
         @csrf

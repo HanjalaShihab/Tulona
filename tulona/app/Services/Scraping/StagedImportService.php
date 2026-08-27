@@ -26,7 +26,10 @@ class StagedImportService
         $connector = $this->registry->get('url');
         $config = $merchant->configuration ?? [];
 
-        $query = $batch->items()->whereIn('status', ['new', 'matched', 'duplicate']);
+        // Name-only (potential) matches are flagged for review (§32) and must
+        // NOT be auto-imported — doing so re-creates duplicate products when the
+        // exact match fails. Only explicit "new" and exact "matched" items go in.
+        $query = $batch->items()->whereIn('status', ['new', 'matched']);
 
         if ($itemIds !== null) {
             $query->whereIn('id', $itemIds);

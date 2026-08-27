@@ -61,6 +61,7 @@ class ProductsCatalogSeeder extends Seeder
                 'has_free_plan' => $digital,
                 'is_featured' => $featured, 'is_trending' => $trending,
                 'popularity_score' => mt_rand(30, 95),
+                'status' => 'published',
             ]);
 
             foreach ($specs as $key => $value) {

@@ -85,6 +85,44 @@
   <div class="field"><label>Availability</label><select name="availability">@foreach(['in_stock','out_of_stock','preorder','unknown'] as $av)<option>{{ $av }}</option>@endforeach</select></div>
   <div style="grid-column:1/-1"><button class="btn btn-primary btn-sm">＋ Save offer</button></div>
 </form>
+
+{{-- Images --}}
+@if($product->exists)
+<h2 style="font-size:16px;margin:26px 0 10px">Images ({{ $product->images->count() }} total)</h2>
+<div class="pane" style="margin-bottom:16px">
+  @forelse($product->images as $i)
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)">
+      <div style="width:56px;height:56px;border-radius:8px;overflow:hidden;flex:0 0 56px;background:var(--bg-2);display:flex;align-items:center;justify-content:center">
+        <img src="{{ $i->path }}" alt="{{ $i->alt_text }}" style="max-width:100%;max-height:100%;object-fit:contain">
+      </div>
+      <form method="POST" action="{{ route('admin.images.update', $i) }}" style="display:flex;align-items:center;gap:10px;flex:1">
+        @csrf @method('PUT')
+        <input type="text" name="alt_text" value="{{ $i->alt_text }}" placeholder="Alt text" style="flex:1;min-width:160px">
+        <button class="btn btn-outline btn-sm">Save</button>
+      </form>
+      <div style="display:flex;gap:6px;align-items:center">
+        @if(!$i->is_main)
+          <form method="POST" action="{{ route('admin.images.main', $i) }}">@csrf<button class="btn btn-outline btn-sm" title="Set as primary">★ Main</button></form>
+        @else
+          <span class="status-pill status-published" title="Primary image">Primary</span>
+        @endif
+        <form method="POST" action="{{ route('admin.images.move', $i) }}?dir=up">@csrf<button class="btn btn-outline btn-sm" title="Move up">↑</button></form>
+        <form method="POST" action="{{ route('admin.images.move', $i) }}?dir=down">@csrf<button class="btn btn-outline btn-sm" title="Move down">↓</button></form>
+        <form method="POST" action="{{ route('admin.images.destroy', $i) }}" onsubmit="return confirm('Remove this image?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm">✕</button></form>
+      </div>
+    </div>
+  @empty
+    <p style="color:var(--ink-3)">No images yet — add one below. The first image added becomes the primary.</p>
+  @endforelse
+</div>
+
+<form method="POST" action="{{ route('admin.products.images.store', $product) }}" class="pane form-grid" style="margin-bottom:16px">
+  @csrf
+  <div class="field" style="grid-column:1/-1"><label>Image URL or storage path</label><input type="url" name="path" required placeholder="https://… or /storage/products/foo.jpg"></div>
+  <div class="field" style="grid-column:1/-1"><label>Alt text</label><input type="text" name="alt_text" placeholder="Describe the image (SEO)"></div>
+  <div style="grid-column:1/-1"><button class="btn btn-primary btn-sm">＋ Add image</button></div>
+</form>
+@endif
 @endif
 
 <p style="margin-top:18px"><a href="{{ route('admin.products.index') }}">← Back to products</a></p>

@@ -119,8 +119,8 @@ class ApiController extends Controller
         return response()->json(DealsController::dealQuery()
             ->limit(50)->get()
             ->map(fn ($p) => [
-                'name' => $p->name, 'slug' => $p->slug, 'best_price' => (float) $p->best_price,
-                'original_from' => (float) $p->max_original ?? null,
+                'name' => $p->name, 'slug' => $p->slug,                 'best_price' => (float) $p->best_price,
+                'original_from' => $p->max_original !== null ? (float) $p->max_original : null,
             ]));
     }
 

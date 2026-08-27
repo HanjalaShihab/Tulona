@@ -29,7 +29,7 @@ return new class extends Migration
             $table->string('website_url')->nullable();
             $table->string('country')->default('BD')->index();
             $table->string('region')->nullable();
-            $table->json('currencies')->default(['BDT']);
+            $table->json('currencies')->default('["BDT"]');
             $table->string('base_affiliate_url')->nullable();
             $table->string('tracking_template')->nullable();  // e.g. "{affiliate_url}?subid={click}"
             $table->json('feed_config')->nullable();          // official feed/API settings for sync (§26)

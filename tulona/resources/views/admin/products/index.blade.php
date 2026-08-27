@@ -5,9 +5,18 @@ Products
 
 @section('page')
 <div class="toolbar">
-  <form method="GET" style="display:flex;gap:8px;max-width:420px;flex:1">
-    <input type="text" class="input" name="q" value="{{ request('q') }}" placeholder="Search products…" aria-label="Search products">
-    <button class="btn btn-outline">Search</button>
+  <form method="GET" style="display:flex;gap:8px;flex:1;flex-wrap:wrap">
+    <input type="text" class="input" name="q" value="{{ request('q') }}" placeholder="Search products…" aria-label="Search products" style="flex:1;min-width:180px">
+    <select name="status" class="input"><option value="">Any status</option>@foreach(['draft','pending_review','published','archived'] as $s)<option value="{{ $s }}" {{ request('status')===$s?'selected':'' }}>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select>
+    <select name="category_id" class="input"><option value="">All categories</option>@foreach($categories as $c)<option value="{{ $c->id }}" {{ request('category_id')==(string)$c->id?'selected':'' }}>{{ $c->parent?->name.' → ' }}{{ $c->name }}</option>@endforeach</select>
+    <select name="brand_id" class="input"><option value="">All brands</option>@foreach($brands as $b)<option value="{{ $b->id }}" {{ request('brand_id')==(string)$b->id?'selected':'' }}>{{ $b->name }}</option>@endforeach</select>
+    <select name="merchant_id" class="input"><option value="">All merchants</option>@foreach($merchants as $m)<option value="{{ $m->id }}" {{ request('merchant_id')==(string)$m->id?'selected':'' }}>{{ $m->name }}</option>@endforeach</select>
+    <input type="number" step="0.01" min="0" name="price_min" class="input" value="{{ request('price_min') }}" placeholder="Min price" style="width:110px">
+    <input type="number" step="0.01" min="0" name="price_max" class="input" value="{{ request('price_max') }}" placeholder="Max price" style="width:110px">
+    <button class="btn btn-outline">Filter</button>
+    @if(count(request()->query()))
+      <a class="btn btn-outline" href="{{ route('admin.products.index') }}">Clear</a>
+    @endif
   </form>
   <div class="spacer"></div>
   <a class="btn btn-primary" href="{{ route('admin.products.create') }}">＋ New product</a>

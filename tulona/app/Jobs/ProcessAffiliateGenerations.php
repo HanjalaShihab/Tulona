@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Connectors\Generator\ManualAffiliateLinkGenerator;
 use App\Contracts\Merchant\AffiliateLinkGenerator;
 use App\Models\AffiliateOffer;
 use Illuminate\Bus\Queueable;
@@ -31,6 +32,16 @@ class ProcessAffiliateGenerations implements ShouldQueue
 
     public function handle(AffiliateLinkGenerator $generator): void
     {
+        // The only registered generator requires a per-offer URL that a bulk run
+        // never has. Running it here would only record a failure for every offer
+        // and loop on each retry — so fail fast and surface that bulk generation
+        // needs an automated (non-manual) generator (§23).
+        if ($generator instanceof ManualAffiliateLinkGenerator) {
+            Log::warning('Bulk affiliate generation skipped: the configured generator requires manual per-offer URLs, which a bulk run cannot supply.');
+
+            return;
+        }
+
         $query = AffiliateOffer::whereIn('status', ['pending', 'failed', 'invalid']);
 
         if ($this->merchantId !== null) {

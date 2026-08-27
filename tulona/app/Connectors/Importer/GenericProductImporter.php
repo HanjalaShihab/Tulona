@@ -108,7 +108,13 @@ class GenericProductImporter implements ProductImporter
         );
 
         if (! ($row['affiliate_url'] ?? null)) {
-            $offer->affiliateOffer()->update(['status' => 'pending', 'affiliate_url' => null]);
+            $offer->affiliateOffer()->updateOrCreate([], [
+                'offer_id' => $offer->id,
+                'product_id' => $offer->product_id,
+                'merchant_id' => $offer->merchant_id,
+                'status' => 'pending',
+                'affiliate_url' => null,
+            ]);
         } else {
             $offer->affiliateOffer()->updateOrCreate([], [
                 'affiliate_url' => $row['affiliate_url'],
