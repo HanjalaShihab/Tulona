@@ -14,7 +14,7 @@ class ProductMatcher
 {
     public function exact(array $row): ?Product
     {
-        $q = Product::query();
+        $q = Product::withTrashed();
 
         if (! empty($row['gtin'])) {
             $q->where('gtin', $row['gtin']);

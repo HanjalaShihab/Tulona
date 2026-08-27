@@ -52,7 +52,7 @@ Generator: {{ $batch->source_type === 'url' ? 'URL scrape #'.$batch->id : $batch
           <th>Product</th><th>Merchant SKU</th><th>Price</th><th>Match</th><th>Status</th><th>Error</th>
         </tr></thead>
         <tbody>
-        @foreach($batch->items->sortByDesc('status') as $item)
+        @foreach($items as $item)
           <tr>
             <td>
               @if(! in_array($item->status, ['error', 'skipped']))
@@ -74,6 +74,7 @@ Generator: {{ $batch->source_type === 'url' ? 'URL scrape #'.$batch->id : $batch
         @endforeach
         </tbody>
       </table>
+      <div style="margin-top:10px">{{ $items->links() }}</div>
       <button class="btn btn-primary btn-sm" style="margin-top:10px">Import selected items</button>
     </form>
   @elseif($batch->status === 'processing')

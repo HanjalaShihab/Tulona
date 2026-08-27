@@ -137,14 +137,19 @@ class ImportController extends Controller
         return redirect()->route('admin.imports.show', $batch)->with('status', 'Import cancelled.');
     }
 
-    public function show(ImportBatch $batch): View
+    public function show(Request $request, ImportBatch $batch): View
     {
         $isUrl = $batch->source_type === 'url';
 
         $batch->load($isUrl ? ['items.product', 'merchant'] : 'errors');
 
+        $items = $isUrl
+            ? $batch->items()->orderByDesc('status')->paginate(perPage: 50, pageName: 'items')
+            : null;
+
         return view('admin.imports.show', [
             'batch' => $batch,
+            'items' => $items,
             'preview' => $batch->errors()->where('severity', 'error')->count() === 0 && ! in_array($batch->status, ['processing', 'completed']),
             'status' => session('status'),
         ]);

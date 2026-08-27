@@ -49,12 +49,8 @@ class GenericProductImporter implements ProductImporter
 
                 $offer = $this->upsertOffer($merchant, $product, $row);
                 $this->counts[$offer->wasRecentlyCreated ? 'created' : 'updated']++;
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
                 $this->counts['errors']++;
-                \Illuminate\Support\Facades\Log::error('GenericProductImporter row error', [
-                    'msg' => $e->getMessage(),
-                    'file' => $e->getFile().':'.$e->getLine(),
-                ]);
             }
         }
 
@@ -66,6 +62,10 @@ class GenericProductImporter implements ProductImporter
         $product = $this->matcher->exact($row);
 
         if ($product !== null) {
+            if ($product->trashed()) {
+                $product->restore();
+            }
+
             return $product;
         }
 

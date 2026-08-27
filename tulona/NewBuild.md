@@ -20,8 +20,6 @@ IMPORTANT:
   and database structures wherever appropriate.
 - Only create or modify what is actually required.
 
-The final application will be Laravel-first/Laravel-only from the
-application architecture perspective.
 
 ============================================================
 1. BUSINESS MODEL
