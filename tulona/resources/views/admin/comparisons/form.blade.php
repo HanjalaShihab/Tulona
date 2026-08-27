@@ -24,6 +24,57 @@
 </form>
 
 @if($comparison->exists)
+  <h2 style="font-size:16px;margin:26px 0 10px">Scrape merchant listings (§31–§33)</h2>
+  <p style="font-size:13px;color:var(--ink-2);margin-bottom:10px">Enter one listing URL per merchant to scrape their catalogues, then detect products sold by more than one merchant (common products). Scraped rows are staged as preview imports; matched products are used for common-product detection.</p>
+  <form method="POST" action="{{ route('admin.comparisons.scrape', $comparison) }}" class="pane" style="max-width:980px;margin-bottom:18px">
+    @csrf
+    <div id="scrape-rows">
+      <div class="scrape-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <select name="entries[0][merchant_id]" class="scrape-merchant">
+          <option value="">— merchant —</option>
+          @foreach($merchants as $m)<option value="{{ $m->id }}">{{ $m->name }}</option>@endforeach
+        </select>
+        <input type="url" name="entries[0][source_url]" placeholder="https://…/products" style="flex:1">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" type="button" onclick="addScrapeRow()">+ Add merchant</button>
+      <button class="btn btn-primary">🔎 Scrape &amp; detect common</button>
+    </div>
+  </form>
+
+  @php($scrape = session('comparisonScrape'))
+  @if($scrape)
+    <div class="pane" style="max-width:980px;margin-bottom:18px;padding:16px">
+      <h3 style="font-size:14px;margin:0 0 10px">Common-product detection results</h3>
+      @if(!empty($scrape['errors']))
+        <p style="color:#b00020">@foreach($scrape['errors'] as $e) {{ $e['error'] }} @endforeach</p>
+      @endif
+      @php($common = \App\Models\Product::whereIn('id', $scrape['common_ids'] ?? [])->with(['brand:id,name','offers.merchant'])->get())
+      @if($common->isEmpty())
+        <p style="color:var(--ink-3)">No products matched across {{ count($scrape['batch_ids']) }} scraped merchant catalogue(s). Try different listing URLs or check the merchant feed configuration.</p>
+      @else
+        <form method="POST" action="{{ route('admin.comparisons.attach-common', $comparison) }}">
+          @csrf
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <tr style="border-bottom:1px solid var(--line);text-align:left"><th>Add</th><th>Product</th><th>Offers across merchants</th></tr>
+            @foreach($common as $p)
+              <tr style="border-bottom:1px dashed var(--line)">
+                <td><input type="checkbox" name="product_ids[]" value="{{ $p->id }}" checked style="width:auto"></td>
+                <td><strong>{{ $p->name }}</strong> <small style="color:var(--ink-3)">{{ $p->brand?->name }}</small></td>
+                <td>
+                  @forelse($p->offers as $o)<span style="display:inline-block;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin:2px">{{ $o->merchant->name }} — {{ $o->current_price }}</span>@empty <span style="color:var(--ink-3)">no offers yet</span>@endforelse
+                </td>
+              </tr>
+            @endforeach
+          </table>
+          <button class="btn btn-primary" style="margin-top:12px">➕ Add common products to comparison</button>
+        </form>
+      @endif
+    </div>
+  @endif
+
+  <h2 style="font-size:16px;margin:26px 0 10px">Products in this comparison (§34)</h2>
   <h2 style="font-size:16px;margin:26px 0 10px">Products in this comparison (§34)</h2>
   <p style="font-size:13px;color:var(--ink-2);margin-bottom:10px">Reorder by arrow buttons, add a pick label (Best Price / Best Overall Deal), and optional editorial note. Save the form above to persist product changes.</p>
   <form method="POST" action="{{ route('admin.comparisons.sync-products', $comparison) }}" style="max-width:980px" id="products-form">
@@ -95,6 +146,8 @@
             <input type="hidden" name="offers[{{ $o->id }}][offer_id]" value="{{ $o->id }}">
             <strong style="min-width:120px">{{ $o->merchant->name }}</strong>
             <label style="color:var(--ink-2)"><input type="checkbox" name="offers[{{ $o->id }}][is_hidden]" value="1" style="width:auto" {{ $o->pivot->is_hidden?'checked':'' }}> hidden</label>
+            <label title="Manually mark this merchant offer as the Best Overall Deal (§36)"><input type="radio" name="best-deal-{{ $o->pivot->product_id }}" value="1" style="width:auto" {{ $o->pivot->is_best_deal?'checked':'' }} onchange="this.form['offers[{{ $o->id }}][is_best_deal]'].value='1'"> Best deal</label>
+            <input type="hidden" name="offers[{{ $o->id }}][is_best_deal]" value="{{ $o->pivot->is_best_deal ? 1 : 0 }}">
             <label>price <input type="number" step="0.01" name="offers[{{ $o->id }}][override_price]" value="{{ $o->pivot->override_price }}" style="width:90px" placeholder="{{ $o->current_price }}"></label>
             <label>avail <select name="offers[{{ $o->id }}][override_availability]">
               <option value="">default</option>
@@ -118,6 +171,18 @@
 <p style="margin-top:18px"><a href="{{ route('admin.comparisons.index') }}">← Back to comparisons</a></p>
 
 <script>
+let scrapeIndex = 1;
+function addScrapeRow() {
+  const box = document.getElementById('scrape-rows');
+  const row = document.createElement('div');
+  row.className = 'scrape-row';
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
+  row.innerHTML = `<select name="entries[${scrapeIndex}][merchant_id]" class="scrape-merchant">${document.querySelector('.scrape-merchant').innerHTML}</select>
+    <input type="url" name="entries[${scrapeIndex}][source_url]" placeholder="https://…/products" style="flex:1">
+    <button class="btn btn-danger btn-sm" type="button" onclick="this.parentElement.remove()">✕</button>`;
+  box.appendChild(row);
+  scrapeIndex++;
+}
 function moveRow(btn, dir) {
   const row = btn.closest('.prod-row');
   const box = row.parentElement;

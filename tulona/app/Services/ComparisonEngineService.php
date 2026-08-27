@@ -129,12 +129,27 @@ class ComparisonEngineService
 
     public function bestDeal(Comparison $comparison): ?array
     {
-        // Admin override wins (§36 "Allow Admin override"): stored on merchant_order? no —
-        // store as featured product pivot pick_label 'best_deal'. We read comparison->verdict
-        // remit: compute heuristic here; admin override handled at the product pivot.
-        $heuristic = $this->heuristicBestDeal($comparison);
+        // §36 "Allow Admin override": a manually flagged is_best_deal offer wins;
+        // otherwise fall back to the heuristic. Among several flagged offers the
+        // lowest-priced one is returned.
+        $flagged = $comparison->offers()
+            ->wherePivot('is_hidden', false)
+            ->wherePivot('is_best_deal', true)
+            ->get()
+            ->filter(fn (Offer $offer) => ($offer->pivot->override_price ?? $offer->current_price) !== null)
+            ->sortBy(fn (Offer $offer) => (float) ($offer->pivot->override_price ?? $offer->current_price));
 
-        return $heuristic;
+        $first = $flagged->first();
+        if ($first) {
+            return [
+                'offer' => $first,
+                'merchant' => $first->merchant,
+                'product' => $first->product,
+                'price' => (float) ($first->pivot->override_price ?? $first->current_price),
+            ];
+        }
+
+        return $this->heuristicBestDeal($comparison);
     }
 
     protected function heuristicBestDeal(Comparison $comparison): ?array

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AttributeDefinition;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Comparison;
 use App\Models\Merchant;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,6 +48,7 @@ class CategoryController extends Controller
             'category' => $category,
             'products' => $query->paginate(24)->withQueryString(),
             'subcategories' => $category->children()->where('is_active', true)->get(),
+            'comparisons' => $this->categoryComparisons($descendantIds),
             'brands' => Brand::whereIn('id', fn ($q) => $q->select('brand_id')->from('products')->whereIn('category_id', $descendantIds))->orderBy('name')->get(),
             'merchants' => Merchant::where('status', 'active')->orderBy('name')->get(),
             'filters' => $this->availableFilters($descendantIds),
@@ -108,6 +110,17 @@ class CategoryController extends Controller
         return AttributeDefinition::whereIn('category_id', $categoryIds)
             ->where('is_filterable', true)
             ->orderBy('sort_order')
+            ->get();
+    }
+
+    /** Published comparisons whose products fall within this category (§37). */
+    protected function categoryComparisons(array $categoryIds)
+    {
+        return Comparison::published()
+            ->withCount('products')
+            ->whereHas('products', fn ($q) => $q->whereIn('category_id', $categoryIds))
+            ->latest('updated_at')
+            ->limit(4)
             ->get();
     }
 }

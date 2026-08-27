@@ -71,6 +71,15 @@
       @endif
 
       {{ $products->links('partials.pagination') }}
+
+      @if(!$comparisons->isEmpty())
+      <section style="margin-top:28px">
+        <div class="sec-head"><div><span class="sec-eyebrow">⚖ Round-ups</span><h2>{{ $category->name }} comparisons</h2></div><a href="{{ route('compare.index') }}">Compare products →</a></div>
+        <div class="cat-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));grid-auto-rows:1fr">
+          @foreach($comparisons as $c)@include('partials.comparison-card', ['comparison' => $c])@endforeach
+        </div>
+      </section>
+      @endif
     </div>
   </div>
 </div>

@@ -137,6 +137,58 @@ class ImportController extends Controller
         return redirect()->route('admin.imports.show', $batch)->with('status', 'Import cancelled.');
     }
 
+    /** §15 retry a failed batch from the beginning. */
+    public function retry(Request $request, ImportBatch $batch): RedirectResponse
+    {
+        $this->authorize('run-imports');
+
+        abort_unless($batch->status === 'failed', 422, 'Only failed imports can be retried.');
+
+        $batch->update(['status' => 'queued']);
+
+        if ($batch->source_type === 'url') {
+            $items = $batch->items()
+                ->whereIn('status', ['new', 'matched'])
+                ->whereNull('processed_at')
+                ->pluck('id');
+
+            ProcessImportItems::dispatch($batch, $items->isEmpty() ? null : $items->all());
+        } else {
+            ProcessImportBatch::dispatch($batch);
+        }
+
+        return redirect()->route('admin.imports.show', $batch)->with('status', 'Import retry queued.');
+    }
+
+    /** §16 resume a completed URL import for the items that failed to import. */
+    public function retryFailedItems(ImportBatch $batch): RedirectResponse
+    {
+        $this->authorize('run-imports');
+
+        abort_unless($batch->source_type === 'url' && $batch->status === 'completed', 422, 'Retry is only available for completed URL imports.');
+
+        $items = $batch->items()
+            ->whereIn('status', ['failed', 'skipped'])
+            ->whereNotNull('error')
+            ->get();
+
+        abort_if($items->isEmpty(), 422, 'No failed items to retry.');
+
+        $ids = $items->map(function ($item) {
+            $item->update([
+                'status' => $item->product_id ? 'matched' : 'new',
+                'error' => null,
+                'processed_at' => null,
+            ]);
+
+            return $item->id;
+        })->all();
+
+        ProcessImportItems::dispatch($batch, $ids);
+
+        return back()->with('status', 'Retrying '.count($ids).' failed item(s).');
+    }
+
     public function show(Request $request, ImportBatch $batch): View
     {
         $isUrl = $batch->source_type === 'url';

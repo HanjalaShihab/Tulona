@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\Category;
+use App\Models\Comparison;
 use App\Models\Merchant;
 use App\Models\PriceDropEvent;
 use App\Models\Product;
@@ -20,6 +21,7 @@ class HomeController extends Controller
             'featured' => Product::published()->where('is_featured', true)->with(['brand', 'activeOffers'])->limit(4)->get(),
             'deals' => $this->bestDeals(),
             'drops' => PriceDropEvent::with(['product.brand', 'offer'])->latest('occurred_at')->limit(6)->get(),
+            'comparisons' => Comparison::published()->featured()->withCount('products')->latest('updated_at')->limit(3)->get(),
             'guides' => Article::published()->where('type', 'guide')->latest('published_at')->limit(3)->get(),
             'merchants' => Merchant::where('status', 'active')->orderBy('name')->get(),
         ];

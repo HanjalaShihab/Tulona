@@ -88,8 +88,21 @@ Generator: {{ $batch->source_type === 'url' ? 'URL scrape #'.$batch->id : $batch
       <div class="stat-card"><b>{{ number_format($batch->updated_count) }}</b><span>Updated</span></div>
       <div class="stat-card"><b style="color:var(--danger)">{{ number_format($batch->failed_count) }}</b><span>Failed</span></div>
     </div>
+    @php($failedItems = $batch->items->whereIn('status', ['failed','skipped'])->whereNotNull('error')->count())
+    @if($failedItems > 0)
+      <form method="POST" action="{{ route('admin.imports.retry-failed', $batch) }}" style="margin-top:14px">
+        @csrf
+        <button class="btn btn-outline">↻ Retry {{ $failedItems }} failed item(s)</button>
+      </form>
+    @endif
   @elseif(in_array($batch->status, ['failed', 'cancelled']))
     <div class="alert alert-err">{{ $batch->status === 'cancelled' ? 'This import was cancelled.' : 'This scrape failed — see the reasons below.' }}</div>
+    @if($batch->status === 'failed')
+      <form method="POST" action="{{ route('admin.imports.retry', $batch) }}" style="margin-top:12px">
+        @csrf
+        <button class="btn btn-outline">↻ Retry import</button>
+      </form>
+    @endif
     @if($batch->items->where('status','error')->count())
       <div class="error-preview">
         <h2 style="font-size:15px;margin-bottom:10px">Row errors ({{ $batch->items->where('status','error')->count() }})</h2>
@@ -135,6 +148,10 @@ Generator: {{ $batch->source_type === 'url' ? 'URL scrape #'.$batch->id : $batch
 
   @if($batch->status === 'failed')
     <div class="alert alert-err">Validation found blocking errors below. Fix them and re-upload.</div>
+    <form method="POST" action="{{ route('admin.imports.retry', $batch) }}" style="margin-top:12px">
+      @csrf
+      <button class="btn btn-outline">↻ Retry import</button>
+    </form>
   @endif
 
   @if($batch->status === 'completed')

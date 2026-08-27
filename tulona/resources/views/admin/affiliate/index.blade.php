@@ -23,6 +23,49 @@ Affiliate Offers
   </form>
 </div>
 
+@if($runs->isNotEmpty())
+  <div class="pane" style="max-width:840px;margin-bottom:16px;padding:16px">
+    <h3 style="font-size:14px;margin:0 0 12px">Recent bulk-generation runs (§23)</h3>
+    @foreach($runs as $run)
+      @php($pct = $run->total > 0 ? (int) floor(($run->processed / $run->total) * 100) : 0)
+      <div class="generation-run" data-run-id="{{ $run->id }}"
+           data-status="{{ $run->status }}"
+           data-total="{{ $run->total }}" data-processed="{{ $run->processed }}"
+           data-generated="{{ $run->generated }}" data-failed="{{ $run->failed }}">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+          <strong>{{ $run->merchant?->name ?? 'All merchants' }}</strong>
+          <span class="status-pill status-{{ $run->status }}">{{ ucfirst($run->status) }}</span>
+        </div>
+        <div style="height:8px;background:var(--line);border-radius:4px;overflow:hidden">
+          <div class="progress-fill" style="height:100%;width:{{ $pct }}%;background:var(--accent);transition:width .4s"></div>
+        </div>
+        <div class="run-stats" style="font-size:12px;color:var(--ink-2);margin-top:6px">
+          {{ $run->processed }} / {{ $run->total }} · {{ $run->generated }} generated · <span style="color:var(--danger)">{{ $run->failed }} failed</span>
+        </div>
+      </div>
+    @endforeach
+  </div>
+@endif
+
+<script>
+function pollRuns() {
+  document.querySelectorAll('.generation-run[data-status="queued"], .generation-run[data-status="processing"]').forEach(function (el) {
+    fetch('{{ route('admin.affiliate.generation-progress', ['run' => '__ID__']) }}'.replace('__ID__', el.dataset.runId))
+      .then(r => r.json())
+      .then(d => {
+        el.dataset.status = d.status;
+        const pct = d.total > 0 ? Math.floor((d.processed / d.total) * 100) : 0;
+        el.querySelector('.progress-fill').style.width = pct + '%';
+        el.querySelector('.run-stats').textContent = d.processed + ' / ' + d.total + ' · ' + d.generated + ' generated · ' + d.failed + ' failed';
+        const pill = el.querySelector('.status-pill');
+        pill.className = 'status-pill status-' + d.status;
+        pill.textContent = d.status.charAt(0).toUpperCase() + d.status.slice(1);
+      });
+  });
+}
+setInterval(pollRuns, 3000);
+</script>
+
 <form method="GET" class="filter-bar" style="max-width:840px;margin-bottom:16px">
   <select name="merchant_id"><option value="">All merchants</option>@foreach($merchants as $m)<option value="{{ $m->id }}" {{ request('merchant_id')==$m->id?'selected':'' }}>{{ $m->name }}</option>@endforeach</select>
   <select name="status"><option value="">All statuses</option>@foreach($statuses as $s)<option value="{{ $s }}" {{ request('status')==$s?'selected':'' }}>{{ ucfirst($s) }}</option>@endforeach</select>

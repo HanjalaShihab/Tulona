@@ -34,7 +34,7 @@ class Comparison extends Model
     public function offers(): BelongsToMany
     {
         return $this->belongsToMany(Offer::class, 'comparison_offer')
-            ->withPivot(['is_hidden', 'override_price', 'override_availability', 'override_warranty', 'override_shipping', 'sort_order'])
+            ->withPivot(['is_hidden', 'is_best_deal', 'override_price', 'override_availability', 'override_warranty', 'override_shipping', 'sort_order'])
             ->with(['merchant', 'product'])
             ->orderBy('pivot_sort_order');
     }

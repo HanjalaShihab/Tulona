@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Contracts\Merchant\AffiliateLinkGenerator;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessAffiliateGenerations;
+use App\Models\AffiliateGenerationRun;
 use App\Models\AffiliateLinkGeneration;
 use App\Models\AffiliateOffer;
 use App\Models\AuditLog;
 use App\Models\Merchant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +32,7 @@ class AffiliateController extends Controller
             'offers' => $query->latest('updated_at')->paginate(20)->withQueryString(),
             'merchants' => Merchant::orderBy('name')->get(['id', 'name']),
             'statuses' => ['pending', 'manual', 'generated', 'failed', 'invalid', 'inactive'],
+            'runs' => AffiliateGenerationRun::with('merchant:id,name')->latest('id')->limit(8)->get(),
             'counts' => [
                 'total' => AffiliateOffer::count(),
                 'manual' => AffiliateOffer::where('status', 'manual')->count(),
@@ -132,20 +135,42 @@ class AffiliateController extends Controller
         ]);
     }
 
-    /** §23 queue bulk affiliate-link generation for a merchant (or all). */
+    /** §23 queue bulk affiliate-link generation for a merchant (or all) with live progress. */
     public function bulkGenerate(Request $request): RedirectResponse
     {
-        $merchantId = $request->input('merchant_id');
+        $merchantId = $request->input('merchant_id') ?: null;
         $count = AffiliateOffer::whereIn('status', ['pending', 'failed', 'invalid'])
             ->when($merchantId, fn ($q) => $q->where('merchant_id', $merchantId))
             ->count();
 
         abort_if($count === 0, 422, 'No pending affiliate offers to generate for this selection.');
 
-        ProcessAffiliateGenerations::dispatch($merchantId ?: null);
+        $run = AffiliateGenerationRun::create([
+            'merchant_id' => $merchantId,
+            'status' => 'queued',
+            'total' => $count,
+            'created_by' => auth()->id(),
+        ]);
 
-        AuditLog::record('affiliate.bulk_generation_queued', null, ['merchant_id' => $merchantId, 'count' => $count]);
+        ProcessAffiliateGenerations::dispatch($merchantId, $run->id);
 
-        return back()->with('status', "Bulk generation queued for {$count} pending offer(s). Run the queue worker to process.");
+        AuditLog::record('affiliate.bulk_generation_queued', null, ['merchant_id' => $merchantId, 'count' => $count, 'run_id' => $run->id]);
+
+        return back()->with('status', "Bulk generation queued for {$count} pending offer(s).");
+    }
+
+    /** §23 poll a bulk generation run's progress from the admin progress bar. */
+    public function generationProgress(AffiliateGenerationRun $run): JsonResponse
+    {
+        return response()->json([
+            'id' => $run->id,
+            'status' => $run->status,
+            'total' => $run->total,
+            'processed' => $run->processed,
+            'generated' => $run->generated,
+            'failed' => $run->failed,
+            'running' => in_array($run->status, ['queued', 'processing']),
+            'completed' => $run->status === 'completed',
+        ]);
     }
 }

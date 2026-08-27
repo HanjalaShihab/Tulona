@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Comparison;
+use App\Models\ImportBatch;
+use App\Models\ImportItem;
 use App\Models\Merchant;
 use App\Models\Offer;
 use App\Models\Product;
+use App\Services\Scraping\UrlScrapeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -95,12 +98,29 @@ class ComparisonController extends Controller
 
                 $comparison->offers()->updateExistingPivot($offerId, [
                     'is_hidden' => (bool) ($attrs['is_hidden'] ?? false),
+                    'is_best_deal' => (bool) ($attrs['is_best_deal'] ?? false),
                     'override_price' => ($attrs['override_price'] ?? '') !== '' ? $attrs['override_price'] : null,
                     'override_availability' => ($attrs['override_availability'] ?? '') !== '' ? $attrs['override_availability'] : null,
                     'override_warranty' => ($attrs['override_warranty'] ?? '') !== '' ? $attrs['override_warranty'] : null,
                     'override_shipping' => ($attrs['override_shipping'] ?? '') !== '' ? $attrs['override_shipping'] : null,
                     'sort_order' => (int) ($attrs['sort_order'] ?? 0),
                 ]);
+
+                // §36 enforce a single "Best Overall Deal" per product: clearing
+                // any previously flagged sibling offers for the same product.
+                if (! empty($attrs['is_best_deal'])) {
+                    $productId = $comparison->offers()
+                        ->where('offers.id', $offerId)
+                        ->value('comparison_offer.product_id');
+
+                    $comparison->offers()
+                        ->wherePivot('product_id', $productId)
+                        ->whereNot('offers.id', $offerId)
+                        ->get()
+                        ->each(function ($o): void {
+                            $o->pivot->update(['is_best_deal' => false]);
+                        });
+                }
             }
         }
 
@@ -132,6 +152,84 @@ class ComparisonController extends Controller
         $comparison->offers()->syncWithoutDetaching($rows);
 
         return back()->with('status', 'Offers added to comparison.');
+    }
+
+    /** §31 scrape one or more merchant listing URLs and detect products common across them. */
+    public function scrape(Request $request, Comparison $comparison, UrlScrapeService $service): RedirectResponse
+    {
+        $entries = $request->validate([
+            'entries' => 'required|array|min:1',
+            'entries.*.merchant_id' => 'required|exists:merchants,id',
+            'entries.*.source_url' => 'required|url|max:2048',
+        ])['entries'];
+
+        $batchIds = [];
+        $errors = [];
+        foreach ($entries as $entry) {
+            $batch = ImportBatch::create([
+                'filename' => 'comparison',
+                'type' => 'url',
+                'source_type' => 'url',
+                'source_url' => $entry['source_url'],
+                'merchant_id' => $entry['merchant_id'],
+                'status' => 'queued',
+                'total_rows' => 0,
+                'created_by' => auth()->id(),
+            ]);
+
+            try {
+                $service->scrape($batch);
+                $batchIds[] = $batch->id;
+            } catch (\Throwable $e) {
+                $errors[] = ['merchant_id' => $entry['merchant_id'], 'source_url' => $entry['source_url'], 'error' => $e->getMessage()];
+            }
+        }
+
+        $common = $this->commonProductIds($batchIds);
+
+        return redirect()->route('admin.comparisons.edit', $comparison)
+            ->with('comparisonScrape', ['batch_ids' => $batchIds, 'common_ids' => $common, 'errors' => $errors]);
+    }
+
+    /** §33 attach every offer of the detected common products to the comparison. */
+    public function attachCommon(Request $request, Comparison $comparison): RedirectResponse
+    {
+        $ids = $request->validate([
+            'product_ids' => 'required|array|min:1',
+            'product_ids.*' => 'exists:products,id',
+        ])['product_ids'];
+
+        $rows = [];
+        foreach ($ids as $pid) {
+            foreach (Offer::where('product_id', $pid)->get() as $i => $offer) {
+                $rows[$offer->id] = ['product_id' => $pid, 'sort_order' => $i, 'is_hidden' => false];
+            }
+        }
+        $comparison->offers()->syncWithoutDetaching($rows);
+        $comparison->products()->syncWithoutDetaching(
+            collect($ids)->mapWithKeys(fn ($pid, $i) => [$pid => ['sort_order' => $i]])
+        );
+
+        AuditLog::record('comparison.common_attached', $comparison, ['products' => $ids]);
+
+        return back()->with('status', 'Common products added to comparison ('.count($ids).').');
+    }
+
+    protected function commonProductIds(array $batchIds): array
+    {
+        if (empty($batchIds)) {
+            return [];
+        }
+
+        return ImportItem::query()
+            ->whereIn('import_batch_id', $batchIds)
+            ->whereNotNull('product_id')
+            ->get(['import_batch_id', 'product_id'])
+            ->groupBy('product_id')
+            ->map(fn ($group) => $group->pluck('import_batch_id')->unique()->count())
+            ->filter(fn ($count) => $count >= 2)
+            ->keys()
+            ->all();
     }
 
     protected function validated(Request $request): array

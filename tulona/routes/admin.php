@@ -43,6 +43,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::post('images/{image}/main', [ProductController::class, 'makeMainImage'])->name('images.main');
         Route::post('images/{image}/move', [ProductController::class, 'moveImage'])->name('images.move');
         Route::delete('images/{image}', [ProductController::class, 'destroyImage'])->name('images.destroy');
+        Route::post('products/bulk', [ProductController::class, 'bulkAction'])->name('products.bulk');
         Route::resource('categories', CategoryController::class)->except('show');
         Route::resource('brands', BrandController::class)->except('show');
     });
@@ -51,6 +52,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
     Route::middleware('can:manage-merchants')->group(function () {
         Route::get('affiliate', [AffiliateController::class, 'index'])->name('affiliate.index');
         Route::post('affiliate/bulk-generate', [AffiliateController::class, 'bulkGenerate'])->name('affiliate.bulk-generate');
+        Route::get('affiliate/runs/{run}/progress', [AffiliateController::class, 'generationProgress'])->name('affiliate.generation-progress');
         Route::get('affiliate/{affiliateOffer}', [AffiliateController::class, 'show'])->name('affiliate.show');
         Route::get('affiliate/{affiliateOffer}/edit', [AffiliateController::class, 'edit'])->name('affiliate.edit');
         Route::put('affiliate/{affiliateOffer}', [AffiliateController::class, 'update'])->name('affiliate.update');
@@ -78,6 +80,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::post('comparisons/{comparison}/add-offer', [ComparisonController::class, 'addOffer'])->name('comparisons.add-offer');
         Route::put('comparisons/{comparison}/sync-products', [ComparisonController::class, 'syncProducts'])->name('comparisons.sync-products');
         Route::put('comparisons/{comparison}/sync-offer-overrides', [ComparisonController::class, 'syncOfferOverrides'])->name('comparisons.sync-offer-overrides');
+        Route::post('comparisons/{comparison}/scrape', [ComparisonController::class, 'scrape'])->name('comparisons.scrape');
+        Route::post('comparisons/{comparison}/attach-common', [ComparisonController::class, 'attachCommon'])->name('comparisons.attach-common');
     });
 
     // Imports (§16: upload, URL scrape, preview confirm, cancel)
@@ -87,6 +91,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
     Route::post('imports/{batch}/confirm', [ImportController::class, 'confirm'])->name('imports.confirm'); // step 3: queue job
     Route::post('imports/{batch}/selected', [ImportController::class, 'selected'])->name('imports.selected'); // §16 import selected
     Route::post('imports/{batch}/cancel', [ImportController::class, 'cancel'])->name('imports.cancel');     // §16 cancel preview
+    Route::post('imports/{batch}/retry', [ImportController::class, 'retry'])->name('imports.retry');         // §15 retry failed batch
+    Route::post('imports/{batch}/retry-failed', [ImportController::class, 'retryFailedItems'])->name('imports.retry-failed'); // §16 resume failed items
     Route::get('imports/{batch}', [ImportController::class, 'show'])->name('imports.show');               // results
 
     // Analytics & users

@@ -56,15 +56,7 @@
           @if(!empty($section['description']))<p style="color:var(--ink-2);margin-bottom:14px">{{ $section['description'] }}</p>@endif
           <div class="grid cards-grid">
             @foreach($page->comparisons as $comparison)
-              <article class="card">
-                <div class="card-body">
-                  <span class="card-brand">Comparison</span>
-                  <a class="card-name" href="{{ route('comparisons.show', $comparison->slug) }}">{{ $comparison->title }}</a>
-                  @if($comparison->introduction)<p style="color:var(--ink-2);font-size:13px;margin:6px 0">{{ \Illuminate\Support\Str::limit($comparison->introduction, 120) }}</p>@endif
-                  <p style="color:var(--ink-3);font-size:13px;margin:6px 0">{{ $comparison->products_count ?? 0 }} products compared</p>
-                  <a class="btn btn-primary btn-sm" style="margin-top:8px" href="{{ route('comparisons.show', $comparison->slug) }}">View comparison</a>
-                </div>
-              </article>
+              @include('partials.comparison-card', ['comparison' => $comparison])
             @endforeach
           </div>
         </section>

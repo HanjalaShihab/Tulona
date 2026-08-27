@@ -315,6 +315,44 @@ class ProductController extends Controller
         return back()->with('status', 'Image removed.');
     }
 
+    /** Bulk catalogue actions (§48): publish / unpublish / archive / delete / category. */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        if (! $request->method() === 'POST') {
+            abort(405);
+        }
+
+        $data = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:products,id',
+            'action' => 'required|in:publish,unpublish,archive,delete,category',
+            'category_id' => 'required_if:action,category|exists:categories,id',
+        ]);
+
+        $ids = $data['ids'];
+        $count = 0;
+
+        DB::transaction(function () use ($data, $ids, &$count) {
+            match ($data['action']) {
+                'publish' => $count = Product::withTrashed()->whereIn('id', $ids)->get()
+                    ->each(fn ($p) => $p->restore())
+                    ->each(fn ($p) => $p->update(['status' => 'published']))
+                    ->count(),
+                'unpublish' => $count = Product::whereIn('id', $ids)->update(['status' => 'draft']),
+                'archive' => $count = Product::withoutTrashed()->whereIn('id', $ids)->get()
+                    ->each(fn ($p) => $p->update(['status' => 'archived']))
+                    ->each->delete()
+                    ->count(),
+                'delete' => $count = Product::withTrashed()->whereIn('id', $ids)->forceDelete(),
+                'category' => $count = Product::whereIn('id', $ids)->update(['category_id' => $data['category_id']]),
+            };
+        });
+
+        AuditLog::record('product.bulk_'.$data['action'], null, ['ids' => $ids, 'count' => $count, 'category_id' => $data['category_id'] ?? null]);
+
+        return back()->with('status', "Bulk action '{$data['action']}' applied to {$count} product(s).");
+    }
+
     protected function offerValidated(Request $request): array
     {
         return $request->validate([

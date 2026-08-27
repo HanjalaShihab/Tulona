@@ -93,6 +93,15 @@
   </section>
   @endif
 
+  @if(!empty($comparisons) && !$comparisons->isEmpty())
+  <section class="section">
+    <div class="sec-head"><div><span class="sec-eyebrow">⚖ Head to head</span><h2>Shop Smarter: Comparisons</h2></div><a href="{{ route('compare.index') }}">Compare products →</a></div>
+    <div class="cat-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));grid-auto-rows:1fr">
+      @foreach($comparisons as $c)@include('partials.comparison-card', ['comparison' => $c])@endforeach
+    </div>
+  </section>
+  @endif
+
   @if(!$guides->isEmpty())
   <section class="section">
     <div class="sec-head"><div><span class="sec-eyebrow">📚 Learn before you buy</span><h2>Buying Guides</h2></div><a href="{{ route('guides.index') }}">All guides →</a></div>
