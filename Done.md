@@ -1,7 +1,7 @@
 # Done.md — Tulona Build Progress
 
 This document records what has been implemented from `Build.md`, organized by the build sections.
-The project lives in `/home/hanjala-shihab/Documents/Narrative Lab/tulona` (a Laravel 13 application).
+The project lives in `/home/hanjala-shihab/Documents/tulona` (a Laravel 13 application).
 
 **Status at a glance:** All 100 Build.md sections are addressed. Migrations, seeders, models,
 controllers, services, views, routes, and tests are in place. 17/18 automated tests pass (1 risky
