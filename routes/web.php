@@ -10,6 +10,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\DealsController;
 use App\Http\Controllers\GoController;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\MerchantController;
@@ -78,6 +79,18 @@ Route::prefix('api')->middleware('throttle:120,1')->group(function () {
     Route::get('/price-drops', [ApiController::class, 'priceDrops']);
     Route::get('/search', [ApiController::class, 'search']);
     Route::get('/compare', [ApiController::class, 'compare']);
+});
+
+// ── Scheduled task webhook (shared hosting has no cron) ──────────────────────
+// cron-job.org polls GET /tulona/cron/<token>. Disabled unless SCHEDULER_TOKEN
+// is set in .env.
+Route::get('/tulona/cron/{token}', function (string $token) {
+    abort_unless(env('SCHEDULER_TOKEN'), 404);
+    abort_unless(hash_equals((string) env('SCHEDULER_TOKEN'), $token), 403);
+
+    Artisan::call('schedule:run');
+
+    return response('ok');
 });
 
 // ── Admin (only admins authenticate; public browsing is anonymous §6) ───────
