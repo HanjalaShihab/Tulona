@@ -49,7 +49,7 @@ Generator: {{ $batch->source_type === 'url' ? 'URL scrape #'.$batch->id : $batch
       <table class="data-table">
         <thead><tr>
           <th style="width:28px"><input type="checkbox" onclick="document.querySelectorAll('[data-item]').forEach(c=>c.checked=this.checked)"></th>
-          <th>Product</th><th>Merchant SKU</th><th>Price</th><th>Match</th><th>Status</th><th>Error</th>
+          <th>Product</th><th>Merchant SKU</th><th>Price</th><th>Match</th><th>Status</th><th>Error</th><th style="width:70px"></th>
         </tr></thead>
         <tbody>
         @foreach($items as $item)
@@ -60,6 +60,9 @@ Generator: {{ $batch->source_type === 'url' ? 'URL scrape #'.$batch->id : $batch
               @endif
             </td>
             <td>
+              @if($item->normalized_data['images'][0] ?? ($item->normalized_data['image'] ?? null))
+                <img src="{{ $item->normalized_data['images'][0] ?? $item->normalized_data['image'] }}" style="width:34px;height:34px;object-fit:cover;border-radius:5px;vertical-align:middle;margin-right:8px" alt="">
+              @endif
               {{ $item->normalized_data['name'] ?? '—' }}
               @if($item->product_id)
                 <div class="note">→ {{ ($item->product->name ?? 'existing product') }} (id #{{ $item->product_id }})</div>
@@ -70,13 +73,31 @@ Generator: {{ $batch->source_type === 'url' ? 'URL scrape #'.$batch->id : $batch
             <td><span class="badge {{ $item->match_type === 'name' ? 'badge-stale' : 'badge-deal' }}">{{ $item->match_type ?? '—' }}</span></td>
             <td><span class="status-pill status-{{ $item->status }}">{{ ucfirst($item->status) }}</span></td>
             <td style="font-size:12.5px;color:var(--danger)">{{ $item->error ?? '' }}</td>
+            <td>
+              @if(! in_array($item->status, ['error', 'skipped']))
+                <button type="submit" form="remove-form-{{ $item->id }}" class="btn btn-outline btn-sm" style="color:var(--danger)" onclick="return confirm('Remove this product from the list?');">Remove</button>
+              @endif
+            </td>
           </tr>
         @endforeach
         </tbody>
       </table>
-      <div style="margin-top:10px">{{ $items->links() }}</div>
-      <button class="btn btn-primary btn-sm" style="margin-top:10px">Import selected items</button>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm">Import selected items</button>
+        <button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger)" formaction="{{ route('admin.imports.remove-selected', $batch) }}" onclick="return confirm('Remove the selected products from the list?');">Remove selected</button>
+      </div>
     </form>
+
+    {{-- External DELETE forms so per-row Remove buttons are not nested inside
+         the selected-items POST form above (nested <form> is invalid HTML). --}}
+    @foreach($items as $item)
+      @if(! in_array($item->status, ['error', 'skipped']))
+        <form id="remove-form-{{ $item->id }}" method="POST" action="{{ route('admin.imports.items.destroy', [$batch, $item]) }}" style="display:none">
+          @csrf
+          @method('DELETE')
+        </form>
+      @endif
+    @endforeach
   @elseif($batch->status === 'processing')
     <div class="alert alert-ok">
       Import is running in the background ({{ number_format($batch->imported_count + $batch->failed_count) }} / {{ number_format($batch->total_rows) }} rows done). Refresh for progress.

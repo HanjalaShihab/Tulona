@@ -12,6 +12,7 @@ use App\Models\Offer;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Services\PriceTrackingService;
+use App\Services\ProductMatchService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +58,26 @@ class ProductController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Detect the same product before the unique-slug rule can reject the
+        // form: reuse the existing product (all merchant offers then line up in
+        // its Compare Stores section) instead of creating a duplicate.
+        $candidate = new Product([
+            'name' => trim((string) $request->input('name')),
+            'category_id' => filled($request->input('category_id')) ? (int) $request->input('category_id') : null,
+            'brand_id' => filled($request->input('brand_id')) ? (int) $request->input('brand_id') : null,
+            'sku' => $request->input('sku') ?: null,
+            'model_number' => $request->input('model_number') ?: null,
+            'gtin' => $request->input('gtin') ?: null,
+        ]);
+
+        if (($match = app(ProductMatchService::class)->find($candidate)) !== null) {
+            AuditLog::record('product.merged', $match, ['skipped' => $request->input('name')]);
+
+            return redirect()
+                ->route('admin.products.edit', $match)
+                ->with('status', '“'.$request->input('name').'” already exists (id #'.$match->id.') — no duplicate created. Add the merchant offer there and it appears in Compare Stores.');
+        }
+
         $data = $this->validated($request);
         $data['slug'] = ($data['slug'] ?? '') ?: str()->slug($data['name']);
         $product = Product::create($data);
@@ -113,7 +134,7 @@ class ProductController extends Controller
             'rating' => 'nullable|numeric|min:0|max:5',
             'pricing_model' => 'nullable|in:,free,freemium,subscription,one_time',
             'has_free_plan' => 'boolean',
-            'is_featured' => 'boolean', 'is_trending' => 'boolean', 'is_editors_pick' => 'boolean',
+            'is_featured' => 'boolean', 'is_trending' => 'boolean', 'is_top_selling' => 'boolean', 'is_editors_pick' => 'boolean',
             'is_best_value' => 'boolean', 'is_budget_pick' => 'boolean', 'is_premium_pick' => 'boolean',
             'status' => 'nullable|in:draft,pending_review,published,archived',
         ];

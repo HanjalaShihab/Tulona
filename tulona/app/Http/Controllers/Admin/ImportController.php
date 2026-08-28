@@ -7,6 +7,7 @@ use App\Jobs\ProcessImportBatch;
 use App\Jobs\ProcessImportItems;
 use App\Models\Category;
 use App\Models\ImportBatch;
+use App\Models\ImportItem;
 use App\Models\Merchant;
 use App\Services\ImportService;
 use App\Services\Scraping\UrlScrapeService;
@@ -147,6 +148,51 @@ class ImportController extends Controller
         return redirect()->route('admin.imports.show', $batch)->with('status', 'Import of '.$items->count().' selected items queued.');
     }
 
+    /** §16 remove a single staged product from the preview list before import. */
+    public function destroyItem(ImportBatch $batch, ImportItem $item): RedirectResponse
+    {
+        $this->authorize('run-imports');
+
+        abort_unless($batch->id === $item->import_batch_id && $batch->status === 'preview', 422, 'Only staged items from a preview can be removed.');
+
+        $item->delete();
+        $this->refreshCounts($batch);
+
+        return back()->with('status', 'Removed from list.');
+    }
+
+    /** §16 remove the selected staged products from the preview list before import. */
+    public function removeSelected(Request $request, ImportBatch $batch): RedirectResponse
+    {
+        $this->authorize('run-imports');
+
+        abort_unless($batch->status === 'preview' && $batch->source_type === 'url', 422, 'Only URL scrape previews support removing items.');
+
+        $ids = $request->input('items', []);
+        abort_if(empty($ids), 422, 'Select at least one item to remove.');
+
+        $deleted = $batch->items()->whereIn('id', $ids)
+            ->whereNotIn('status', ['error', 'skipped'])
+            ->delete();
+
+        abort_if($deleted === 0, 422, 'No removable items selected.');
+        $this->refreshCounts($batch);
+
+        return back()->with('status', "Removed {$deleted} product(s) from the list.");
+    }
+
+    protected function refreshCounts(ImportBatch $batch): void
+    {
+        $items = $batch->items();
+        $batch->updateQuietly([
+            'total_rows' => $items->count(),
+            'created_count' => (clone $items)->where('status', 'new')->count(),
+            'updated_count' => (clone $items)->where('status', 'matched')->count(),
+            'skipped_count' => (clone $items)->where('status', 'duplicate')->count(),
+            'failed_count' => (clone $items)->where('status', 'error')->count(),
+        ]);
+    }
+
     /** §16 cancel a previewed URL import. */
     public function cancel(ImportBatch $batch): RedirectResponse
     {
@@ -219,7 +265,7 @@ class ImportController extends Controller
         $batch->load($isUrl ? ['items.product', 'merchant'] : 'errors');
 
         $items = $isUrl
-            ? $batch->items()->orderByDesc('status')->paginate(perPage: 50, pageName: 'items')
+            ? $batch->items()->orderBy('id')->get()
             : null;
 
         return view('admin.imports.show', [

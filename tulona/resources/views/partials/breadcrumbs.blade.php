@@ -9,10 +9,14 @@
   @endforeach
 </nav>
 @section('schema')
-<script type="application/ld+json">{!! json_encode([
-  '@context'=>'https://schema.org','@type'=>'BreadcrumbList',
-  'itemListElement'=>collect($items)->values()->map(fn($it,$i)=>[
-    '@type'=>'ListItem','position'=>$i+1,'name'=>$it['name'],
-  ] + (!empty($it['url']) ? ['item'=>url($it['url'])] : []))->all(),
-], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}</script>
+@php
+  $crumbSchema = json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'BreadcrumbList',
+    'itemListElement' => collect($items)->values()->map(fn ($it, $i) => [
+      '@type' => 'ListItem', 'position' => $i + 1, 'name' => $it['name'],
+    ] + (! empty($it['url']) ? ['item' => url($it['url'])] : []))->all(),
+  ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+@endphp
+<script type="application/ld+json">{!! $crumbSchema !!}</script>
 @endsection

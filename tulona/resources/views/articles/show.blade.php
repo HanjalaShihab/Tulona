@@ -1,18 +1,21 @@
 @extends('layouts.app')
 
 @section('schema')
-<script type="application/ld+json">{!! json_encode(array_filter([
-  '@context'=>'https://schema.org','@type'=>'Article',
-  'headline'=>$article->title,
-  'description'=>strip_tags($article->excerpt ?? ''),
-  'author'=>['@type'=>'Organization','name'=>$article->author],
-  'publisher'=>['@type'=>'Organization','name'=>'Tulona'],
-  'datePublished'=>$article->published_at?->toIso8601String(),
-  'dateModified'=>$article->updated_at->toIso8601String(),
-  'image'=>$article->og_image ?: $article->featured_image,
-]) + ($article->faqs ? ['mainEntity'=>collect($article->faqs)->map(fn($f)=>[
-  '@type'=>'Question','name'=>$f['question'],'acceptedAnswer'=>['@type'=>'Answer','text'=>$f['answer']]])->all()] : []),
-JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}</script>
+@php
+  $articleSchema = json_encode(array_filter([
+    '@context' => 'https://schema.org', '@type' => 'Article',
+    'headline' => $article->title,
+    'description' => strip_tags($article->excerpt ?? ''),
+    'author' => ['@type' => 'Organization', 'name' => $article->author],
+    'publisher' => ['@type' => 'Organization', 'name' => 'Tulona'],
+    'datePublished' => $article->published_at?->toIso8601String(),
+    'dateModified' => $article->updated_at->toIso8601String(),
+    'image' => $article->og_image ?: $article->featured_image,
+  ]) + ($article->faqs ? ['mainEntity' => collect($article->faqs)->map(fn ($f) => [
+    '@type' => 'Question', 'name' => $f['question'], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['answer']],
+  ])->all()] : []), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+@endphp
+<script type="application/ld+json">{!! $articleSchema !!}</script>
 @endsection
 
 @section('content')

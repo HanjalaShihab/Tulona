@@ -41,7 +41,7 @@ class PublicPagesTest extends TestCase
         $response->assertOk()
             ->assertSee('Compare Stores')
             ->assertSee('Price History')
-            ->assertSee('Buy from Daraz BD');
+            ->assertSee('Buy now');
 
         // Every offer CTA points at our tracked redirect — never raw affiliate URLs
         $this->assertStringNotContainsString('affiliate_url', $response->getContent());
@@ -97,7 +97,7 @@ class PublicPagesTest extends TestCase
 
         $this->getJson('/api/products')->assertOk();
         $this->getJson('/api/products/nvidia-rtx-5070')->assertOk()->assertJsonPath('slug', 'nvidia-rtx-5070');
-        $this->getJson('/api/products/nvidia-rtx-5070/offers')->assertOk()->assertJsonCount(4);
+        $this->getJson('/api/products/nvidia-rtx-5070/offers')->assertOk()->assertJsonCount(5);
         $this->getJson('/api/categories')->assertOk();
         $this->getJson('/api/search?q=iphone')->assertOk();
     }

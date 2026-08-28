@@ -2,6 +2,7 @@
 
 namespace App\Services\Scraping;
 
+use App\Connectors\Parser\HtmlProductParser;
 use App\Models\ImportBatch;
 use App\Services\Merchant\ConnectorRegistry;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,7 @@ class UrlScrapeService
         protected UrlFetcher $fetcher,
         protected ConnectorRegistry $registry,
         protected ProductMatcher $matcher,
+        protected HtmlProductParser $htmlParser,
     ) {}
 
     public function scrape(ImportBatch $batch): void
@@ -34,12 +36,16 @@ class UrlScrapeService
         $config = $merchant->configuration ?? [];
         $parser = $connector->parser();
 
-        // Safety ceiling against runaway/infinite pagination; tuned down via
-        // merchant configuration (html.max_pages). High default so "all pages"
-        // is honoured for large catalogues.
-        $maxPages = max(1, (int) ($config['html']['max_pages'] ?? 1000));
+        // Safety ceiling against runaway/infinite pagination. Defaults to 1 so
+        // only the products on the given (first) page are generated — a merchant
+        // may opt into more via config html.max_pages.
+        $maxPages = max(1, (int) ($config['html']['max_pages'] ?? 1));
 
-        $counts = ['total' => 0, 'matched' => 0, 'new' => 0, 'duplicate' => 0, 'error' => 0, 'pages' => 0];
+        $counts = ['total' => 0, 'matched' => 0, 'new' => 0, 'duplicate' => 0, 'error' => 0, 'pages' => 0, 'details' => 0];
+
+        // Cap on per-product detail-page fetches during a single scrape so a very
+        // large first page still completes in one request cycle.
+        $maxDetails = max(0, (int) ($config['html']['max_details'] ?? 200));
 
         $batch->items()->delete(); // re-staged preview replaces any earlier one
 
@@ -70,10 +76,37 @@ class UrlScrapeService
 
             $raw = $this->fetcher->fetch($pageUrl);
 
-            foreach ($parser->parse($raw, $config) as $rawRow) {
+            // Make the current page URL available to HTML parsers so they can
+            // resolve relative product links/images discovered on the page.
+            $pageConfig = array_merge($config, ['_base_url' => $pageUrl]);
+
+            foreach ($parser->parse($raw, $pageConfig) as $rawRow) {
                 $counts['total']++;
 
                 try {
+                    // Follow each product's own page to fetch full details (images,
+                    // description, more accurate price/SKU/availability). Merged over
+                    // the listing row so listing data is preferred where present.
+                    if (! empty($rawRow['external_url'])
+                        && $counts['details'] < $maxDetails
+                        && ($config['html']['fetch_details'] ?? true)) {
+                        $counts['details']++;
+                        try {
+                            $detailRow = $this->htmlParser->detail(
+                                $this->fetcher->fetch($rawRow['external_url']),
+                                $rawRow['external_url'],
+                                $config,
+                            );
+                            // Detail fills gaps but never overrides listing data that
+                            // is already present (listing is the more reliable source
+                            // for the current price on the category page).
+                            $listing = array_filter($rawRow, fn ($v) => $v !== null && $v !== '');
+                            $rawRow = array_merge($detailRow, $listing);
+                        } catch (\Throwable $e) {
+                            Log::debug('Detail fetch skipped', ['url' => $rawRow['external_url'], 'error' => $e->getMessage()]);
+                        }
+                    }
+
                     $normalized = $connector->normalizer()->normalize($rawRow, $config);
 
                     if (empty($normalized['name'])) {

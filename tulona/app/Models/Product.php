@@ -16,13 +16,16 @@ class Product extends Model
         'category_id', 'brand_id', 'name', 'slug', 'sku', 'model_number', 'gtin',
         'product_type', 'short_description', 'description', 'summary_editorial',
         'pros', 'cons', 'rating', 'pricing_model', 'has_free_plan', 'platforms',
-        'is_featured', 'is_trending', 'is_editors_pick', 'is_best_value',
+        'is_featured', 'is_trending', 'is_top_selling', 'is_editors_pick', 'is_best_value',
         'is_budget_pick', 'is_premium_pick', 'popularity_score', 'clicks_count', 'status',
     ];
 
     protected $casts = [
         'pros' => 'array', 'cons' => 'array', 'platforms' => 'array',
         'has_free_plan' => 'boolean', 'rating' => 'float',
+        'is_featured' => 'boolean', 'is_trending' => 'boolean', 'is_top_selling' => 'boolean',
+        'is_editors_pick' => 'boolean', 'is_best_value' => 'boolean',
+        'is_budget_pick' => 'boolean', 'is_premium_pick' => 'boolean',
     ];
 
     /** §7/§39 live products only — replaces the old 'active' filter. */

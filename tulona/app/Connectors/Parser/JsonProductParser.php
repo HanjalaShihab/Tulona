@@ -36,6 +36,12 @@ class JsonProductParser implements ProductParser
         return $method === 'json' || $method === 'api';
     }
 
+    /** Public accessor so other parsers (e.g. HTML detail enrichment) can clean a JSON-LD node. */
+    public function cleanRow(array $node): array
+    {
+        return $this->clean($node);
+    }
+
     protected function extractList(array $json): array
     {
         if (! array_is_list($json) || $json === []) {
@@ -78,10 +84,34 @@ class JsonProductParser implements ProductParser
         $name = $pick($node, 'name', 'title', 'product_name');
         $offers = is_array($node['offers'] ?? null) ? $node['offers'] : null;
         $offer0 = is_array($offers['offers'] ?? null) ? ($offers['offers'][0] ?? null) : $offers;
+        if (! is_array($offer0)) {
+            $offer0 = null;
+        }
         $price = $pick($node, 'price', 'current_price', 'sale_price', 'amount')
-            ?? (! $offer0 || is_scalar($offer0) ? null : $pick($offer0, 'price', 'lowPrice', 'highPrice'));
+            ?? ($offer0 === null ? null : $pick($offer0, 'price', 'lowPrice', 'highPrice'));
         $currency = $this->scalarOrNull($pick($node, 'currency', 'currency_code'))
-            ?? (! $offer0 || is_scalar($offer0) ? null : $this->scalarOrNull($pick($offer0, 'priceCurrency', 'currency')));
+            ?? ($offer0 === null ? null : $this->scalarOrNull($pick($offer0, 'priceCurrency', 'currency')));
+
+        // Original/list price — node level, then offer level, then a nested
+        // UnitPriceSpecification, then highPrice when it differs from the
+        // current (low) price (AggregateOffer sale pattern).
+        $originalPrice = $this->scalarOrNull($pick($node, 'original_price', 'regular_price', 'list_price'));
+        if ($originalPrice === null && $offer0 !== null) {
+            $originalPrice = $this->scalarOrNull($pick($offer0, 'original_price', 'originalPrice', 'regular_price', 'regularPrice', 'list_price', 'listPrice', 'compare_at_price', 'compareAtPrice', 'msrp'));
+        }
+        if ($originalPrice === null && $offer0 !== null && isset($offer0['priceSpecification']) && is_array($offer0['priceSpecification'])) {
+            $specPrice = $pick($offer0['priceSpecification'], 'price', 'value');
+            if ($specPrice !== null && $specPrice != $price) {
+                $originalPrice = $this->scalarOrNull($specPrice);
+            }
+        }
+        if ($originalPrice === null && $offer0 !== null && $price !== null) {
+            $high = $pick($offer0, 'highPrice');
+            $low = $pick($offer0, 'lowPrice', 'price');
+            if ($high !== null && $low !== null && $high != $low && $price == $low) {
+                $originalPrice = $this->scalarOrNull($high);
+            }
+        }
 
         return [
             'name' => is_scalar($name) ? trim((string) $name) : null,
@@ -89,7 +119,7 @@ class JsonProductParser implements ProductParser
             'brand_slug' => $this->scalarOrNull($pick($node, 'brand', 'brand_name')),
             'merchant_slug' => null,
             'price' => is_numeric($price) || is_string($price) ? $price : null,
-            'original_price' => $this->scalarOrNull($pick($node, 'original_price', 'regular_price', 'list_price')),
+            'original_price' => $originalPrice,
             'currency' => $currency ?? 'BDT',
             'affiliate_url' => $this->urlOrNull($pick($node, 'affiliate_url', 'affiliateUrl', 'tracking_url', 'url', 'url2')),
             'external_url' => $this->urlOrNull($pick($node, 'external_url', 'externalUrl', 'product_url', 'itemUrl', '@id')),

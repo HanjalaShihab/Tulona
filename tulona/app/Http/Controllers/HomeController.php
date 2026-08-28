@@ -18,7 +18,13 @@ class HomeController extends Controller
         $data = [
             'categories' => Category::whereNull('parent_id')->where('is_active', true)->orderBy('sort_order')->get(),
             'trending' => Product::published()->where('is_trending', true)->with(['brand', 'activeOffers'])->limit(8)->get(),
+            'topSelling' => Product::published()->where('is_top_selling', true)->with(['brand', 'activeOffers'])->limit(8)->get(),
             'featured' => Product::published()->where('is_featured', true)->with(['brand', 'activeOffers'])->limit(4)->get(),
+            'newArrivals' => Product::published()->with(['brand', 'activeOffers'])
+                ->withCount('activeOffers')
+                ->latest()
+                ->limit(8)
+                ->get(),
             'deals' => $this->bestDeals(),
             'drops' => PriceDropEvent::with(['product.brand', 'offer'])->latest('occurred_at')->limit(6)->get(),
             'comparisons' => Comparison::published()->featured()->withCount('products')->latest('updated_at')->limit(3)->get(),

@@ -9,7 +9,6 @@
       <input type="text" class="search-input" name="q" placeholder="Search phones, laptops, GPUs, skincare, AI tools…" aria-label="Search products">
       <button class="search-btn" type="submit">Search</button>
     </form>
-    <p class="disclose">We may earn a commission when you buy through our links — it never changes the price you pay.</p>
   </div>
 </section>
 
@@ -79,10 +78,24 @@
   </section>
   @endif
 
+  @if(!$topSelling->isEmpty())
+  <section class="section">
+    <div class="sec-head"><div><span class="sec-eyebrow">🏆 Best sellers</span><h2>Top Selling Products</h2></div></div>
+    <div class="prod-grid">@foreach($topSelling as $p)@include('partials.product-card', ['product' => $p])@endforeach</div>
+  </section>
+  @endif
+
   @if(!$trending->isEmpty() && (App\Models\Setting::get('homepage.show_trending', true)))
   <section class="section">
     <div class="sec-head"><div><span class="sec-eyebrow">📈 Hot right now</span><h2>Trending Products</h2></div></div>
     <div class="prod-grid">@foreach($trending as $p)@include('partials.product-card', ['product' => $p])@endforeach</div>
+  </section>
+  @endif
+
+  @if(!$newArrivals->isEmpty())
+  <section class="section">
+    <div class="sec-head"><div><span class="sec-eyebrow">🆕 Just added</span><h2>New Arrivals</h2></div></div>
+    <div class="prod-grid">@foreach($newArrivals as $p)@include('partials.product-card', ['product' => $p])@endforeach</div>
   </section>
   @endif
 

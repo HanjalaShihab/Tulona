@@ -29,31 +29,33 @@
     <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">☰</button>
     <a class="logo" href="{{ route('home') }}">Tulo<span>na</span></a>
     <nav class="main-nav" aria-label="Main">
-      <div class="has-menu">
-        <a href="{{ route('products.index') }}">Categories ▾</a>
-        <div class="mega">
-          @foreach(App\Models\Category::whereNull('parent_id')->where('is_active', true)->orderBy('sort_order')->get() as $c)
-            <a href="{{ route('categories.show', $c->slug) }}">{{ ($c->icon ? $c->icon.' ' : '') }}{{ $c->name }}</a>
-          @endforeach
-        </div>
-      </div>
       <a href="{{ route('deals.index') }}">Deals</a>
       <a href="{{ route('drops.index') }}">Price Drops</a>
       <a href="{{ route('compare.index') }}">Compare</a>
       <a href="{{ route('guides.index') }}">Guides</a>
       <a href="{{ route('reviews.index') }}">Reviews</a>
     </nav>
-    <form class="search-form head-search" role="search" action="{{ route('search.index') }}" method="get">
+    <div class="nav-cta">
+      <a class="btn btn-outline btn-sm" href="{{ route('compare.index') }}">Compare</a>
+    </div>
+  </div>
+  <div class="header-tools">
+    <div class="cat-menu has-menu">
+      <button type="button" class="cat-trigger" aria-expanded="false">☰ Categories ▾</button>
+      <div class="mega">
+        @foreach(App\Models\Category::whereNull('parent_id')->where('is_active', true)->orderBy('sort_order')->get() as $c)
+          <a href="{{ route('categories.show', $c->slug) }}">{{ ($c->icon ? $c->icon.' ' : '') }}{{ $c->name }}</a>
+        @endforeach
+      </div>
+    </div>
+    <form class="search-form" role="search" action="{{ route('search.index') }}" method="get">
       <div class="search-wrap">
         <input type="text" class="search-input" name="q" value="{{ request()->q ?? '' }}"
                placeholder="Search products, brands, categories…" data-suggest aria-label="Search products" autocomplete="off">
         <ul class="suggest"></ul>
       </div>
-      <button class="search-btn icon-btn" type="submit" aria-label="Search">Search</button>
+      <button class="search-btn" type="submit" aria-label="Search">Search</button>
     </form>
-    <div class="nav-cta">
-      <a class="btn btn-outline btn-sm" href="{{ route('compare.index') }}">Compare</a>
-    </div>
   </div>
 </header>
 
@@ -93,24 +95,24 @@
         <a href="{{ url('/terms-of-use') }}">Terms of Use</a>
       </div>
     </div>
-    <p class="footer-note">Prices and availability are provided for informational purposes and may change. Clicking a retailer link will take you to the retailer's website, where final pricing and availability are determined. Tulona does not sell products or process payments.</p>
   </div>
 </footer>
 
 {{-- Organization + WebSite schema sitewide (§38) --}}
-<script type="application/ld+json">
-{!! json_encode([
-  '@context' => 'https://schema.org',
-  '@graph' => [
-    ['@type' => 'Organization', 'name' => 'Tulona', 'url' => url('/'),
-     'logo' => asset('img/logo.png'), 'description' => 'Smart shopping research and product comparison platform for Bangladesh.'],
-    ['@type' => 'WebSite', 'name' => 'Tulona', 'url' => url('/'),
-     'potentialAction' => ['@type' => 'SearchAction',
-       'target' => ['@type' => 'EntryPoint', 'urlTemplate' => url('/search').'?q={search_term_string}'],
-       'query-input' => 'required name=search_term_string']],
-  ],
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
-</script>
+@php
+  $siteSchema = json_encode([
+    '@context' => 'https://schema.org',
+    '@graph' => [
+      ['@type' => 'Organization', 'name' => 'Tulona', 'url' => url('/'),
+       'logo' => asset('img/logo.png'), 'description' => 'Smart shopping research and product comparison platform for Bangladesh.'],
+      ['@type' => 'WebSite', 'name' => 'Tulona', 'url' => url('/'),
+       'potentialAction' => ['@type' => 'SearchAction',
+         'target' => ['@type' => 'EntryPoint', 'urlTemplate' => url('/search').'?q={search_term_string}'],
+         'query-input' => 'required name=search_term_string']],
+    ],
+  ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+@endphp
+<script type="application/ld+json">{!! $siteSchema !!}</script>
 <script src="/js/app.js" defer></script>
 @yield('scripts')
 </body>

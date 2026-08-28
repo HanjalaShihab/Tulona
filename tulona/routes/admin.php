@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\LandingPageController;
 use App\Http\Controllers\Admin\MerchantController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ScrapePostController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SyncController;
 use App\Http\Controllers\Admin\UserController;
@@ -46,6 +47,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::post('products/bulk', [ProductController::class, 'bulkAction'])->name('products.bulk');
         Route::resource('categories', CategoryController::class)->except('show');
         Route::resource('brands', BrandController::class)->except('show');
+    });
+
+    // Scrape & Post — single product detail → edit → publish into a category (§new)
+    Route::middleware('can:manage-products')->group(function () {
+        Route::get('scrape-post', [ScrapePostController::class, 'index'])->name('scrape-post.index');
+        Route::post('scrape-post/scrape', [ScrapePostController::class, 'scrape'])->name('scrape-post.scrape');
+        Route::get('scrape-post/edit', [ScrapePostController::class, 'edit'])->name('scrape-post.edit');
+        Route::post('scrape-post/post', [ScrapePostController::class, 'post'])->name('scrape-post.post');
+        Route::post('scrape-post/reset', [ScrapePostController::class, 'reset'])->name('scrape-post.reset');
     });
 
     // Affiliate offers & link generation (§19–§22)
@@ -90,6 +100,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
     Route::post('imports/scrape', [ImportController::class, 'scrape'])->name('imports.scrape');   // §14 URL import → queued
     Route::post('imports/{batch}/confirm', [ImportController::class, 'confirm'])->name('imports.confirm'); // step 3: queue job
     Route::post('imports/{batch}/selected', [ImportController::class, 'selected'])->name('imports.selected'); // §16 import selected
+    Route::post('imports/{batch}/remove-selected', [ImportController::class, 'removeSelected'])->name('imports.remove-selected'); // §16 drop selected from list
+    Route::delete('imports/{batch}/items/{item}', [ImportController::class, 'destroyItem'])->name('imports.items.destroy'); // §16 drop single item
     Route::post('imports/{batch}/cancel', [ImportController::class, 'cancel'])->name('imports.cancel');     // §16 cancel preview
     Route::post('imports/{batch}/retry', [ImportController::class, 'retry'])->name('imports.retry');         // §15 retry failed batch
     Route::post('imports/{batch}/retry-failed', [ImportController::class, 'retryFailedItems'])->name('imports.retry-failed'); // §16 resume failed items

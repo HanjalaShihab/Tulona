@@ -23,6 +23,7 @@
     <div class="nav-group-title">Sources</div>
     <a href="{{ route('admin.merchants.index') }}" class="{{ request()->routeIs('admin.merchants.*') ? 'active' : '' }}"><span class="side-ico">⌂</span><span>Merchants &amp; Sync</span></a>
     <a href="{{ route('admin.imports.index') }}" class="{{ request()->routeIs('admin.imports.*') ? 'active' : '' }}"><span class="side-ico">⚙</span><span>Generator</span></a>
+    <a href="{{ route('admin.scrape-post.index') }}" class="{{ request()->routeIs('admin.scrape-post.*') ? 'active' : '' }}"><span class="side-ico">✇</span><span>Scrape &amp; Post</span></a>
 
     <div class="nav-group-title">Monetization</div>
     <a href="{{ route('admin.affiliate.index') }}" class="{{ request()->routeIs('admin.affiliate.*') ? 'active' : '' }}"><span class="side-ico">⛓</span><span>Affiliate</span></a>

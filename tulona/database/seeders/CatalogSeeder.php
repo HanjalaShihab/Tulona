@@ -49,6 +49,7 @@ class CatalogSeeder extends Seeder
                 ['Productivity Software', 'productivity-software'],
             ]],
             ['Travel Products', 'travel-products', '✈️', [['Luggage', 'luggage']]],
+            ['Books', 'books', '📚'],
         ];
 
         foreach ($tree as $node) {

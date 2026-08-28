@@ -18,12 +18,15 @@ class ProductsSeeder extends Seeder
             ['Amazon Global', 'amazon', 'US', 'USD', 'amazon'],
             ['AliExpress', 'aliexpress', 'CN', 'USD', 'aliexpress'],
             ['Star Tech', 'star-tech', 'BD', 'BDT', null],
+            ['Rokomari', 'rokomari', 'BD', 'BDT', null, true, 'html'],
         ])->map(fn ($m) => Merchant::create([
             'name' => $m[0], 'slug' => $m[1], 'country' => $m[2], 'currencies' => [$m[3]],
             'affiliate_network_id' => $m[4] ? AffiliateNetwork::where('slug', $m[4])->value('id') : null,
             'description' => "{$m[0]} offers on Tulona. Purchases happen on the merchant's own website.",
-            'website_url' => "https://www.{$m[1]}.example",
-            'base_affiliate_url' => "https://{$m[1]}.example/aff",
+            'website_url' => "https://www.{$m[1]}.com",
+            'base_affiliate_url' => "https://{$m[1]}.com/affiliate",
+            'connector_type' => ($m[5] ?? false) ? 'url' : null,
+            'product_import_method' => $m[6] ?? 'csv',
         ]))->keyBy('slug');
 
         $attrs = [

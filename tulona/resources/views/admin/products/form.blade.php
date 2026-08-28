@@ -29,6 +29,7 @@
   <div class="pane form-grid" style="margin-top:14px">
     <label class="check"><input type="checkbox" name="is_featured" value="1" {{ old('is_featured', $product->is_featured)?'checked':'' }}> Featured</label>
     <label class="check"><input type="checkbox" name="is_trending" value="1" {{ old('is_trending', $product->is_trending)?'checked':'' }}> Trending</label>
+    <label class="check"><input type="checkbox" name="is_top_selling" value="1" {{ old('is_top_selling', $product->is_top_selling)?'checked':'' }}> Top Selling</label>
     <label class="check"><input type="checkbox" name="is_editors_pick" value="1" {{ old('is_editors_pick', $product->is_editors_pick)?'checked':'' }}> Editor's Pick</label>
     <label class="check"><input type="checkbox" name="is_best_value" value="1" {{ old('is_best_value', $product->is_best_value)?'checked':'' }}> Best Value</label>
     <label class="check"><input type="checkbox" name="is_budget_pick" value="1" {{ old('is_budget_pick', $product->is_budget_pick)?'checked':'' }}> Budget Pick</label>

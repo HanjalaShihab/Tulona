@@ -49,6 +49,8 @@ class GenericProductImporter implements ProductImporter
 
                 $offer = $this->upsertOffer($merchant, $product, $row);
                 $this->counts[$offer->wasRecentlyCreated ? 'created' : 'updated']++;
+
+                $this->syncImages($product, $row['images'] ?? []);
             } catch (\Throwable) {
                 $this->counts['errors']++;
             }
@@ -142,5 +144,31 @@ class GenericProductImporter implements ProductImporter
         $brand = $slug === null ? null : Brand::where('slug', $slug)->first();
 
         return $brand?->id;
+    }
+
+    /**
+     * Persist product image records from scraped image URLs (remote URLs are
+     * stored directly in the path column, mirroring the admin's URL-image flow).
+     * Never deletes existing images; only appends missing ones so a later import
+     * can't wipe hand-curated product media.
+     */
+    protected function syncImages(Product $product, array $images): void
+    {
+        $existing = $product->images()->pluck('path')->map(fn ($p) => trim($p))->all();
+        $sort = (int) ($product->images()->max('sort_order') ?? 0) + 1;
+
+        foreach ($images as $url) {
+            $url = trim((string) $url);
+            if ($url === '' || in_array($url, $existing, true)) {
+                continue;
+            }
+            $existing[] = $url;
+
+            $product->images()->create([
+                'path' => $url,
+                'is_main' => $sort === 1,
+                'sort_order' => $sort++,
+            ]);
+        }
     }
 }

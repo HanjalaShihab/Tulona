@@ -30,7 +30,32 @@ class GenericProductNormalizer implements ProductNormalizer
             'model_number' => $this->cleanString($raw['model_number'] ?? null),
             'sku' => $this->cleanString($raw['sku'] ?? null),
             'description' => $this->cleanString($raw['description'] ?? null),
+            'images' => $this->images($raw['images'] ?? ($raw['image'] !== null ? [$raw['image']] : null)),
         ];
+    }
+
+    /** Normalize an image value (string URL or array of URLs) to a list of URLs. */
+    protected function images(mixed $value): array
+    {
+        $list = $value;
+        if (is_string($value)) {
+            $list = [$value];
+        }
+        if (! is_array($list)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($list as $img) {
+            if (is_array($img)) {
+                $img = $img['src'] ?? $img['url'] ?? null;
+            }
+            if (is_string($img) && trim($img) !== '' && filter_var($img, FILTER_VALIDATE_URL)) {
+                $out[] = trim($img);
+            }
+        }
+
+        return array_values(array_unique($out));
     }
 
     protected function toNullableFloat(mixed $value): ?float
@@ -54,8 +79,8 @@ class GenericProductNormalizer implements ProductNormalizer
     protected function availability(mixed $value): string
     {
         $maps = [
-            'in stock' => 'in_stock', 'in-stock' => 'in_stock', 'instock' => 'in_stock',
-            'out of stock' => 'out_of_stock', 'out-of-stock' => 'out_of_stock', 'oos' => 'out_of_stock',
+            'in stock' => 'in_stock', 'in-stock' => 'in_stock', 'instock' => 'in_stock', 'in_stock' => 'in_stock',
+            'out of stock' => 'out_of_stock', 'out-of-stock' => 'out_of_stock', 'oos' => 'out_of_stock', 'out_of_stock' => 'out_of_stock',
             'pre order' => 'preorder', 'preorder' => 'preorder',
         ];
 

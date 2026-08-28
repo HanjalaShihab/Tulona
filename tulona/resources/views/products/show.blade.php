@@ -42,7 +42,7 @@
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-left:auto">
             <a class="btn btn-outline" href="#offers">Compare Prices</a>
-            <a class="btn btn-primary btn-lg" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$product->slug, $bestOffer->merchant->slug]) }}">Buy Now — {{ $bestOffer->merchant->name }}</a>
+            <a class="btn btn-primary btn-lg" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$product->slug, $bestOffer->merchant->slug]) }}">Buy now</a>
           </div>
         </div>
       @else
@@ -70,16 +70,25 @@
                   @if($o->original_price && $o->original_price > $o->current_price)<s class="price-old">{{ \App\Support\Currency::format((float)$o->original_price, $o->currency) }}</s>@endif
                 @else<em>Price unavailable</em>@endif
               </td>
-              <td>@if($o->availability === 'in_stock')✅ In stock@elseif($o->availability==='out_of_stock')<span class="badge badge-out">Out of stock</span>@elseif($o->availability==='preorder')Pre-order@else<span title="Source did not provide status">Unknown</span>@endif</td>
+              <td>
+                @if($o->availability === 'in_stock')
+                  ✅ In stock
+                @elseif($o->availability === 'out_of_stock')
+                  <span class="badge badge-out">Out of stock</span>
+                @elseif($o->availability === 'preorder')
+                  Pre-order
+                @else
+                  <span title="Source did not provide status">Unknown</span>
+                @endif
+              </td>
               <td>{{ $o->discountPercent() ? '-'.round($o->discountPercent(),1).'%' : '—' }}</td>
               <td>@if($o->isStale($freshnessHours))<span class="badge badge-stale" title="This offer hasn't been verified recently — price may be outdated.">May be outdated</span>@else{{ optional($o->last_synced_at ?? $o->updated_at)->diffForHumans() }}@endif</td>
-              <td><a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$product->slug, $o->merchant->slug]) }}">Buy from {{ $o->merchant->name }}</a></td>
+              <td><a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$product->slug, $o->merchant->slug]) }}">Buy now</a></td>
             </tr>
           @endforeach
           </tbody>
         </table>
       </div>
-      <p class="disclosure" style="margin-top:12px"><span aria-hidden="true">ℹ️</span><span>You'll be redirected to the merchant to complete your purchase. Prices and availability may change without notice — Tulona never sells or ships products.</span></p>
     @endif
   </section>
 
