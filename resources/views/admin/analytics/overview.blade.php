@@ -15,15 +15,13 @@
         <div class="pane">
             <div class="ana-pane-head">
                 <h2 class="ana-pane-title">Real-time</h2>
-                <span class="ana-live off">LIVE · inactive</span>
+                @if($realtime['active'] > 0)
+                    <span class="ana-live on">● {{ number_format($realtime['active']) }} active now</span>
+                @else
+                    <span class="ana-live off">LIVE · idle</span>
+                @endif
             </div>
-            @include('admin.analytics._empty', [
-                'compact' => true,
-                'icon' => '◷',
-                'title' => 'Real-time panel is off',
-                'body' => 'The site does not stream visitor events yet, so there is nothing real-time to report.',
-                'note' => 'This panel stays empty instead of showing invented numbers.',
-            ])
+            @include('admin.analytics._realtime', ['realtime' => $realtime])
         </div>
     </div>
 </div>

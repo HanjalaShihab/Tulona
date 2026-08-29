@@ -1541,6 +1541,19 @@ table.compare-stores {
 .ana-live { font-size: 11px; font-weight: 750; letter-spacing: .06em; border-radius: 999px; padding: 3px 10px }
 .ana-live.off { color: var(--ink-3); background: var(--surface-2); border: 1px solid var(--line) }
 .ana-live.off::before { content: "●"; color: var(--ink-3); margin-right: 5px }
+.ana-live.on { color: #065f46; background: #ecfdf5; border: 1px solid #a7f3d0 }
+.ana-live.on::before { content: "●"; color: #10b981; margin-right: 5px; animation: ana-pulse 1.6s ease-in-out infinite }
+
+.ana-recent-title { font-size: 12px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; letter-spacing: .05em; margin: 6px 0 8px }
+.realtime-feed { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 12px }
+.realtime-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px }
+.realtime-list li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 6px 9px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden }
+.realtime-list .rt-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex: 0 0 auto; box-shadow: 0 0 0 3px rgba(16,185,129,.15) }
+.realtime-list .rt-path { font-weight: 600; color: var(--ink); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.realtime-list .rt-family { color: var(--ink-3); font-size: 11px; text-transform: capitalize; flex: 0 0 auto }
+.realtime-list .rt-time { color: var(--ink-3); font-size: 11px; flex: 0 0 auto }
+
+@keyframes ana-pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
 
 .ana-foot { font-size: 12px; color: var(--ink-3); margin: 13px 0 0; line-height: 1.55 }
 .ana-footwide { font-size: 13px; color: var(--ink-2); background: var(--brand-light); border: 1px solid var(--brand-50); border-radius: 12px; padding: 16px 20px; box-shadow: var(--shadow-xs) }

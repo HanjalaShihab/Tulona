@@ -19,6 +19,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicComparisonController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,11 @@ Route::get('/reviews/{slug}', fn (string $slug) => redirect(route('articles.show
 Route::get('/go/{product}/{merchant}', [GoController::class, 'redirect'])
     ->middleware('throttle:60,1')
     ->name('go.redirect');
+
+// Anonymous page-view beacon (§ analytics) — GET, tiny 204, rate-limited, noindex
+Route::get('/tulona/track', [TrackingController::class, 'track'])
+    ->middleware('throttle:120,1')
+    ->name('track');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.index');
 

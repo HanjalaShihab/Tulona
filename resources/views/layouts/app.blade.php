@@ -116,6 +116,20 @@
 @endphp
 <script type="application/ld+json">@json($siteSchema, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
 <script src="{{ $assetJs }}" defer></script>
+{{-- Anonymous page-view beacon: coarse path + internal referrer only (no raw IP, no cookies) --}}
+<script>
+(function () {
+  var trackUrl = '{{ url('/tulona/track') }}';
+  var ref = '';
+  try { var r = document.referrer; if (r && r.indexOf(location.origin) === 0) { ref = new URL(r).pathname; } } catch (e) {}
+  var payload = 'path=' + encodeURIComponent(location.pathname) + '&ref=' + encodeURIComponent(ref);
+  if (navigator.sendBeacon) {
+    try { navigator.sendBeacon(trackUrl + '?' + payload); return; } catch (e) {}
+  }
+  var img = new Image();
+  img.src = trackUrl + '?' + payload;
+})();
+</script>
 @yield('scripts')
 </body>
 </html>

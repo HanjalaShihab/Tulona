@@ -8,6 +8,7 @@ use App\Models\Click;
 use App\Models\Comparison;
 use App\Models\LandingPage;
 use App\Models\Offer;
+use App\Models\PageView;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -40,6 +41,8 @@ class AnalyticsController extends Controller
             [
                 'kpis' => $this->kpiCards($clicks, $p),
                 'trend' => $this->dailyTrend($clicks, $p),
+                'pageTrend' => $this->pageViewTrend($p),
+                'realtime' => $this->realtime($request),
                 'topProducts' => $this->topProducts($clicks, 6),
                 'merchantShare' => $this->merchantShare($clicks, $p),
                 'topComparisons' => $this->comparisonClicks($clicks, 6),
@@ -59,6 +62,9 @@ class AnalyticsController extends Controller
         return view('admin.analytics.visitors', array_merge(
             $this->shared($p),
             [
+                'visitorStats' => $this->visitorStats($p),
+                'pageTrend' => $this->pageViewTrend($p),
+                'realtime' => $this->realtime($request),
                 'clickerStats' => $this->clickerStats($clicks, $p),
                 'trend' => $this->dailyTrend($clicks, $p),
                 'referrerMix' => $this->referrerMix($clicks),
@@ -298,6 +304,127 @@ class AnalyticsController extends Controller
             ->whereBetween('clicked_at', [$p['start'], $p['end']]);
     }
 
+    // ── Page-view / visitor metrics (anonymous beacon data) ───────────────────
+
+    protected function pageViewQuery(array $p, ?string $pathPattern = null): Builder
+    {
+        return PageView::query()
+            ->whereBetween('viewed_at', [$p['start'], $p['end']])
+            ->when($pathPattern, fn ($q) => $q->where('path', 'like', $pathPattern));
+    }
+
+    protected function countPageViews(array $p, ?string $pathPattern = null): int
+    {
+        return (int) $this->pageViewQuery($p, $pathPattern)->count();
+    }
+
+    protected function uniqueVisitors(array $p): int
+    {
+        return (int) $this->pageViewQuery($p)
+            ->whereNotNull('ip_hash')
+            ->distinct('ip_hash')
+            ->count('ip_hash');
+    }
+
+    protected function pageViewTrend(array $p): Collection
+    {
+        $byDay = $this->pageViewQuery($p)
+            ->selectRaw('date(viewed_at) as d, COUNT(*) as c')
+            ->groupBy('d')
+            ->orderBy('d')
+            ->get()
+            ->keyBy('d');
+
+        $visitorsByDay = $this->pageViewQuery($p)
+            ->whereNotNull('ip_hash')
+            ->selectRaw('date(viewed_at) as d, COUNT(DISTINCT ip_hash) as v')
+            ->groupBy('d')
+            ->orderBy('d')
+            ->get()
+            ->keyBy('d');
+
+        $series = collect();
+        for ($d = $p['start']->copy(); $d->lessThanOrEqualTo($p['end']); $d->addDay()) {
+            $key = $d->format('Y-m-d');
+            $series->push((object) [
+                'day' => $key,
+                'label' => $d->format('M j'),
+                'views' => (int) ($byDay[$key]->c ?? 0),
+                'visitors' => (int) ($visitorsByDay[$key]->v ?? 0),
+            ]);
+        }
+
+        return $series;
+    }
+
+    /** Honest visitor KPI set: real values backed by the beacon; gaps stay null. */
+    protected function visitorStats(array $p): Collection
+    {
+        return collect([
+            (object) ['label' => 'Unique visitors', 'icon' => '👤', 'value' => $this->uniqueVisitors($p), 'real' => true,
+                'note' => 'Distinct hashed IPs on public pages'],
+            (object) ['label' => 'Page views', 'icon' => '📄', 'value' => $this->countPageViews($p), 'real' => true,
+                'note' => 'Views recorded by the anonymity beacon'],
+            (object) ['label' => 'Product page views', 'icon' => '👁', 'value' => $this->countPageViews($p, '/product/%'), 'real' => true,
+                'note' => 'Views on /product/ pages'],
+            (object) ['label' => 'Avg. pages / visitor', 'icon' => '📑', 'value' => $this->avgPagesPerVisitor($p), 'real' => true,
+                'note' => 'Page views ÷ unique visitors'],
+            (object) ['label' => 'Active now', 'icon' => '🟢', 'value' => $this->activeCount(), 'real' => true,
+                'note' => 'Distinct visitors in last 10 minutes'],
+        ]);
+    }
+
+    protected function avgPagesPerVisitor(array $p): ?float
+    {
+        $visitors = $this->uniqueVisitors($p);
+        if ($visitors <= 0) {
+            return null;
+        }
+
+        return round($this->countPageViews($p) / $visitors, 1);
+    }
+
+    /**
+     * Real-time panel: distinct visitors active in the last 10 minutes plus a
+     * short tail of the most recent page views. Returns null-safe values so the
+     * panel never fabricates numbers.
+     */
+    protected function realtime(Request $request): array
+    {
+        $since = now()->subMinutes(10);
+        $active = (int) PageView::query()
+            ->where('viewed_at', '>=', $since)
+            ->whereNotNull('ip_hash')
+            ->distinct('ip_hash')
+            ->count('ip_hash');
+
+        $recent = PageView::query()
+            ->latest('viewed_at')
+            ->limit(10)
+            ->get()
+            ->map(fn ($v) => (object) [
+                'path' => $v->path,
+                'family' => $v->user_agent_family,
+                'viewed_at' => $v->viewed_at,
+            ]);
+
+        return [
+            'active' => $active,
+            'recent' => $recent,
+            'now' => now()->timestamp,
+            'ttl' => 10,
+        ];
+    }
+
+    protected function activeCount(): int
+    {
+        return (int) PageView::query()
+            ->where('viewed_at', '>=', now()->subMinutes(10))
+            ->whereNotNull('ip_hash')
+            ->distinct('ip_hash')
+            ->count('ip_hash');
+    }
+
     // ── Real metric builders ──────────────────────────────────────────────────
 
     protected function kpiCards(Builder $clicks, array $p): array
@@ -307,19 +434,37 @@ class AnalyticsController extends Controller
             ->whereBetween('clicked_at', [$p['prevStart'], $p['prevEnd']])
             ->count());
 
+        $pageViews = $this->countPageViews($p);
+        $viewDelta = $this->percentDelta(
+            $pageViews,
+            $this->countPageViews([
+                'start' => $p['prevStart'], 'end' => $p['prevEnd'],
+            ])
+        );
+
+        $uniqueVisitors = $this->uniqueVisitors($p);
+        $visitorDelta = $this->percentDelta(
+            $uniqueVisitors,
+            $this->uniqueVisitors([
+                'start' => $p['prevStart'], 'end' => $p['prevEnd'],
+            ])
+        );
+
+        $productViews = $this->countPageViews($p, '/product/%');
+
         return [
             ['label' => 'Affiliate Clicks', 'icon' => '👆', 'value' => $total, 'delta' => $delta, 'real' => true,
                 'note' => 'Outbound clicks recorded in period'],
+            ['label' => 'Unique Visitors', 'icon' => '👤', 'value' => $uniqueVisitors, 'delta' => $visitorDelta, 'real' => true,
+                'note' => 'Distinct hashed IPs on public pages'],
+            ['label' => 'Page Views', 'icon' => '📄', 'value' => $pageViews, 'delta' => $viewDelta, 'real' => true,
+                'note' => 'Views recorded by the anonymity beacon'],
+            ['label' => 'Product Views', 'icon' => '👁', 'value' => $productViews, 'delta' => null, 'real' => true,
+                'note' => 'Page views on /product/ pages'],
             ['label' => 'Affiliate CTR', 'icon' => '🎯', 'value' => null, 'delta' => null, 'real' => false,
-                'note' => 'Requires page-view (impression) tracking'],
-            ['label' => 'Product Views', 'icon' => '👁', 'value' => null, 'delta' => null, 'real' => false,
-                'note' => 'Requires product-page event tracking'],
-            ['label' => 'Unique Visitors', 'icon' => '👤', 'value' => null, 'delta' => null, 'real' => false,
-                'note' => 'Requires visitor event tracking'],
+                'note' => 'Needs page-view (impression) tracking per offer'],
             ['label' => 'Sessions', 'icon' => '🕘', 'value' => null, 'delta' => null, 'real' => false,
-                'note' => 'Requires session tracking'],
-            ['label' => 'Page Views', 'icon' => '📄', 'value' => null, 'delta' => null, 'real' => false,
-                'note' => 'Requires page-view event tracking'],
+                'note' => 'Needs session boundaries'],
         ];
     }
 
@@ -482,8 +627,9 @@ class AnalyticsController extends Controller
         return collect([
             (object) ['label' => 'Unique clickers (hashed)', 'value' => $unique, 'note' => 'Distinct hashed IPs, no personal data', 'real' => true],
             (object) ['label' => 'Affiliate clicks', 'value' => $total, 'note' => 'Outbound clicks recorded', 'real' => true],
-            (object) ['label' => 'Sessions', 'value' => null, 'note' => 'Awaiting session tracking', 'real' => false],
-            (object) ['label' => 'Page views', 'value' => null, 'note' => 'Awaiting page-view tracking', 'real' => false],
+            (object) ['label' => 'Page views', 'value' => $this->countPageViews($p), 'note' => 'Views recorded by the anonymity beacon', 'real' => true],
+            (object) ['label' => 'Unique visitors', 'value' => $this->uniqueVisitors($p), 'note' => 'Distinct hashed IPs on public pages', 'real' => true],
+            (object) ['label' => 'Sessions', 'value' => null, 'note' => 'Awaiting session boundaries', 'real' => false],
         ]);
     }
 
@@ -492,9 +638,8 @@ class AnalyticsController extends Controller
         $total = (clone $clicks)->count();
 
         return [
-            ['label' => 'Unique visitors', 'value' => null, 'real' => false],
-            ['label' => 'Product views', 'value' => null, 'real' => false],
-            ['label' => 'Product detail views', 'value' => null, 'real' => false],
+            ['label' => 'Unique visitors', 'value' => $this->uniqueVisitors($p), 'real' => true],
+            ['label' => 'Product page views', 'value' => $this->countPageViews($p, '/product/%'), 'real' => true],
             ['label' => 'Affiliate clicks', 'value' => $total, 'real' => true],
             ['label' => 'Merchant visits (outbound redirects)', 'value' => $total, 'real' => true],
         ];

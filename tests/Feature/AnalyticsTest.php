@@ -103,7 +103,7 @@ class AnalyticsTest extends TestCase
             ->assertSee('Star Tech');
     }
 
-    public function test_visitors_page_shows_awaited_states_and_clicker_signals(): void
+    public function test_visitors_page_shows_real_visitor_metrics_and_clicker_signals(): void
     {
         $this->actingAnalyst();
         $f = $this->fixture();
@@ -111,10 +111,29 @@ class AnalyticsTest extends TestCase
 
         $this->get(route('admin.analytics.visitors'))
             ->assertOk()
-            ->assertSee('Unique Visitors', false)
-            ->assertSee('Visitor tracking is not enabled')
+            ->assertSee('Unique visitors', false)
+            ->assertSee('Page views', false)
+            ->assertSee('Active now', false)
             ->assertSee('Unique clickers (hashed)')
             ->assertSee('Product pages');
+    }
+
+    public function test_anonymous_beacon_records_page_views_for_analytics(): void
+    {
+        $this->actingAnalyst();
+
+        $this->get(route('track', ['path' => '/product/stuff', 'ref' => '/']))
+            ->assertStatus(204);
+
+        $this->assertDatabaseHas('page_views', [
+            'path' => '/product/stuff',
+            'referrer_page' => '/',
+        ]);
+
+        $this->get(route('admin.analytics.visitors'))
+            ->assertOk()
+            ->assertSee('Product page views', false)
+            ->assertSee('1', false);
     }
 
     public function test_products_page_sorts_by_real_clicks_and_marks_views_ctr_awaited(): void
