@@ -51,7 +51,11 @@ rsync -a \
   "$ROOT/" "$HTDOCS/"
 
 echo "Installing production dependencies (composer --no-dev) …"
-(cd "$HTDOCS" && composer install --no-dev --optimize-autoloader --no-interaction --quiet)
+# Autoloader stays UNOPTIMIZED (composer.json optimize-autoloader=false):
+# InfinityFree silently drops PHP files > 1 MB, and an optimized classmap can
+# exceed that. Class-loading speed loss is negligible.
+(cd "$HTDOCS" && composer install --no-dev --no-interaction --quiet \
+    && composer dump-autoload --no-dev --no-interaction --quiet)
 
 echo "Wiring production .env, .htaccess, database …"
 cp "$SCRIPT_DIR/.env.infinityfree.example" "$HTDOCS/.env"
