@@ -26,6 +26,7 @@ class ComparisonEngineService
     public function offers(Comparison $comparison): Collection
     {
         return $comparison->offers()
+            ->with(['merchant:id,name,slug', 'product:id,name,slug'])
             ->wherePivot('is_hidden', false)
             ->get()
             ->groupBy('product_id');
@@ -42,6 +43,7 @@ class ComparisonEngineService
 
         return $products->map(function ($product) use ($comparison) {
             $columns = $comparison->offers()
+                ->with(['merchant:id,name,slug', 'product:id,name,slug'])
                 ->where('comparison_offer.product_id', $product->id)
                 ->wherePivot('is_hidden', false)
                 ->get()
@@ -109,7 +111,7 @@ class ComparisonEngineService
     public function bestPrice(Comparison $comparison): ?array
     {
         $best = null;
-        foreach ($comparison->offers()->wherePivot('is_hidden', false)->get() as $offer) {
+        foreach ($comparison->offers()->with(['merchant:id,name,slug', 'product:id,name,slug'])->wherePivot('is_hidden', false)->get() as $offer) {
             $price = $offer->pivot->override_price ?? $offer->current_price;
             if ($price === null) {
                 continue;
@@ -133,6 +135,7 @@ class ComparisonEngineService
         // otherwise fall back to the heuristic. Among several flagged offers the
         // lowest-priced one is returned.
         $flagged = $comparison->offers()
+            ->with(['merchant:id,name,slug', 'product:id,name,slug'])
             ->wherePivot('is_hidden', false)
             ->wherePivot('is_best_deal', true)
             ->get()
@@ -157,7 +160,7 @@ class ComparisonEngineService
         $best = null;
         $bestScore = PHP_FLOAT_MIN;
 
-        foreach ($comparison->offers()->wherePivot('is_hidden', false)->get() as $offer) {
+        foreach ($comparison->offers()->with(['merchant:id,name,slug', 'product:id,name,slug'])->wherePivot('is_hidden', false)->get() as $offer) {
             $p = $offer->pivot;
             $price = $p->override_price ?? $offer->current_price;
             if ($price === null) {

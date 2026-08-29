@@ -44,6 +44,15 @@ Product Generator
   </div>
 
   <div class="pane">
+    <h2 style="font-size:16px;margin-bottom:6px">Upload a CSV (many products)</h2>
+    <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:12px">
+      Got a spreadsheet/feed of products (e.g. an export)? Upload it here and every row becomes an
+      <strong>editable draft</strong> you review and post one-by-one.
+    </p>
+    <a class="btn btn-primary" href="{{ route('admin.csv-drafts.index') }}">Upload CSV → review &amp; post</a>
+  </div>
+
+  <div class="pane">
     <h2 style="font-size:16px;margin-bottom:10px">Landing-page categories</h2>
     <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:12px">
       Products posted into these categories appear in the <strong>Popular Categories</strong>

@@ -18,7 +18,7 @@ class CategoryController extends Controller
     {
         $query = Product::published()
             ->whereHas('category', fn ($c) => $c->where('is_active', true))
-            ->with(['brand', 'category', 'activeOffers'])->withCount('activeOffers');
+            ->with(['brand', 'category', 'activeOffers.merchant', 'images', 'latestDrop'])->withCount('activeOffers');
         $this->applyFilters($request, $query);
         $this->applySorting($request, $query);
 
@@ -38,7 +38,7 @@ class CategoryController extends Controller
         $query = Product::query()
             ->where('status', 'published')
             ->whereIn('category_id', $descendantIds)
-            ->with(['brand', 'activeOffers'])
+            ->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])
             ->withCount('activeOffers');
 
         $this->applyFilters($request, $query);
@@ -49,8 +49,8 @@ class CategoryController extends Controller
             'products' => $query->paginate(24)->withQueryString(),
             'subcategories' => $category->children()->where('is_active', true)->get(),
             'comparisons' => $this->categoryComparisons($descendantIds),
-            'brands' => Brand::whereIn('id', fn ($q) => $q->select('brand_id')->from('products')->whereIn('category_id', $descendantIds))->orderBy('name')->get(),
-            'merchants' => Merchant::where('status', 'active')->orderBy('name')->get(),
+            'brands' => Brand::whereIn('id', fn ($q) => $q->select('brand_id')->from('products')->whereIn('category_id', $descendantIds))->orderBy('name')->limit(12)->get(),
+            'merchants' => Merchant::where('status', 'active')->orderBy('name')->limit(10)->get(),
             'filters' => $this->availableFilters($descendantIds),
             'sort' => $request->query('sort', 'relevance'),
             'seo' => [

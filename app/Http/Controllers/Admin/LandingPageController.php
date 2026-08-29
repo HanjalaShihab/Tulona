@@ -124,8 +124,8 @@ class LandingPageController extends Controller
                 $section['heading'] = trim((string) ($block['heading'] ?? ''));
                 $section['subheading'] = trim((string) ($block['subheading'] ?? ''));
                 $section['cta_text'] = trim((string) ($block['cta_text'] ?? ''));
-                $section['cta_url'] = trim((string) ($block['cta_url'] ?? ''));
-                $section['image_url'] = trim((string) ($block['image_url'] ?? ''));
+                $section['cta_url'] = $this->linkUrl($block['cta_url'] ?? null);
+                $section['image_url'] = $this->linkUrl($block['image_url'] ?? null, ['http', 'https']);
                 break;
             case 'text':
                 $section['heading'] = trim((string) ($block['heading'] ?? ''));
@@ -151,7 +151,7 @@ class LandingPageController extends Controller
                 $section['heading'] = trim((string) ($block['heading'] ?? ''));
                 $section['text'] = trim((string) ($block['text'] ?? ''));
                 $section['button_text'] = trim((string) ($block['button_text'] ?? ''));
-                $section['button_url'] = trim((string) ($block['button_url'] ?? ''));
+                $section['button_url'] = $this->linkUrl($block['button_url'] ?? null);
                 break;
         }
 
@@ -162,6 +162,29 @@ class LandingPageController extends Controller
         }
 
         return $section;
+    }
+
+    /**
+     * Allow relative links/anchors and only http/https (or allow-listed)
+     * absolute schemes — reject javascript:/data:/vbscript: etc.
+     */
+    protected function linkUrl(mixed $value, array $protocols = ['http', 'https']): string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('#^[a-zA-Z][a-zA-Z0-9+.\-]*:#', $value)) {
+            $scheme = strtolower((string) parse_url($value, PHP_URL_SCHEME));
+
+            if (! in_array($scheme, $protocols, true)) {
+                return '';
+            }
+        }
+
+        return $value;
     }
 
     protected function syncRelated(Request $request, LandingPage $page): void

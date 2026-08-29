@@ -17,16 +17,16 @@ class HomeController extends Controller
     {
         $data = [
             'categories' => Category::whereNull('parent_id')->where('is_active', true)->orderBy('sort_order')->get(),
-            'trending' => Product::published()->where('is_trending', true)->with(['brand', 'activeOffers'])->limit(8)->get(),
-            'topSelling' => Product::published()->where('is_top_selling', true)->with(['brand', 'activeOffers'])->limit(8)->get(),
-            'featured' => Product::published()->where('is_featured', true)->with(['brand', 'activeOffers'])->limit(4)->get(),
-            'newArrivals' => Product::published()->with(['brand', 'activeOffers'])
+            'trending' => Product::published()->where('is_trending', true)->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])->limit(8)->get(),
+            'topSelling' => Product::published()->where('is_top_selling', true)->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])->limit(8)->get(),
+            'featured' => Product::published()->where('is_featured', true)->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])->limit(4)->get(),
+            'newArrivals' => Product::published()->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])
                 ->withCount('activeOffers')
                 ->latest()
                 ->limit(8)
                 ->get(),
             'deals' => $this->bestDeals(),
-            'drops' => PriceDropEvent::with(['product.brand', 'offer'])->latest('occurred_at')->limit(6)->get(),
+            'drops' => PriceDropEvent::with('product.brand')->latest('occurred_at')->limit(6)->get(),
             'comparisons' => Comparison::published()->featured()->withCount('products')->latest('updated_at')->limit(3)->get(),
             'guides' => Article::published()->where('type', 'guide')->latest('published_at')->limit(3)->get(),
             'merchants' => Merchant::where('status', 'active')->orderBy('name')->get(),
@@ -49,7 +49,7 @@ class HomeController extends Controller
             ->selectRaw('products.*, MIN(offers.current_price) as best_price, MAX(offers.original_price) as max_original, COUNT(DISTINCT offers.id) as offer_count')
             ->havingRaw('max_original IS NOT NULL AND max_original > best_price * 1.05') // genuine ≥5% discount only
             ->orderByRaw('(max_original - best_price) / max_original DESC')
-            ->with(['brand'])
+            ->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])
             ->limit(8)
             ->get();
     }

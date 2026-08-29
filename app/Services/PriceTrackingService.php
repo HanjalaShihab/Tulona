@@ -77,4 +77,42 @@ class PriceTrackingService
             'points' => $prices->map(fn ($p) => (float) $p)->all(),
         ];
     }
+
+    /**
+     * Batch variant of summaryFor — collapses N history queries into one
+     * (keyed by offer id, null when there is insufficient data for stats).
+     */
+    public function summariesFor(iterable $offers): array
+    {
+        $offers = collect($offers);
+
+        if ($offers->isEmpty()) {
+            return [];
+        }
+
+        $histories = PriceHistory::whereIn('offer_id', $offers->pluck('id'))
+            ->orderBy('recorded_at')
+            ->get(['offer_id', 'price'])
+            ->groupBy('offer_id');
+
+        $byId = $offers->keyBy('id');
+
+        $summaries = [];
+        foreach ($histories as $offerId => $prices) {
+            $offer = $byId[$offerId] ?? null;
+
+            if ($offer === null || $prices->count() < 2 || is_null($offer->current_price)) {
+                continue;
+            }
+
+            $summaries[$offerId] = [
+                'lowest' => (float) $prices->min('price'),
+                'highest' => (float) $prices->max('price'),
+                'average' => round((float) $prices->avg('price'), 2),
+                'points' => $prices->pluck('price')->map(fn ($p) => (float) $p)->all(),
+            ];
+        }
+
+        return $summaries;
+    }
 }

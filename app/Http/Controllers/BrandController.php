@@ -14,7 +14,7 @@ class BrandController extends Controller
 
         $products = Product::where('brand_id', $brand->id)
             ->published()
-            ->with(['category', 'activeOffers'])
+            ->with(['category', 'activeOffers.merchant', 'images', 'latestDrop'])
             ->withCount('activeOffers')
             ->orderByDesc('popularity_score')
             ->paginate(24);

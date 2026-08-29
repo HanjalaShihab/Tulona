@@ -10,13 +10,13 @@
 </nav>
 @section('schema')
 @php
-  $crumbSchema = json_encode([
+  $crumbSchema = [
     '@context' => 'https://schema.org',
     '@type' => 'BreadcrumbList',
     'itemListElement' => collect($items)->values()->map(fn ($it, $i) => [
       '@type' => 'ListItem', 'position' => $i + 1, 'name' => $it['name'],
     ] + (! empty($it['url']) ? ['item' => url($it['url'])] : []))->all(),
-  ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+  ];
 @endphp
-<script type="application/ld+json">{!! $crumbSchema !!}</script>
+<script type="application/ld+json">@json($crumbSchema, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
 @endsection

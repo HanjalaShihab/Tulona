@@ -4,19 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Connectors\Parser\HtmlProductParser;
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Merchant;
-use App\Models\Offer;
-use App\Models\Product;
-use App\Models\ProductImage;
-use App\Services\PriceTrackingService;
-use App\Services\ProductMatchService;
+use App\Services\ProductPublishService;
 use App\Services\Scraping\UrlFetcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -121,7 +114,7 @@ class ScrapePostController extends Controller
     }
 
     /** Publish the posted product into its category section with a merchant offer. */
-    public function post(Request $request): RedirectResponse
+    public function post(Request $request, ProductPublishService $service): RedirectResponse
     {
         $this->authorize('manage-products');
 
@@ -149,141 +142,14 @@ class ScrapePostController extends Controller
             'category.required_without' => 'Choose a landing-page category or type a new one below.',
         ]);
 
-        $categoryName = null;
-        $product = DB::transaction(function () use ($data, $draft, &$categoryName) {
-            $category = $this->resolvePostedCategory(
-                $data['category_id'] ?? null,
-                $data['category'] ?? null,
-                $data['subcategory'] ?? null
-            );
-            $categoryName = $category->name;
-
-            $description = ($data['description'] ?? null) ?: null;
-
-            // Candidate (never saved) used to detect whether this is the same
-            // real-world product already listed from another merchant — see
-            // ProductMatchService. When it matches, the new merchant's offer is
-            // attached to the existing product so the Compare Stores section
-            // shows every store side by side instead of creating a duplicate.
-            $candidate = new Product([
-                'name' => $data['name'],
-                'category_id' => $category->id,
-                'sku' => ($data['sku'] ?? null) ?: ($draft['sku'] ?? null),
-                'model_number' => $draft['model_number'] ?? null,
-                'gtin' => $draft['gtin'] ?? null,
-            ]);
-
-            $match = app(ProductMatchService::class)->find($candidate);
-            $merged = $match !== null;
-
-            if ($merged) {
-                $product = $match;
-
-                $fill = app(ProductMatchService::class)->missingIdentifiers($product, $candidate);
-                if (blank($product->short_description) && $description !== null) {
-                    $fill['short_description'] = Str::limit($description, 500);
-                }
-                if ($fill) {
-                    $product->update($fill);
-                }
-
-                // Only ever promote on a merge (another store for an existing
-                // product) — a new merchant offer must not clear homepage flags.
-                $promote = array_filter([
-                    'is_trending' => (bool) ($data['is_trending'] ?? false),
-                    'is_featured' => (bool) ($data['is_featured'] ?? false),
-                    'is_top_selling' => (bool) ($data['is_top_selling'] ?? false),
-                ]);
-                if ($promote) {
-                    $product->update($promote);
-                }
-            } else {
-                $product = Product::withTrashed()->firstOrNew(['slug' => Str::slug($data['name'])]);
-
-                $product->fill([
-                    'category_id' => $category->id,
-                    'name' => $data['name'],
-                    'sku' => ($data['sku'] ?? null) ?: null,
-                    'short_description' => $description !== null ? Str::limit($description, 500) : null,
-                    'description' => $description,
-                    'product_type' => 'physical',
-                    'status' => 'published',
-                    'is_trending' => (bool) ($data['is_trending'] ?? false),
-                    'is_featured' => (bool) ($data['is_featured'] ?? false),
-                    'is_top_selling' => (bool) ($data['is_top_selling'] ?? false),
-                ])->save();
-
-                // A later post of the same name should be relinked + republished even
-                // if it was trashed or previously posted to a different category.
-                if ($product->trashed()) {
-                    $product->restore();
-                }
-            }
-
-            $num = fn ($k) => isset($data[$k]) && $data[$k] !== '' && $data[$k] !== null ? (float) $data[$k] : null;
-
-            $offer = Offer::updateOrCreate(
-                ['product_id' => $product->id, 'merchant_id' => $data['merchant_id']],
-                [
-                    'external_url' => $draft['external_url'] ?? null,
-                    'affiliate_url' => $data['affiliate_url'] ?? '',
-                    'current_price' => $num('current_price'),
-                    'original_price' => $num('original_price'),
-                    'currency' => $data['currency'],
-                    'availability' => $data['availability'],
-                    'source' => 'manual',
-                    'status' => 'active',
-                    'last_synced_at' => now(),
-                ]
-            );
-
-            $affiliateUrl = $data['affiliate_url'] ?? null;
-            $image = $data['image'] ?? null;
-
-            $offer->affiliateOffer()->updateOrCreate([], [
-                'offer_id' => $offer->id,
-                'product_id' => $offer->product_id,
-                'merchant_id' => $offer->merchant_id,
-                'normal_product_url' => $draft['external_url'] ?? null,
-                'affiliate_url' => $affiliateUrl,
-                'status' => $affiliateUrl ? 'manual' : 'pending',
-                'generation_method' => $affiliateUrl ? 'manual' : null,
-                'generated_at' => $affiliateUrl ? now() : null,
-            ]);
-
-            // Replace the product image entirely when a new one is provided so a
-            // re-post never silently keeps a stale image. When this post was
-            // matched to an existing product (a new merchant), keep the existing
-            // main image unless the product has none yet.
-            if (! empty($image)) {
-                if ($merged) {
-                    if ($product->images()->doesntExist()) {
-                        $product->images()->create(['path' => $image, 'is_main' => true, 'sort_order' => 1]);
-                    }
-                } else {
-                    ProductImage::where('product_id', $product->id)->delete();
-                    $product->images()->create(['path' => $image, 'is_main' => true, 'sort_order' => 1]);
-                }
-            }
-
-            if ($offer->current_price !== null) {
-                app(PriceTrackingService::class)->recordPrice($offer, $offer->current_price);
-            }
-
-            AuditLog::record($merged ? 'product.merged' : 'product.posted', $product, [
-                'merchant_id' => $data['merchant_id'],
-                'category_id' => $category->id,
-            ]);
-
-            return $product;
-        });
+        $result = $service->publish($data, $draft);
 
         session()->forget($this->draftKey());
 
-        $offerCount = $product->offers()->count();
+        $offerCount = $result['product']->offers()->count();
         $status = $offerCount > 1
-            ? 'Posted — "'.$product->name.'" is sold by '.$offerCount.' stores, all shown side by side in the product page Compare Stores section.'
-            : 'Product posted to "'.$categoryName.'" and is live — '.$product->name.' (id #'.$product->id.')';
+            ? 'Posted — "'.$result['product']->name.'" is sold by '.$offerCount.' stores, all shown side by side in the product page Compare Stores section.'
+            : 'Product posted to "'.$result['categoryName'].'" and is live — '.$result['product']->name.' (id #'.$result['product']->id.')';
 
         return redirect()->route('admin.scrape-post.index')->with('status', $status);
     }
@@ -315,68 +181,5 @@ class ScrapePostController extends Controller
         }
 
         return null;
-    }
-
-    /** Resolve/create a category (and optional subcategory) by typed name. */
-    protected function resolveCategory(string $categoryName, ?string $subcategoryName): Category
-    {
-        $parent = $this->findOrCreateCategory($categoryName, null);
-
-        if (! empty($subcategoryName)) {
-            return $this->findOrCreateCategory($subcategoryName, $parent->id);
-        }
-
-        return $parent;
-    }
-
-    /** Resolve the category from the posted form: a fixed landing-page category id, or a typed new name. */
-    protected function resolvePostedCategory(?int $categoryId, ?string $categoryName, ?string $subcategoryName): Category
-    {
-        if ($categoryId !== null) {
-            $parent = Category::findOrFail($categoryId);
-
-            return ! empty($subcategoryName)
-                ? $this->findOrCreateCategory($subcategoryName, $parent->id)
-                : $parent;
-        }
-
-        return $this->resolveCategory((string) $categoryName, $subcategoryName);
-    }
-
-    protected function findOrCreateCategory(string $name, ?int $parentId): Category
-    {
-        $name = trim($name);
-        $slug = Str::slug($name);
-
-        $category = Category::where('slug', $slug)
-            ->where('parent_id', $parentId)
-            ->first();
-
-        if ($category === null) {
-            $category = Category::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
-                ->where('parent_id', $parentId)
-                ->first();
-        }
-
-        if ($category !== null) {
-            return $category;
-        }
-
-        // categories.slug is globally unique — if the slug is already taken by
-        // another branch of the tree, allocate a unique sibling slug instead of
-        // failing the insert.
-        $uniqueSlug = $slug;
-        $counter = 1;
-        while (Category::where('slug', $uniqueSlug)->exists()) {
-            $uniqueSlug = $slug.'-'.(++$counter);
-        }
-
-        return Category::create([
-            'name' => $name,
-            'slug' => $uniqueSlug,
-            'parent_id' => $parentId,
-            'is_active' => true,
-            'sort_order' => 0,
-        ]);
     }
 }

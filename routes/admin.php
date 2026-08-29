@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ComparisonController;
+use App\Http\Controllers\Admin\CsvDraftController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\LandingPageController;
@@ -58,6 +59,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::post('scrape-post/reset', [ScrapePostController::class, 'reset'])->name('scrape-post.reset');
     });
 
+    // Upload CSV → review & post products individually (Product Generator)
+    Route::middleware('can:manage-products')->group(function () {
+        Route::get('csv-drafts', [CsvDraftController::class, 'index'])->name('csv-drafts.index');
+        Route::post('csv-drafts/upload', [CsvDraftController::class, 'upload'])->name('csv-drafts.upload');
+        Route::get('csv-drafts/{draft}/edit', [CsvDraftController::class, 'edit'])->name('csv-drafts.edit');
+        Route::post('csv-drafts/{draft}/post', [CsvDraftController::class, 'post'])->name('csv-drafts.post');
+        Route::delete('csv-drafts/{draft}', [CsvDraftController::class, 'destroy'])->name('csv-drafts.destroy');
+    });
+
     // Affiliate offers & link generation (§19–§22)
     Route::middleware('can:manage-merchants')->group(function () {
         Route::get('affiliate', [AffiliateController::class, 'index'])->name('affiliate.index');
@@ -94,18 +104,21 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::post('comparisons/{comparison}/attach-common', [ComparisonController::class, 'attachCommon'])->name('comparisons.attach-common');
     });
 
-    // Imports (§16: upload, URL scrape, preview confirm, cancel)
-    Route::get('imports', [ImportController::class, 'index'])->name('imports.index');
-    Route::post('imports', [ImportController::class, 'upload'])->name('imports.upload');   // step 1-2: upload + validate + preview
-    Route::post('imports/scrape', [ImportController::class, 'scrape'])->name('imports.scrape');   // §14 URL import → queued
-    Route::post('imports/{batch}/confirm', [ImportController::class, 'confirm'])->name('imports.confirm'); // step 3: queue job
-    Route::post('imports/{batch}/selected', [ImportController::class, 'selected'])->name('imports.selected'); // §16 import selected
-    Route::post('imports/{batch}/remove-selected', [ImportController::class, 'removeSelected'])->name('imports.remove-selected'); // §16 drop selected from list
-    Route::delete('imports/{batch}/items/{item}', [ImportController::class, 'destroyItem'])->name('imports.items.destroy'); // §16 drop single item
-    Route::post('imports/{batch}/cancel', [ImportController::class, 'cancel'])->name('imports.cancel');     // §16 cancel preview
-    Route::post('imports/{batch}/retry', [ImportController::class, 'retry'])->name('imports.retry');         // §15 retry failed batch
-    Route::post('imports/{batch}/retry-failed', [ImportController::class, 'retryFailedItems'])->name('imports.retry-failed'); // §16 resume failed items
-    Route::get('imports/{batch}', [ImportController::class, 'show'])->name('imports.show');               // results
+    // Imports (§16: upload, URL scrape, preview confirm, cancel) — analyst
+    // accounts are read-only and must not view raw scraped import data.
+    Route::middleware('can:run-imports')->group(function () {
+        Route::get('imports', [ImportController::class, 'index'])->name('imports.index');
+        Route::post('imports', [ImportController::class, 'upload'])->name('imports.upload');   // step 1-2: upload + validate + preview
+        Route::post('imports/scrape', [ImportController::class, 'scrape'])->name('imports.scrape');   // §14 URL import → queued
+        Route::post('imports/{batch}/confirm', [ImportController::class, 'confirm'])->name('imports.confirm'); // step 3: queue job
+        Route::post('imports/{batch}/selected', [ImportController::class, 'selected'])->name('imports.selected'); // §16 import selected
+        Route::post('imports/{batch}/remove-selected', [ImportController::class, 'removeSelected'])->name('imports.remove-selected'); // §16 drop selected from list
+        Route::delete('imports/{batch}/items/{item}', [ImportController::class, 'destroyItem'])->name('imports.items.destroy'); // §16 drop single item
+        Route::post('imports/{batch}/cancel', [ImportController::class, 'cancel'])->name('imports.cancel');     // §16 cancel preview
+        Route::post('imports/{batch}/retry', [ImportController::class, 'retry'])->name('imports.retry');         // §15 retry failed batch
+        Route::post('imports/{batch}/retry-failed', [ImportController::class, 'retryFailedItems'])->name('imports.retry-failed'); // §16 resume failed items
+        Route::get('imports/{batch}', [ImportController::class, 'show'])->name('imports.show');               // results
+    });
 
     // Analytics & users
     Route::middleware('can:view-analytics')->get('analytics', [AnalyticsController::class, 'index'])->name('analytics');

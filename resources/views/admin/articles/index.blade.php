@@ -17,6 +17,7 @@ Articles & Guides
     <tr><td colspan="5">No articles yet.</td></tr>
   @endforelse
 </table>
+{{ $articles->links('partials.pagination') }}
 <p style="margin-top:14px">
   <a class="btn btn-primary" href="{{ route('admin.articles.create', ['type' => 'guide']) }}">＋ New guide</a>
   <a class="btn btn-outline" href="{{ route('admin.articles.create', ['type' => 'review']) }}">＋ New review</a>

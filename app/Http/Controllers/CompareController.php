@@ -24,7 +24,7 @@ class CompareController extends Controller
 
         $products = Product::whereIn('slug', $slugs)
             ->published()
-            ->with(['brand', 'category', 'activeOffers.merchant'])
+            ->with(['brand', 'category', 'activeOffers.merchant', 'attributes.definition'])
             ->get()
             ->sortBy(fn ($p) => array_search($p->slug, $slugs->all()))
             ->values();

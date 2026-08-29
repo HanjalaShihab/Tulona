@@ -2,7 +2,7 @@
 
 @section('schema')
 @if(!empty($schema))
-<script type="application/ld+json">@json($schema)</script>
+<script type="application/ld+json">@json($schema, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
 @endif
 @endsection
 
@@ -18,7 +18,7 @@
   <div class="pdp">
     <div class="pdp-gallery">
       @if($img = $product->images->firstWhere('is_main') ?: $product->images->first())
-        <div class="main-img"><img src="{{ str_starts_with($img->path,'http') ? $img->path : asset('storage/'.$img->path) }}" alt="{{ $img->alt_text ?: $product->name }}" width="480" height="360"></div>
+        <div class="main-img"><img src="{{ str_starts_with($img->path,'http') ? $img->path : asset('storage/'.$img->path) }}" alt="{{ $img->alt_text ?: $product->name }}" width="480" height="360" fetchpriority="high"></div>
       @else
         <div class="main-img">{{ strtoupper(substr($product->brand->name ?? 'T',0,1)) }}</div>
       @endif

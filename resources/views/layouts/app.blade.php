@@ -17,10 +17,12 @@
 @endif
 @if($seo['published_at'] ?? null)<meta property="article:published_time" content="{{ $seo['published_at']->toIso8601String() }}">@endif
 <meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111927'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-size='18' font-weight='bold' text-anchor='middle' fill='%23f97316'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://rokbucket.rokomari.io" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="{{ $assetCss }}">
 @yield('schema')
 </head>
 <body>
@@ -43,8 +45,8 @@
     <div class="cat-menu has-menu">
       <button type="button" class="cat-trigger" aria-expanded="false">☰ Categories ▾</button>
       <div class="mega">
-        @foreach(App\Models\Category::whereNull('parent_id')->where('is_active', true)->orderBy('sort_order')->get() as $c)
-          <a href="{{ route('categories.show', $c->slug) }}">{{ ($c->icon ? $c->icon.' ' : '') }}{{ $c->name }}</a>
+        @foreach($navCategories as $c)
+          <a href="{{ route('categories.show', $c['slug']) }}">{{ ($c['icon'] ? $c['icon'].' ' : '') }}{{ $c['name'] }}</a>
         @endforeach
       </div>
     </div>
@@ -82,8 +84,8 @@
       </div>
       <div>
         <h4>Stores</h4>
-        @foreach(\App\Models\Merchant::where('status','active')->orderBy('name')->get() as $m)
-          <a href="{{ route('merchants.show', $m->slug) }}">{{ $m->name }}</a>
+        @foreach($footerMerchants as $m)
+          <a href="{{ route('merchants.show', $m['slug']) }}">{{ $m['name'] }}</a>
         @endforeach
       </div>
       <div>
@@ -100,7 +102,7 @@
 
 {{-- Organization + WebSite schema sitewide (§38) --}}
 @php
-  $siteSchema = json_encode([
+  $siteSchema = [
     '@context' => 'https://schema.org',
     '@graph' => [
       ['@type' => 'Organization', 'name' => 'Tulona', 'url' => url('/'),
@@ -110,10 +112,10 @@
          'target' => ['@type' => 'EntryPoint', 'urlTemplate' => url('/search').'?q={search_term_string}'],
          'query-input' => 'required name=search_term_string']],
     ],
-  ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+  ];
 @endphp
-<script type="application/ld+json">{!! $siteSchema !!}</script>
-<script src="/js/app.js" defer></script>
+<script type="application/ld+json">@json($siteSchema, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
+<script src="{{ $assetJs }}" defer></script>
 @yield('scripts')
 </body>
 </html>

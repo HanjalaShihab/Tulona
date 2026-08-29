@@ -27,13 +27,14 @@ class SearchService
         $terms = preg_split('/\s+/', strtolower($q));
         // Typo tolerance: expand terms with a loose prefix variant ("iphon" → iphon%)
         $loose = substr($q, 0, max(4, (int) floor(strlen($q) * 0.8)));
+        $safe = $this->escapeLike($q);
 
         return [
             'products' => $this->products($terms, $loose),
-            'categories' => Category::where('is_active', true)->where(fn ($w) => $w->where('name', 'like', "%{$q}%")->orWhere('slug', 'like', "%{$q}%"))->limit(6)->get(),
-            'brands' => Brand::where(fn ($w) => $w->where('name', 'like', "%{$q}%")->orWhere('slug', 'like', "%{$q}%"))->limit(6)->get(),
-            'merchants' => Merchant::where('status', 'active')->where('name', 'like', "%{$q}%")->limit(4)->get(),
-            'articles' => Article::published()->where(fn ($w) => $w->where('title', 'like', "%{$q}%")->orWhere('excerpt', 'like', "%{$q}%"))->limit(5)->get(),
+            'categories' => Category::where('is_active', true)->where(fn ($w) => $w->where('name', 'like', "%{$safe}%")->orWhere('slug', 'like', "%{$safe}%"))->limit(6)->get(),
+            'brands' => Brand::where(fn ($w) => $w->where('name', 'like', "%{$safe}%")->orWhere('slug', 'like', "%{$safe}%"))->limit(6)->get(),
+            'merchants' => Merchant::where('status', 'active')->where('name', 'like', "%{$safe}%")->limit(4)->get(),
+            'articles' => Article::published()->where(fn ($w) => $w->where('title', 'like', "%{$safe}%")->orWhere('excerpt', 'like', "%{$safe}%"))->limit(5)->get(),
         ];
     }
 
@@ -46,7 +47,7 @@ class SearchService
     {
         return Product::query()
             ->where('status', 'published')
-            ->with(['brand', 'category'])
+            ->with(['brand', 'category', 'activeOffers.merchant', 'images', 'latestDrop'])
             ->withCount(['activeOffers as offer_count'])
             ->where(function ($w) use ($terms, $loose) {
                 foreach ($terms as $t) {

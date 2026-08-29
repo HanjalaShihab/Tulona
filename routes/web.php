@@ -10,7 +10,6 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\DealsController;
 use App\Http\Controllers\GoController;
-use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\MerchantController;
@@ -20,6 +19,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicComparisonController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SitemapController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 // ── Public site ─────────────────────────────────────────────────────────────
@@ -85,8 +85,9 @@ Route::prefix('api')->middleware('throttle:120,1')->group(function () {
 // cron-job.org polls GET /tulona/cron/<token>. Disabled unless SCHEDULER_TOKEN
 // is set in .env.
 Route::get('/tulona/cron/{token}', function (string $token) {
-    abort_unless(env('SCHEDULER_TOKEN'), 404);
-    abort_unless(hash_equals((string) env('SCHEDULER_TOKEN'), $token), 403);
+    $expected = config('services.scheduler_token');
+    abort_unless(is_string($expected) && $expected !== '', 404);
+    abort_unless(hash_equals($expected, $token), 403);
 
     Artisan::call('schedule:run');
 

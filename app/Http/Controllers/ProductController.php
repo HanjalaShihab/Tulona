@@ -42,9 +42,11 @@ class ProductController extends Controller
             ? [null, null]
             : [(float) $availableOffers->min('current_price'), (float) $availableOffers->max('current_price')];
 
+        $summaries = $this->priceTracking->summariesFor($availableOffers);
+
         $history = $offers->map(fn ($o) => [
             'offer' => $o,
-            'summary' => $this->priceTracking->summaryFor($o),
+            'summary' => $summaries[$o->id] ?? null,
         ])->filter(fn ($h) => $h['summary'] !== null);
 
         // Precompute SVG-polyline chart data so the Blade view stays simple (§14).
@@ -140,12 +142,17 @@ class ProductController extends Controller
 
     protected function seoFor(Product $product): array
     {
+        $image = $product->images->firstWhere('is_main') ?: $product->images->first();
+
         return [
             'title' => "{$product->name} — Price Comparison & Best Deals",
             'description' => $product->short_description
                 ? Str::limit(strip_tags($product->short_description), 155)
                 : "Compare prices for {$product->name} across multiple stores, see price history and find the best deal.",
             'og_type' => 'product',
+            'og_image' => $image
+                ? (str_starts_with($image->path, 'http') ? $image->path : asset('storage/'.$image->path))
+                : null,
         ];
     }
 }

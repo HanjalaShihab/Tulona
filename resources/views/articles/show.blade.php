@@ -2,7 +2,7 @@
 
 @section('schema')
 @php
-  $articleSchema = json_encode(array_filter([
+  $articleSchema = array_filter([
     '@context' => 'https://schema.org', '@type' => 'Article',
     'headline' => $article->title,
     'description' => strip_tags($article->excerpt ?? ''),
@@ -13,9 +13,9 @@
     'image' => $article->og_image ?: $article->featured_image,
   ]) + ($article->faqs ? ['mainEntity' => collect($article->faqs)->map(fn ($f) => [
     '@type' => 'Question', 'name' => $f['question'], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $f['answer']],
-  ])->all()] : []), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+  ])->all()] : []);
 @endphp
-<script type="application/ld+json">{!! $articleSchema !!}</script>
+<script type="application/ld+json">@json($articleSchema, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
 @endsection
 
 @section('content')
@@ -45,7 +45,7 @@
     @if($article->products->isNotEmpty())
       <h2>Our recommendations</h2>
       @foreach($article->products as $p)
-        @php($best = $p->bestOffer())
+        @php($best = $p->activeOffers->whereNotNull('current_price')->sortBy(fn ($o) => (float) $o->current_price)->first())
         <div class="pick-card">
           <div style="font-size:34px;text-align:center">{{ strtoupper(substr($p->brand->name ?? 'P',0,1)) }}</div>
           <div>

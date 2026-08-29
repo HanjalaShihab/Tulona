@@ -97,7 +97,7 @@ class PublicPagesTest extends TestCase
 
         $this->getJson('/api/products')->assertOk();
         $this->getJson('/api/products/nvidia-rtx-5070')->assertOk()->assertJsonPath('slug', 'nvidia-rtx-5070');
-        $this->getJson('/api/products/nvidia-rtx-5070/offers')->assertOk()->assertJsonCount(5);
+        $this->getJson('/api/products/nvidia-rtx-5070/offers')->assertOk()->assertJsonCount(5, 'offers');
         $this->getJson('/api/categories')->assertOk();
         $this->getJson('/api/search?q=iphone')->assertOk();
     }

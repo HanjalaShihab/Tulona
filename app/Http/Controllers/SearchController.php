@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use App\Services\SearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,9 +33,16 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
-        [$products] = [$this->search->search($q)['products']];
+        $like = '%'.addcslashes($q, '%_\\').'%';
 
-        return response()->json(collect($products)->take(8)->map(fn ($p) => [
+        $products = Product::published()
+            ->where('name', 'like', $like)
+            ->orWhereHas('brand', fn ($b) => $b->where('name', 'like', $like))
+            ->with('brand:id,name')
+            ->limit(8)
+            ->get(['id', 'name', 'slug']);
+
+        return response()->json($products->map(fn ($p) => [
             'name' => $p->name,
             'brand' => $p->brand?->name,
             'url' => route('product.show', $p->slug),

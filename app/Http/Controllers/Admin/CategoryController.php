@@ -27,6 +27,7 @@ class CategoryController extends Controller
     {
         $data = $this->validated($request);
         Category::create($data);
+        cache()->forget('nav.categories');
 
         return redirect()->route('admin.categories.index')->with('status', 'Category created.');
     }
@@ -39,6 +40,7 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category): RedirectResponse
     {
         $category->update($this->validated($request));
+        cache()->forget('nav.categories');
 
         return back()->with('status', 'Category updated.');
     }
@@ -48,6 +50,7 @@ class CategoryController extends Controller
         abort_if($category->products()->exists(), 422, 'Category has products.');
         AuditLog::record('category.deleted', $category);
         $category->delete();
+        cache()->forget('nav.categories');
 
         return redirect()->route('admin.categories.index')->with('status', 'Category deleted.');
     }

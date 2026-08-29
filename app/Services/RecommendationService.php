@@ -19,7 +19,7 @@ class RecommendationService
             ->where('status', 'published')
             ->whereIn('category_id', $categoryIds)
             ->where('id', '!=', $product->id)
-            ->with(['brand', 'activeOffers'])
+            ->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])
             ->withCount('activeOffers');
 
         $similar = (clone $base)->orderByDesc('popularity_score')->limit($limit)->get();

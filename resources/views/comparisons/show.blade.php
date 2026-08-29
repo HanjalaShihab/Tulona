@@ -2,7 +2,7 @@
 
 @section('schema')
 @if(!empty($schema))
-<script type="application/ld+json">@json($schema)</script>
+<script type="application/ld+json">@json($schema, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
 @endif
 @endsection
 
@@ -22,8 +22,8 @@
   @if($bestPrice && $bestDeal)
     <div class="verdict-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
       @foreach([
-        ['k'=>'Best Price','v'=>\App\Support\Currency::format($bestPrice['price'], $bestPrice['merchant']->currency ?? 'BDT'),'s'=>$bestPrice['product']->name .' · '. $bestPrice['merchant']->name,'u'=>$bestPrice['offer']->resolvedAffiliateUrl()],
-        ['k'=>'Best Overall Deal','v'=>\App\Support\Currency::format($bestDeal['price'], $bestDeal['merchant']->currency ?? 'BDT'),'s'=>$bestDeal['product']->name .' · '. $bestDeal['merchant']->name,'u'=>$bestDeal['offer']->resolvedAffiliateUrl()],
+        ['k'=>'Best Price','v'=>\App\Support\Currency::format($bestPrice['price'], $bestPrice['merchant']->currency ?? 'BDT'),'s'=>$bestPrice['product']->name .' · '. $bestPrice['merchant']->name,'u'=>route('go.redirect', [$bestPrice['product']->slug, $bestPrice['merchant']->slug])],
+        ['k'=>'Best Overall Deal','v'=>\App\Support\Currency::format($bestDeal['price'], $bestDeal['merchant']->currency ?? 'BDT'),'s'=>$bestDeal['product']->name .' · '. $bestDeal['merchant']->name,'u'=>route('go.redirect', [$bestDeal['product']->slug, $bestDeal['merchant']->slug])],
       ] as $card)
         <div class="pane" style="display:flex;flex-direction:column;gap:8px">
           <span class="badge badge-pick">{{ $card['k'] }}</span>
@@ -96,7 +96,7 @@
               @foreach($row['columns'] as $col)
                 <td>
                   @if($col['affiliate_url'])
-                    <a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ $col['affiliate_url'] }}">{{ $comparison->cta_text ?: 'Buy now' }} — {{ $col['merchant_name'] }}</a>
+                    <a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$prod->slug, $col['merchant']->slug]) }}">{{ $comparison->cta_text ?: 'Buy now' }} — {{ $col['merchant_name'] }}</a>
                   @else
                     <span style="color:var(--ink-3);font-size:13px">No link</span>
                   @endif

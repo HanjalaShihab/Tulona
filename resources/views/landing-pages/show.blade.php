@@ -2,7 +2,7 @@
 
 @section('schema')
 @if(!empty($schema))
-<script type="application/ld+json">@json($schema)</script>
+<script type="application/ld+json">@json($schema, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
 @endif
 @endsection
 
@@ -22,7 +22,7 @@
     @php($type = $section['type'] ?? '')
     @if($type === 'hero')
       <section class="hero-sect" style="padding:32px;border-radius:16px;background:var(--bg-2);margin-bottom:20px">
-        @if(!empty($section['image_url']))<img src="{{ $section['image_url'] }}" alt="{{ $section['heading'] ?? $page->title }}" style="max-height:260px;width:100%;object-fit:cover;border-radius:12px;margin-bottom:18px">@endif
+        @if(!empty($section['image_url']))<img src="{{ $section['image_url'] }}" alt="{{ $section['heading'] ?? $page->title }}" loading="lazy" decoding="async" style="max-height:260px;width:100%;object-fit:cover;border-radius:12px;margin-bottom:18px">@endif
         <h2 style="font-size:24px;margin:0 0 8px">{{ $section['heading'] ?? '' }}</h2>
         @if(!empty($section['subheading']))<p style="color:var(--ink-2);max-width:640px">{{ $section['subheading'] }}</p>@endif
         @if(!empty($section['cta_text']) && !empty($section['cta_url']))

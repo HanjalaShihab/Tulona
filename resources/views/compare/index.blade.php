@@ -64,7 +64,7 @@
           </tr>
           <tr><td>Buy</td>
             @foreach($products as $p)
-              @php($best = $p->bestOffer())
+              @php($best = $p->activeOffers->whereNotNull('current_price')->sortBy(fn ($o) => (float) $o->current_price)->first())
               <td>@if($best)<a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>
                   @else<span class="badge badge-out">Unavailable</span>@endif</td>
             @endforeach

@@ -15,7 +15,7 @@ class MerchantController extends Controller
 
         $offers = $merchant->offers()
             ->where('status', 'active')
-            ->with(['product.brand', 'product.category'])
+            ->with(['product.brand', 'product.category', 'product.images', 'product.activeOffers.merchant', 'product.latestDrop'])
             ->latest('updated_at')
             ->paginate(24);
 

@@ -16,7 +16,7 @@ class MerchantController extends Controller
     public function index(): View
     {
         return view('admin.merchants.index', [
-            'merchants' => Merchant::withCount(['offers', 'offers as product_count' => fn ($q) => $q->selectRaw('COUNT(DISTINCT product_id)')])
+            'merchants' => Merchant::with('network:id,name')->withCount(['offers', 'offers as product_count' => fn ($q) => $q->selectRaw('COUNT(DISTINCT product_id)')])
                 ->orderBy('name')->paginate(30),
             'networks' => AffiliateNetwork::all(),
         ]);
@@ -30,6 +30,7 @@ class MerchantController extends Controller
     public function store(Request $request): RedirectResponse
     {
         Merchant::create($this->validated($request));
+        cache()->forget('footer.merchants');
 
         return redirect()->route('admin.merchants.index')->with('status', 'Merchant created.');
     }
@@ -43,6 +44,7 @@ class MerchantController extends Controller
     {
         $merchant->update($this->validated($request));
         AuditLog::record('merchant.changed', $merchant);
+        cache()->forget('footer.merchants');
 
         return back()->with('status', 'Merchant updated.');
     }
@@ -53,6 +55,7 @@ class MerchantController extends Controller
         $merchant->update(['status' => 'inactive']);
         $merchant->offers()->update(['status' => 'inactive']);
         AuditLog::record('merchant.disabled', $merchant);
+        cache()->forget('footer.merchants');
 
         return redirect()->route('admin.merchants.index')->with('status', 'Merchant disabled.');
     }

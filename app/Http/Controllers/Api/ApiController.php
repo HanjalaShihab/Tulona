@@ -24,8 +24,10 @@ class ApiController extends Controller
 
     public function products(Request $request): JsonResponse
     {
-        $q = Product::where('status', 'published')->with(['brand:id,name,slug', 'category:id,name,slug'])
-            ->withCount('activeOffers');
+        $q = Product::where('status', 'published')->select('products.*')
+            ->with(['brand:id,name,slug', 'category:id,name,slug'])
+            ->withCount('activeOffers')
+            ->selectRaw("(SELECT MIN(current_price) FROM offers WHERE offers.product_id = products.id AND offers.status = 'active' AND current_price IS NOT NULL) as best_price");
 
         if ($s = $request->query('search')) {
             $ids = $this->search->search($s)['products']->pluck('id');
@@ -42,7 +44,7 @@ class ApiController extends Controller
             ->through(fn ($p) => [
                 'name' => $p->name, 'slug' => $p->slug, 'brand' => $p->brand?->name,
                 'category' => $p->category?->name, 'offers_count' => $p->active_offers_count,
-                'best_price' => $p->bestOffer()?->current_price,
+                'best_price' => $p->best_price,
                 'url' => route('product.show', $p->slug),
             ]));
     }
@@ -67,8 +69,24 @@ class ApiController extends Controller
 
     public function offers(string $slug): JsonResponse
     {
-        return response()->json(Product::where('slug', $slug)->firstOrFail()
-            ->activeOffers()->with('merchant:id,name,slug')->orderBy('current_price')->get());
+        $product = Product::where('slug', $slug)->firstOrFail();
+
+        return response()->json([
+            'product' => $product->name,
+            'offers' => $product->activeOffers()
+                ->with('merchant:id,name,slug')
+                ->orderBy('current_price')
+                ->get()
+                ->map(fn ($o) => [
+                    'merchant' => $o->merchant->name,
+                    'merchant_slug' => $o->merchant->slug,
+                    'price' => $o->current_price,
+                    'original_price' => $o->original_price,
+                    'currency' => $o->currency,
+                    'availability' => $o->availability,
+                    'go_url' => route('go.redirect', [$product->slug, $o->merchant->slug]),
+                ]),
+        ]);
     }
 
     public function categories(): JsonResponse

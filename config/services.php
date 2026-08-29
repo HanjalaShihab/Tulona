@@ -35,4 +35,7 @@ return [
         ],
     ],
 
+    // Token protecting the /tulona/cron/{token} webhook on shared hosting.
+    'scheduler_token' => env('SCHEDULER_TOKEN'),
+
 ];

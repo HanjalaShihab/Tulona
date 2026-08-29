@@ -17,7 +17,7 @@ class LandingPageController extends Controller
     {
         $page = LandingPage::published()
             ->where('slug', $slug)
-            ->with(['products' => fn ($q) => $q->where('status', 'published')])
+            ->with(['products' => fn ($q) => $q->where('status', 'published')->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])])
             ->with(['comparisons' => fn ($q) => $q->withCount('products')])
             ->firstOrFail();
 

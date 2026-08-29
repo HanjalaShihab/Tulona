@@ -23,3 +23,10 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Cache static assets (bust via ?v= query string from the layout)
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>

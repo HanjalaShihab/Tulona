@@ -28,7 +28,7 @@ class ArticleController extends Controller
 
     public function show(string $slug): View
     {
-        $article = Article::published()->where('slug', $slug)->with(['products.brand', 'products.activeOffers'])->firstOrFail();
+        $article = Article::published()->where('slug', $slug)->with(['products.brand', 'products.activeOffers.merchant', 'products.images', 'products.latestDrop'])->firstOrFail();
 
         $related = Article::published()
             ->where('id', '!=', $article->id)

@@ -24,7 +24,6 @@ class SettingController extends Controller
         ]);
 
         Setting::put('homepage', $data);
-        cache()->forget('home.sections');
 
         return back()->with('status', 'Homepage settings saved.');
     }

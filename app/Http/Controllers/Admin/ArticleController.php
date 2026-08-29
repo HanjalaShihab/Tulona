@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\HtmlSanitizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -88,6 +89,10 @@ class ArticleController extends Controller
 
         if (($data['status'] ?? '') === 'published' && empty($data['published_at'])) {
             $data['published_at'] = now();
+        }
+
+        if (isset($data['content'])) {
+            $data['content'] = HtmlSanitizer::sanitize($data['content']);
         }
 
         return $data;
