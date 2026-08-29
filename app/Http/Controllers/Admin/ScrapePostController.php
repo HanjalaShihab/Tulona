@@ -106,10 +106,8 @@ class ScrapePostController extends Controller
         return view('admin.scrape-post.edit', [
             'draft' => $draft,
             'merchants' => Merchant::where('status', 'active')->orderBy('name')->get(['id', 'name']),
-            // "Fixed" categories = the active top-level categories shown under
-            // "Popular Categories" on the landing page, each with its subcategories.
-            'categories' => Category::whereNull('parent_id')->where('is_active', true)
-                ->orderBy('sort_order')->with('children')->get(),
+            // Every category in the tree (all depths) so anything can be posted into.
+            'categories' => Category::cascadeData(),
         ]);
     }
 
@@ -125,6 +123,7 @@ class ScrapePostController extends Controller
             'name' => 'required|string|max:255',
             'merchant_id' => 'required|exists:merchants,id',
             'category_id' => 'nullable|integer|exists:categories,id',
+            'subcategory_id' => 'nullable|integer|exists:categories,id',
             'category' => 'nullable|string|max:255|required_without:category_id',
             'subcategory' => 'nullable|string|max:255',
             'affiliate_url' => 'required|url|max:2048',

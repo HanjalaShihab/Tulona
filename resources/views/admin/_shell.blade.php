@@ -13,7 +13,22 @@
   <aside class="admin-side" id="admin-side">
     <div class="side-brand"><span class="side-brand-text">Tulona</span></div>
 
-    <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><span class="side-ico">▤</span><span>Dashboard</span></a>
+    @php($dashOpen = request()->routeIs('admin.dashboard') || request()->routeIs('admin.analytics*'))
+    <div class="nav-group {{ $dashOpen ? 'open' : '' }}">
+        <a href="{{ route('admin.dashboard') }}" class="{{ $dashOpen ? 'active' : '' }}" aria-expanded="{{ $dashOpen ? 'true' : 'false' }}"><span class="side-ico">▤</span><span>Dashboard</span><span class="caret">▾</span></a>
+        <div class="nav-sub">
+            <a href="{{ route('admin.analytics') }}" class="{{ request()->routeIs('admin.analytics') ? 'active' : '' }}">Overview</a>
+            <a href="{{ route('admin.analytics.visitors') }}" class="{{ request()->routeIs('admin.analytics.visitors') ? 'active' : '' }}">Visitors</a>
+            <a href="{{ route('admin.analytics.products') }}" class="{{ request()->routeIs('admin.analytics.products') ? 'active' : '' }}">Products</a>
+            <a href="{{ route('admin.analytics.clicks') }}" class="{{ request()->routeIs('admin.analytics.clicks') ? 'active' : '' }}">Affiliate Clicks</a>
+            <a href="{{ route('admin.analytics.search') }}" class="{{ request()->routeIs('admin.analytics.search') ? 'active' : '' }}">Search</a>
+            <a href="{{ route('admin.analytics.comparisons') }}" class="{{ request()->routeIs('admin.analytics.comparisons') ? 'active' : '' }}">Comparisons</a>
+            <a href="{{ route('admin.analytics.categories') }}" class="{{ request()->routeIs('admin.analytics.categories') ? 'active' : '' }}">Categories</a>
+            <a href="{{ route('admin.analytics.sources') }}" class="{{ request()->routeIs('admin.analytics.sources') ? 'active' : '' }}">Traffic Sources</a>
+            <a href="{{ route('admin.analytics.devices') }}" class="{{ request()->routeIs('admin.analytics.devices') ? 'active' : '' }}">Devices</a>
+            <a href="{{ route('admin.analytics.landing-pages') }}" class="{{ request()->routeIs('admin.analytics.landing-pages') ? 'active' : '' }}">Landing Pages</a>
+        </div>
+    </div>
 
     <div class="nav-group-title">Catalog</div>
     <a href="{{ route('admin.products.index') }}" class="{{ request()->routeIs('admin.products.*') ? 'active' : '' }}"><span class="side-ico">▦</span><span>Products</span></a>
@@ -33,8 +48,6 @@
     <a href="{{ route('admin.comparisons.index') }}" class="{{ request()->routeIs('admin.comparisons.*') ? 'active' : '' }}"><span class="side-ico">⚖</span><span>Comparisons</span></a>
     <a href="{{ route('admin.landing-pages.index') }}" class="{{ request()->routeIs('admin.landing-pages.*') ? 'active' : '' }}"><span class="side-ico">▤</span><span>Landing Pages</span></a>
 
-    <div class="nav-group-title">Insights</div>
-    <a href="{{ route('admin.analytics') }}" class="{{ request()->routeIs('admin.analytics') ? 'active' : '' }}"><span class="side-ico">◔</span><span>Analytics</span></a>
     @can('manage-users')
     <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><span class="side-ico">◍</span><span>Users</span></a>
     @endcan
@@ -60,6 +73,7 @@
   </div>
 </div>
 <form id="logout-form" method="POST" action="{{ route('admin.logout') }}" class="visually-hidden">@csrf</form>
+@yield('scripts')
 <script>
 (function () {
   var shell = document.getElementById('admin-shell'),
@@ -80,6 +94,17 @@
   });
   scrim.addEventListener('click', function () {
     side.classList.remove('open'); scrim.hidden = true; scrim.classList.remove('show');
+  });
+  var groups = document.querySelectorAll('.nav-group');
+  groups.forEach(function (group) {
+    var toggle = group.querySelector(':scope > a');
+    toggle.addEventListener('click', function (e) {
+      if (toggle.classList.contains('active')) {
+        e.preventDefault();
+        var open = group.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+    });
   });
 })();
 </script>

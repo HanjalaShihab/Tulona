@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\ImportBatch;
 use App\Models\ImportItem;
 use App\Models\Merchant;
+use App\Models\ProductDraft;
 use App\Services\ImportService;
 use App\Services\Scraping\UrlScrapeService;
 use Illuminate\Http\RedirectResponse;
@@ -25,7 +26,8 @@ class ImportController extends Controller
         return view('admin.imports.index', [
             'batches' => ImportBatch::latest()->paginate(15),
             'merchants' => Merchant::orderBy('name')->get(['id', 'name', 'slug', 'connector_type', 'product_import_method']),
-            'categories' => Category::orderBy('name')->get(['id', 'name', 'slug']),
+            'categories' => Category::whereNull('parent_id')->where('is_active', true)->orderBy('sort_order')->get(['id', 'name', 'slug']),
+            'draftCount' => ProductDraft::where('status', '!=', 'posted')->count(),
         ]);
     }
 

@@ -129,6 +129,7 @@ class JsonProductParser implements ProductParser
             'model_number' => $this->scalarOrNull($pick($node, 'model_number', 'modelNumber', 'mpn', 'sku_id')),
             'sku' => $this->scalarOrNull($pick($node, 'sku', 'merchant_product_id', 'external_product_id', 'sku', 'id')),
             'description' => $this->scalarOrNull($pick($node, 'description', 'short_description')),
+            'image' => $this->urlOrNull($pick($node, 'image', 'image_url', 'img', 'thumbnail', 'thumbnailUrl')),
         ];
     }
 

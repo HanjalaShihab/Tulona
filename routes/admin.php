@@ -59,10 +59,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::post('scrape-post/reset', [ScrapePostController::class, 'reset'])->name('scrape-post.reset');
     });
 
-    // Upload CSV → review & post products individually (Product Generator)
+    // Upload CSV / generate from URL → review & post products individually (Product Generator)
     Route::middleware('can:manage-products')->group(function () {
         Route::get('csv-drafts', [CsvDraftController::class, 'index'])->name('csv-drafts.index');
         Route::post('csv-drafts/upload', [CsvDraftController::class, 'upload'])->name('csv-drafts.upload');
+        Route::post('csv-drafts/generate', [CsvDraftController::class, 'generateFromUrl'])->name('csv-drafts.generate');
+        Route::post('csv-drafts/post-all', [CsvDraftController::class, 'postAll'])->name('csv-drafts.post-all');
         Route::get('csv-drafts/{draft}/edit', [CsvDraftController::class, 'edit'])->name('csv-drafts.edit');
         Route::post('csv-drafts/{draft}/post', [CsvDraftController::class, 'post'])->name('csv-drafts.post');
         Route::delete('csv-drafts/{draft}', [CsvDraftController::class, 'destroy'])->name('csv-drafts.destroy');
@@ -120,7 +122,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::get('imports/{batch}', [ImportController::class, 'show'])->name('imports.show');               // results
     });
 
-    // Analytics & users
-    Route::middleware('can:view-analytics')->get('analytics', [AnalyticsController::class, 'index'])->name('analytics');
+    // Analytics & users — aggregated, privacy-friendly visitor/engagement metrics.
+    // Only metrics with real backing data are shown; everything else renders an
+    // "awaiting tracking" empty state instead of fabricating numbers.
+    Route::middleware('can:view-analytics')->group(function () {
+        Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics');
+        Route::prefix('analytics')->name('analytics.')->group(function () {
+            Route::get('visitors', [AnalyticsController::class, 'visitors'])->name('visitors');
+            Route::get('products', [AnalyticsController::class, 'products'])->name('products');
+            Route::get('clicks', [AnalyticsController::class, 'clicks'])->name('clicks');
+            Route::get('search', [AnalyticsController::class, 'search'])->name('search');
+            Route::get('comparisons', [AnalyticsController::class, 'comparisons'])->name('comparisons');
+            Route::get('categories', [AnalyticsController::class, 'categories'])->name('categories');
+            Route::get('sources', [AnalyticsController::class, 'sources'])->name('sources');
+            Route::get('devices', [AnalyticsController::class, 'devices'])->name('devices');
+            Route::get('landing-pages', [AnalyticsController::class, 'landingPages'])->name('landing-pages');
+        });
+    });
     Route::middleware('can:manage-users')->resource('users', UserController::class)->only('index', 'store', 'update', 'destroy');
 });

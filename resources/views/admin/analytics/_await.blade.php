@@ -1,0 +1,1 @@
+<span class="ana-await-badge" title="{{ $title ?? 'This metric needs event tracking to be enabled before it can be reported here.' }}">awaits tracking</span>

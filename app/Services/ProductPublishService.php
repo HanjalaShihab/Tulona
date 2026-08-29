@@ -36,6 +36,7 @@ class ProductPublishService
         $product = DB::transaction(function () use ($data, $draft, &$categoryName) {
             $category = $this->resolvePostedCategory(
                 $data['category_id'] ?? null,
+                $data['subcategory_id'] ?? null,
                 $data['category'] ?? null,
                 $data['subcategory'] ?? null,
             );
@@ -155,16 +156,21 @@ class ProductPublishService
         ];
     }
 
-    /** Resolve the category from the posted form: a fixed category id, or a typed new name. */
-    protected function resolvePostedCategory(?int $categoryId, ?string $categoryName, ?string $subcategoryName): Category
+    /** Resolve the category from the posted form: a fixed category id (cascade parent), an optional
+     *  subcategory id, or a typed new name. */
+    protected function resolvePostedCategory(?int $categoryId, ?int $subcategoryId, ?string $newCategoryName, ?string $subcategoryName): Category
     {
         if ($categoryId !== null) {
             $parent = Category::findOrFail($categoryId);
 
+            if ($subcategoryId !== null) {
+                return Category::where('id', $subcategoryId)->where('parent_id', $parent->id)->firstOrFail();
+            }
+
             return ! empty($subcategoryName) ? $this->findOrCreateCategory($subcategoryName, $parent->id) : $parent;
         }
 
-        return $this->resolveCategory((string) $categoryName, $subcategoryName);
+        return $this->resolveCategory((string) $newCategoryName, $subcategoryName);
     }
 
     protected function resolveCategory(string $categoryName, ?string $subcategoryName): Category

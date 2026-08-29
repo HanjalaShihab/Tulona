@@ -348,7 +348,7 @@ class ScrapePostTest extends TestCase
             ->assertSee('Daraz BD');
     }
 
-    public function test_edit_page_lists_landing_page_categories_as_fixed_options(): void
+    public function test_edit_page_lists_the_full_category_tree(): void
     {
         $this->actingManager();
         $this->merchant();
@@ -359,11 +359,15 @@ class ScrapePostTest extends TestCase
             'price' => 450,
         ]]);
 
+        $electronics = Category::where('slug', 'electronics')->firstOrFail();
+        $smartphone = Category::where('slug', 'smartphones')->firstOrFail();
+
         $this->get(route('admin.scrape-post.edit'))
             ->assertOk()
-            ->assertSee('landing-page category')
-            ->assertSee('Books')
-            ->assertSee('Other / new category');
+            ->assertSee('Electronics')
+            ->assertSee('Subcategory (optional)')
+            ->assertSee((string) $electronics->id)
+            ->assertSee($smartphone->name);
     }
 
     public function test_post_using_fixed_category_id_publishes_into_that_category(): void
@@ -388,6 +392,32 @@ class ScrapePostTest extends TestCase
         $this->assertNotNull($product);
         $this->assertSame($books->id, $product->category_id);
         $this->assertSame('published', $product->status);
+    }
+
+    public function test_post_with_subcategory_id_publishes_into_the_child_category(): void
+    {
+        $this->actingManager();
+        $merchant = $this->merchant();
+        $mobile = Category::where('slug', 'mobile')->firstOrFail();
+        $smartphone = Category::where('slug', 'smartphones')->firstOrFail();
+        session(['scrape_post.draft' => ['external_url' => 'https://shop.test/mobile/x', 'source_url' => 'https://shop.test/mobile/x']]);
+
+        $this->post(route('admin.scrape-post.post'), [
+            'name' => 'Cascade Phone',
+            'merchant_id' => $merchant->id,
+            'category_id' => $mobile->id,
+            'subcategory_id' => $smartphone->id,
+            'category' => '',
+            'subcategory' => '',
+            'affiliate_url' => 'https://track.rokkomari.example/?pid=778',
+            'current_price' => 999,
+            'currency' => 'BDT',
+            'availability' => 'in_stock',
+        ])->assertRedirect(route('admin.scrape-post.index'))->assertSessionHas('status');
+
+        $product = Product::where('slug', 'cascade-phone')->first();
+        $this->assertNotNull($product);
+        $this->assertSame($smartphone->id, $product->category_id);
     }
 
     public function test_post_requires_landing_page_category_or_new_category_name(): void

@@ -258,4 +258,16 @@ class ProductGeneratorTest extends TestCase
         $this->assertEquals(2500, $byName('Product C')->normalized_data['price']);
         $this->assertSame('out_of_stock', $byName('Product B')->normalized_data['availability'] ?? null);
     }
+
+    public function test_generator_home_offers_url_fetch_form_and_draft_count(): void
+    {
+        $this->actingManager();
+        $this->merchant();
+
+        $this->get(route('admin.imports.index'))
+            ->assertOk()
+            ->assertSee('Fetch multiple products from a URL')
+            ->assertSee('/admin/csv-drafts/generate')
+            ->assertSee('Open drafts (0)');
+    }
 }

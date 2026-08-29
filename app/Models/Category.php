@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -56,5 +57,43 @@ class Category extends Model
         }
 
         return $crumbs;
+    }
+
+    public static function nestedTree(): Collection
+    {
+        $all = static::orderBy('sort_order')->orderBy('name')->get();
+        $children = $all->groupBy('parent_id');
+
+        $attach = function ($items) use (&$attach, $children) {
+            return $items->map(function ($category) use (&$attach, $children) {
+                $category->setRelation('children', $attach($children->get($category->id, collect())));
+
+                return $category;
+            });
+        };
+
+        return $attach($children->get(null, collect()));
+    }
+
+    /**
+     * Data for the cascading category picker: parent list, id lookups and
+     * child lists keyed by parent id.
+     *
+     * @return array{parents: \Illuminate\Support\Collection, byId: array, byParentId: array}
+     */
+    public static function cascadeData(): array
+    {
+        $parents = static::whereNull('parent_id')->orderBy('sort_order')->orderBy('name')->get(['id', 'name']);
+
+        $byId = [];
+        $byParentId = [];
+        static::whereNotNull('parent_id')->orderBy('sort_order')->orderBy('name')
+            ->get(['id', 'name', 'parent_id'])
+            ->each(function ($child) use (&$byId, &$byParentId) {
+                $byId[(int) $child->id] = $child;
+                $byParentId[(int) $child->parent_id][] = $child;
+            });
+
+        return compact('parents', 'byId', 'byParentId');
     }
 }

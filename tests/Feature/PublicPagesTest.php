@@ -29,7 +29,8 @@ class PublicPagesTest extends TestCase
         $response = $this->get('/');
         $response->assertOk();
         $response->assertSee('Find the right product', false);
-        $response->assertSee('Popular Categories');
+        $response->assertSee('Best Deals');
+        $response->assertDontSee('Popular Categories');
     }
 
     public function test_product_page_shows_store_comparison_and_chart(): void

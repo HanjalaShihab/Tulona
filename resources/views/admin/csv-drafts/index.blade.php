@@ -11,9 +11,28 @@ Product Drafts
 @endif
 
 <div class="steps">
-  <span class="step-pill done">✓ 1. Upload CSV</span>
+  <span class="step-pill done">✓ 1. Fetch from URL / Upload CSV</span>
   <span class="step-pill now">2. Review &amp; edit each draft</span>
-  <span class="step-pill">3. Post individually</span>
+  <span class="step-pill">3. Post all or one-by-one</span>
+</div>
+
+@if($pendingCount > 0)
+  <div class="pane" style="margin-bottom:18px">
+    <form method="POST" action="{{ route('admin.csv-drafts.post-all') }}" onsubmit="return confirm('Post ALL pending drafts now? Existing products may be updated with a new offer.');">
+      @csrf
+      <button class="btn btn-primary">Post all pending drafts ({{ $pendingCount }})</button>
+      <small style="color:var(--ink-3);display:block;margin-top:6px">Publishes every pending draft in one go. Each draft still needs a name, merchant, category and affiliate link — drafts missing those will be skipped and marked as errors to fix individually.</small>
+    </form>
+  </div>
+@endif
+
+<div class="pane" style="margin-bottom:18px">
+  <h2 style="font-size:16px;margin-bottom:4px">Fetch from a URL</h2>
+  <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:12px">
+    Create editable drafts for <strong>every product</strong> on a merchant product-list page.
+    Go to the <a href="{{ route('admin.imports.index') }}">Generator</a> to fetch from a URL.
+  </p>
+  <a class="btn btn-outline" href="{{ route('admin.imports.index') }}">Go to Generator (fetch from URL)</a>
 </div>
 
 <div class="pane" style="margin-bottom:18px">

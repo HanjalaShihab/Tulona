@@ -11,6 +11,7 @@ use App\Models\User;
 use Database\Seeders\CatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -207,5 +208,126 @@ class CsvDraftTest extends TestCase
             ->assertSessionHas('status');
 
         $this->assertSame(0, ProductDraft::where('id', $draft->id)->count());
+    }
+
+    private function listingPage(array $products): string
+    {
+        $json = ['@context' => 'https://schema.org', '@type' => 'ItemList', 'itemListElement' => $products];
+
+        return '<!DOCTYPE html><html><head>'
+            .'<script type="application/ld+json">'.json_encode($json, JSON_UNESCAPED_SLASHES).'</script>'
+            .'</head><body></body></html>';
+    }
+
+    private function productNode(string $name, float $price, string $id): array
+    {
+        return [
+            '@type' => 'Product',
+            'name' => $name,
+            'sku' => $id,
+            'image' => "https://shop.test/img/{$id}.jpg",
+            'description' => "Description for {$name}.",
+            'offers' => ['@type' => 'Offer', 'price' => $price, 'priceCurrency' => 'BDT', 'availability' => 'https://schema.org/InStock'],
+        ];
+    }
+
+    public function test_generate_from_url_creates_one_editable_draft_per_product(): void
+    {
+        $this->actingManager();
+        $merchant = $this->merchant('shop');
+        Http::fake(['https://shop.test/books/listing' => Http::response(
+            $this->listingPage([
+                $this->productNode('The Alchemist', 450, 'BK-1'),
+                $this->productNode('Atomic Habits', 650, 'BK-2'),
+            ]),
+            200, ['Content-Type' => 'text/html'])]);
+
+        $this->post(route('admin.csv-drafts.generate'), [
+            'source_url' => 'https://shop.test/books/listing',
+            'merchant_id' => $merchant->id,
+        ])->assertRedirect(route('admin.csv-drafts.index'))->assertSessionHas('status');
+
+        $this->assertSame(2, ProductDraft::count());
+        $names = ProductDraft::get()->map(fn ($d) => $d->data['name'])->sort()->values()->toArray();
+        $this->assertSame(['Atomic Habits', 'The Alchemist'], $names);
+        $this->assertSame('450', ProductDraft::where('data->name', 'The Alchemist')->first()->data['current_price']);
+        $this->assertSame('https://shop.test/img/BK-1.jpg', ProductDraft::where('data->name', 'The Alchemist')->first()->data['image']);
+        $this->assertSame('draft', ProductDraft::where('data->name', 'The Alchemist')->first()->status);
+    }
+
+    public function test_generate_from_url_prefills_chosen_category_slug(): void
+    {
+        $this->actingManager();
+        $merchant = $this->merchant('shop');
+        $books = Category::where('slug', 'books')->firstOrFail();
+        Http::fake(['https://shop.test/books/listing' => Http::response(
+            $this->listingPage([$this->productNode('The Alchemist', 450, 'BK-1')]),
+            200, ['Content-Type' => 'text/html'])]);
+
+        $this->post(route('admin.csv-drafts.generate'), [
+            'source_url' => 'https://shop.test/books/listing',
+            'category_id' => $books->id,
+            'merchant_id' => $merchant->id,
+        ])->assertRedirect(route('admin.csv-drafts.index'))->assertSessionHas('status');
+
+        $draft = ProductDraft::first();
+        $this->assertSame('books', $draft->data['category_slug']);
+    }
+
+    public function test_generate_from_url_keeps_drafts_when_no_products_parse(): void
+    {
+        $this->actingManager();
+        Http::fake(['https://shop.test/books/empty' => Http::response(
+            '<!DOCTYPE html><html><head></head><body><p>No products here.</p></body></html>',
+            200, ['Content-Type' => 'text/html'])]);
+
+        $this->post(route('admin.csv-drafts.generate'), [
+            'source_url' => 'https://shop.test/books/empty',
+        ])->assertSessionHasErrors('generate');
+
+        $this->assertSame(0, ProductDraft::count());
+    }
+
+    public function test_post_all_publishes_every_pending_draft_with_valid_required_fields(): void
+    {
+        $this->actingManager();
+        $merchant = $this->merchant('rokomari');
+
+        $valid = ProductDraft::create([
+            'data' => [
+                'name' => 'The Alchemist', 'merchant_id' => $merchant->id,
+                'category_slug' => 'books', 'affiliate_url' => 'https://track.rokomari.example/?p=1',
+                'current_price' => '450', 'currency' => 'BDT', 'availability' => 'in_stock',
+            ],
+            'merchant_id' => $merchant->id, 'created_by' => auth()->id(), 'status' => 'draft',
+        ]);
+
+        $invalid = ProductDraft::create([
+            'data' => ['name' => 'No Affiliate'], // missing merchant + affiliate + category
+            'created_by' => auth()->id(), 'status' => 'draft',
+        ]);
+
+        $this->post(route('admin.csv-drafts.post-all'))
+            ->assertRedirect(route('admin.csv-drafts.index'))
+            ->assertSessionHas('status');
+
+        $valid->refresh();
+        $invalid->refresh();
+        $this->assertSame('posted', $valid->status);
+
+        $this->assertSame(1, Product::count());
+        $this->assertNotNull(Product::where('slug', 'the-alchemist')->first());
+        $this->assertSame('error', $invalid->status);
+    }
+
+    public function test_post_all_with_no_pending_drafts_is_a_noop(): void
+    {
+        $this->actingManager();
+
+        $this->post(route('admin.csv-drafts.post-all'))
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $this->assertSame(0, Product::count());
     }
 }

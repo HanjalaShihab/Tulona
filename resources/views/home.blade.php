@@ -13,18 +13,12 @@
 </section>
 
 <div class="container">
+  @if(!$trending->isEmpty() && (App\Models\Setting::get('homepage.show_trending', true)))
   <section class="section">
-    <div class="sec-head"><div><span class="sec-eyebrow">Browse</span><h2>Popular Categories</h2></div></div>
-    <div class="cat-grid">
-      @forelse($categories as $c)
-        <a class="cat-tile" href="{{ route('categories.show', $c->slug) }}">
-          <div class="ico">{{ $c->icon ?? '🛍️' }}</div><div class="nm">{{ $c->name }}</div>
-        </a>
-      @empty
-        @include('partials.empty', ['icon' => '🗂️', 'text' => 'Categories will appear here once added.'])
-      @endforelse
-    </div>
+    <div class="sec-head"><div><span class="sec-eyebrow">📈 Hot right now</span><h2>Trending Products</h2></div></div>
+    <div class="prod-grid">@foreach($trending as $p)@include('partials.product-card', ['product' => $p])@endforeach</div>
   </section>
+  @endif
 
   @if(!$deals->isEmpty() && (App\Models\Setting::get('homepage.show_deals', true)))
   <section class="section">
@@ -82,13 +76,6 @@
   <section class="section">
     <div class="sec-head"><div><span class="sec-eyebrow">🏆 Best sellers</span><h2>Top Selling Products</h2></div></div>
     <div class="prod-grid">@foreach($topSelling as $p)@include('partials.product-card', ['product' => $p])@endforeach</div>
-  </section>
-  @endif
-
-  @if(!$trending->isEmpty() && (App\Models\Setting::get('homepage.show_trending', true)))
-  <section class="section">
-    <div class="sec-head"><div><span class="sec-eyebrow">📈 Hot right now</span><h2>Trending Products</h2></div></div>
-    <div class="prod-grid">@foreach($trending as $p)@include('partials.product-card', ['product' => $p])@endforeach</div>
   </section>
   @endif
 

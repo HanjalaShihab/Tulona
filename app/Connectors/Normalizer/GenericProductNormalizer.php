@@ -30,7 +30,7 @@ class GenericProductNormalizer implements ProductNormalizer
             'model_number' => $this->cleanString($raw['model_number'] ?? null),
             'sku' => $this->cleanString($raw['sku'] ?? null),
             'description' => $this->cleanString($raw['description'] ?? null),
-            'images' => $this->images($raw['images'] ?? ($raw['image'] !== null ? [$raw['image']] : null)),
+            'images' => $this->images($raw['images'] ?? (isset($raw['image']) && $raw['image'] !== null ? [$raw['image']] : null)),
         ];
     }
 
