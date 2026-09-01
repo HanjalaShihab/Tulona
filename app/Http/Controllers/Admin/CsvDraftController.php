@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Merchant;
 use App\Models\ProductDraft;
@@ -156,6 +157,7 @@ class CsvDraftController extends Controller
         return [
             'name' => $data['name'],
             'merchant_id' => $data['merchant_id'],
+            'brand_id' => $data['brand_id'] ?? null,
             'category_id' => $categoryId ?: null,
             'subcategory_id' => $data['subcategory_id'] ?? null,
             'category' => empty($categoryId) ? $categoryName : null,
@@ -189,6 +191,7 @@ class CsvDraftController extends Controller
             'prefill' => $data,
             'prefillCategoryId' => $category?->id,
             'merchants' => Merchant::where('status', 'active')->orderBy('name')->get(['id', 'name']),
+            'brands' => Brand::orderBy('name')->get(['id', 'name']),
             'categories' => Category::cascadeData(),
         ]);
     }
@@ -205,6 +208,7 @@ class CsvDraftController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'merchant_id' => 'required|exists:merchants,id',
+            'brand_id' => 'nullable|integer|exists:brands,id',
             'category_id' => 'nullable|integer|exists:categories,id',
             'subcategory_id' => 'nullable|integer|exists:categories,id',
             'category' => 'nullable|string|max:255|required_without:category_id',

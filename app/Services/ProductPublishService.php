@@ -47,6 +47,7 @@ class ProductPublishService
             $candidate = new Product([
                 'name' => $data['name'],
                 'category_id' => $category->id,
+                'brand_id' => ($data['brand_id'] ?? null) ? (int) $data['brand_id'] : null,
                 'sku' => ($data['sku'] ?? null) ?: ($draft['sku'] ?? null),
                 'model_number' => $draft['model_number'] ?? null,
                 'gtin' => $draft['gtin'] ?? null,
@@ -59,6 +60,9 @@ class ProductPublishService
                 $product = $match;
 
                 $fill = $this->matcher->missingIdentifiers($product, $candidate);
+                if (blank($product->brand_id) && $candidate->brand_id) {
+                    $fill['brand_id'] = $candidate->brand_id;
+                }
                 if (blank($product->short_description) && $description !== null) {
                     $fill['short_description'] = Str::limit($description, 500);
                 }
@@ -79,6 +83,7 @@ class ProductPublishService
 
                 $product->fill([
                     'category_id' => $category->id,
+                    'brand_id' => ($data['brand_id'] ?? null) ? (int) $data['brand_id'] : null,
                     'name' => $data['name'],
                     'sku' => ($data['sku'] ?? null) ?: null,
                     'short_description' => $description !== null ? Str::limit($description, 500) : null,

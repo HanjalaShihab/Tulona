@@ -159,9 +159,11 @@
         if (raf) return;
         raf = requestAnimationFrame(function () {
           var r = card.getBoundingClientRect();
-          var px = (e.clientX - r.left) / r.width - 0.5;
+          var px = (e.clientX - r.left) / r.width -  0.5;
           var py = (e.clientY - r.top) / r.height -  0.5;
-          card.style.transform = 'perspective(900px) rotateY(' + (px * 7).toFixed(2) + 'deg) rotateX(' + (-(py * 9).toFixed(2) + 'deg) translateY(-6px)';
+          var rx = (px * 7).toFixed(2);
+          var ry = ((-(py * 9)).toFixed(2));
+          card.style.transform = 'perspective(900px) rotateY(' + rx + 'deg) rotateX(' + ry + 'deg) translateY(-6px)';
           raf = null;
         });
       });

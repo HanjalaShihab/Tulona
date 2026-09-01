@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Connectors\Parser\HtmlProductParser;
 use App\Http\Controllers\Controller;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Merchant;
 use App\Services\ProductPublishService;
@@ -106,6 +107,7 @@ class ScrapePostController extends Controller
         return view('admin.scrape-post.edit', [
             'draft' => $draft,
             'merchants' => Merchant::where('status', 'active')->orderBy('name')->get(['id', 'name']),
+            'brands' => Brand::orderBy('name')->get(['id', 'name']),
             // Every category in the tree (all depths) so anything can be posted into.
             'categories' => Category::cascadeData(),
         ]);
@@ -122,6 +124,7 @@ class ScrapePostController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'merchant_id' => 'required|exists:merchants,id',
+            'brand_id' => 'nullable|integer|exists:brands,id',
             'category_id' => 'nullable|integer|exists:categories,id',
             'subcategory_id' => 'nullable|integer|exists:categories,id',
             'category' => 'nullable|string|max:255|required_without:category_id',

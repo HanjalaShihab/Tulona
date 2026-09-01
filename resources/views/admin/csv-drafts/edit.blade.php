@@ -44,6 +44,14 @@ Review &amp; Post Draft
     <div class="field" style="grid-column:1/-1"><label>Name *</label><input type="text" name="name" value="{{ old('name', $p['name'] ?? '') }}" required></div>
     <div class="field" style="grid-column:1/-1"><label>Description</label><textarea name="description" rows="4">{{ old('description', $p['description'] ?? '') }}</textarea></div>
     <div class="field"><label>SKU / product code</label><input type="text" name="sku" value="{{ old('sku', $p['sku'] ?? '') }}"></div>
+    <div class="field"><label>Brand <span style="font-weight:400;color:var(--ink-3)">— optional</span></label>
+      <select name="brand_id">
+        <option value="">— No brand —</option>
+        @foreach($brands as $b)
+          <option value="{{ $b->id }}" {{ old('brand_id', $p['brand_id'] ?? '') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+        @endforeach
+      </select>
+    </div>
 
     <h4 style="grid-column:1/-1;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:14px 0 2px">Price &amp; availability</h4>
     <div class="field"><label>Price (৳)</label><input type="number" step="0.01" min="0" name="current_price" value="{{ old('current_price', $p['current_price'] ?? '') }}"></div>

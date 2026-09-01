@@ -9,35 +9,41 @@
   $trendCount = $trending->count();
 @endphp
 
-<!-- ── HERO — Cinematic, editorial, glass search ── -->
+<!-- ── HERO — Aurora ink, glass search, floating product cards ── -->
 <section class="home-hero">
+  <div class="hero-aurora" aria-hidden="true">
+    <span class="ha-orb ha-orb--a"></span>
+    <span class="ha-orb ha-orb--b"></span>
+    <span class="ha-orb ha-orb--c"></span>
+    <span class="ha-grid"></span>
+  </div>
   <div class="container hero-grid">
     <div class="hero-copy">
-      <div class="hero-eyebrow">
+      <div class="hero-eyebrow reveal" data-reveal>
         <span class="eyebrow-dot"></span>
         Trusted by researchers & bargain hunters in Bangladesh
-        <span class="eyebrow-live">● live prices</span>
+        <span class="eyebrow-live"><span class="live-ping"></span>live prices</span>
       </div>
 
-      <h1 class="hero-title">
+      <h1 class="hero-title" data-reveal>
         Find the right
         <span class="hero-accent">product</span>
         at the right price
       </h1>
 
-      <p class="hero-sub">
+      <p class="hero-sub" data-reveal data-delay="80">
         {{ App\Models\Setting::get('homepage.hero_subtitle', 'We compare products, prices and trusted stores before you buy — honest data, verified history, no sponsored ranking.') }}
       </p>
 
-      <form class="hero-search" role="search" action="{{ route('search.index') }}" method="get">
+      <form class="hero-search" role="search" action="{{ route('search.index') }}" method="get" data-reveal data-delay="160">
         <div class="hs-input-wrap">
-          <span class="hs-icon" aria-hidden="true">⌕</span>
+          <span class="hs-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
           <input type="text" name="q" placeholder="Search phones, laptops, books, headphones…" aria-label="Search products" autocomplete="off">
         </div>
-        <button class="btn btn-primary hs-btn" type="submit">Search</button>
+        <button class="btn btn-primary hs-btn" type="submit">Search<span class="btn-arrow">→</span></button>
       </form>
 
-      <div class="hero-chips">
+      <div class="hero-chips" data-reveal data-delay="240">
         <span>Try:</span>
         <a href="{{ route('search.index') }}?q=phone">Phones</a>
         <a href="{{ route('search.index') }}?q=laptop">Laptops</a>
@@ -45,22 +51,23 @@
         <a href="{{ route('search.index') }}?q=headphones">Headphones</a>
       </div>
 
-      <div class="hero-stats">
-        <div class="hs-stat"><b>{{ \App\Models\Product::where('status','published')->count() }}+</b><span>Products tracked</span></div>
-        <div class="hs-stat"><b>{{ \App\Models\Merchant::where('status','active')->count() }}</b><span>Trusted stores</span></div>
+      <div class="hero-stats" data-reveal data-delay="320">
+        <div class="hs-stat"><b data-count="{{ \App\Models\Product::where('status','published')->count() }}" data-suffix="+">0</b><span>Products tracked</span></div>
+        <div class="hs-stat"><b data-count="{{ \App\Models\Merchant::where('status','active')->count() }}">0</b><span>Trusted stores</span></div>
         <div class="hs-stat"><b>72h</b><span>Freshness promise</span></div>
       </div>
     </div>
 
-    <div class="hero-visual" aria-hidden="true">
+    <div class="hero-visual" data-reveal data-delay="200" aria-hidden="false">
       <div class="hv-blob hv-blob--a"></div>
       <div class="hv-blob hv-blob--b"></div>
+      <div class="hv-orb" aria-hidden="true"></div>
 
       <div class="hv-stack">
         <!-- Showcase card -->
         @if($heroProducts->isNotEmpty())
           @php $hp = $heroProducts->first(); $hpImg = $hp->images->firstWhere('is_main') ?: $hp->images->first(); $hpOffer = $hp->activeOffers->whereNotNull('current_price')->sortBy('current_price')->first(); @endphp
-          <div class="hv-card hv-card--main">
+          <div class="hv-card hv-card--main" data-tilt>
             <div class="hv-card-img">
               @if($hpImg)<img src="{{ str_starts_with($hpImg->path,'http') ? $hpImg->path : asset('storage/'.$hpImg->path) }}" alt="" loading="eager">@else<span class="hv-fallback">{{ substr($hp->name,0,1) }}</span>@endif
             </div>
@@ -78,16 +85,17 @@
               <span class="hv-store">from {{ $hpOffer->merchant->name }} • <em>Best price</em></span>
               @endif
             </div>
+            <span class="hv-card-glow" aria-hidden="true"></span>
           </div>
         @endif
 
         <div class="hv-mini-row">
-          <div class="hv-mini">
+          <div class="hv-mini" data-reveal data-delay="300">
             <span class="hv-mini-ico">⚖</span>
             <strong>Compare Stores</strong>
             <small>Side-by-side prices per product</small>
           </div>
-          <div class="hv-mini">
+          <div class="hv-mini" data-reveal data-delay="380">
             <span class="hv-mini-ico">📉</span>
             <strong>Price History</strong>
             <small>Real drops, not fake discounts</small>
@@ -95,7 +103,7 @@
         </div>
 
         @if($drops->isNotEmpty())
-          <div class="hv-drop">
+          <div class="hv-drop" data-reveal data-delay="460">
             <span class="hv-drop-badge">↓ {{ round($drops->first()->drop_percent) }}%</span>
             <span class="hv-drop-name">{{ \Illuminate\Support\Str::limit($drops->first()->product->name, 28) }}</span>
             <span class="hv-drop-hint">recent drop</span>
@@ -110,7 +118,7 @@
 
   <!-- ── CATEGORIES — bento tiles ── -->
   @if(isset($categories) && $categories->isNotEmpty())
-  <section class="home-section">
+  <section class="home-section" data-reveal>
     <div class="hs-head">
       <div>
         <span class="sec-eyebrow">Explore</span>
@@ -120,8 +128,8 @@
     </div>
     <div class="cat-bento">
       @foreach($categories->take(8) as $c)
-        <a class="cat-bento-tile" href="{{ route('categories.show', $c->slug) }}">
-          <span class="cbt-icon">{{ $c->icon ?? '▦' }}</span>
+        <a class="cat-bento-tile" href="{{ route('categories.show', $c->slug) }}" data-reveal>
+          <span class="cbt-ico">{{ $c->icon ?? '▦' }}</span>
           <span class="cbt-name">{{ $c->name }}</span>
           <span class="cbt-go">→</span>
         </a>
@@ -131,8 +139,8 @@
   @endif
 
   <!-- ── TRENDING ── -->
-  @if(!$trending->isEmpty() && (App\Models\Setting::get('homepage.show_trending', true)))
-  <section class="home-section">
+  @if(!$trending->isEmpty() && (App\Models\Setting::get('homepage.show_trending', true))))
+  <section class="home-section" data-reveal>
     <div class="hs-head">
       <div>
         <span class="sec-eyebrow">Hot right now</span>
@@ -147,11 +155,12 @@
 
 </div>
 
-<!-- ── TODAY'S BEST DEALS — dark band ── -->
-@if(!$deals->isEmpty() && (App\Models\Setting::get('homepage.show_deals', true)))
+<!-- ── TODAY'S BEST DEALS — dark aurora band ── -->
+@if(!$deals->isEmpty() && (App\Models\Setting::get('homepage.show_deals', true))))
 <section class="home-band">
+  <div class="band-glow" aria-hidden="true"></div>
   <div class="container">
-    <div class="hs-head hs-head--light">
+    <div class="hs-head hs-head--light" data-reveal>
       <div>
         <span class="sec-eyebrow sec-eyebrow--light">Limited time</span>
         <h2 style="color:#fff">Today's Best Deals</h2>
@@ -159,7 +168,7 @@
       </div>
       <a class="hs-link hs-link--light" href="{{ route('deals.index') }}">All deals →</a>
     </div>
-    <div class="deal-grid">
+    <div class="deal-grid" data-reveal>
       @foreach($deals as $p)
         @php
           $dImg = $p->images->firstWhere('is_main') ?: $p->images->first();
@@ -182,7 +191,7 @@
             </div>
             <div class="dc-save">
               <span class="amount">Save {{ \App\Support\Currency::format((float)$dOffer->original_price - (float)$dOffer->current_price, $dOffer->currency) }}</span>
-              <span class="drop">↓{{ round($dOffer->discountPercent(), 1) }}%</span>
+              <span class="drop">↓{{ round($dOffer->discountPercent(),1) }}%</span>
             </div>
             @endif
           </div>
@@ -197,8 +206,8 @@
 <div class="container">
 
   <!-- ── PRICE DROPS — horizontal scroller ── -->
-  @if(!$drops->isEmpty() && (App\Models\Setting::get('homepage.show_price_drops', true)))
-  <section class="home-section">
+  @if(!$drops->isEmpty() && (App\Models\Setting::get('homepage.show_price_drops', true))))
+  <section class="home-section" data-reveal>
     <div class="hs-head">
       <div>
         <span class="sec-eyebrow">Falling prices</span>
@@ -206,20 +215,24 @@
       </div>
       <a class="hs-link" href="{{ route('drops.index') }}">See all →</a>
     </div>
-    <div class="drop-ticker">
-      @foreach($drops as $d)
-        <a class="drop-pill" href="{{ route('product.show', $d->product->slug) }}">
-          <span class="dp-badge">↓{{ round($d->drop_percent) }}%</span>
-          <span class="dp-name">{{ $d->product->name }}</span>
-        </a>
-      @endforeach
+    <div class="drop-ticker marquee" data-marquee>
+      <div class="marquee-track">
+        <div class="marquee-group">
+          @foreach($drops as $d)
+            <a class="drop-pill" href="{{ route('product.show', $d->product->slug) }}">
+              <span class="dp-badge">↓{{ round($d->drop_percent) }}%</span>
+              <span class="dp-name">{{ $d->product->name }}</span>
+            </a>
+          @endforeach
+        </div>
+      </div>
     </div>
   </section>
   @endif
 
   <!-- ── TOP SELLING ── -->
   @if(!$topSelling->isEmpty())
-  <section class="home-section">
+  <section class="home-section" data-reveal>
     <div class="hs-head">
       <div>
         <span class="sec-eyebrow">Best sellers</span>
@@ -232,7 +245,7 @@
 
   <!-- ── NEW ARRIVALS ── -->
   @if(!$newArrivals->isEmpty())
-  <section class="home-section">
+  <section class="home-section" data-reveal>
     <div class="hs-head">
       <div>
         <span class="sec-eyebrow">Just added</span>
@@ -245,7 +258,7 @@
 
   <!-- ── FEATURED ── -->
   @if(!$featured->isEmpty())
-  <section class="home-section">
+  <section class="home-section" data-reveal>
     <div class="hs-head">
       <div>
         <span class="sec-eyebrow">Handpicked</span>
@@ -258,7 +271,7 @@
 
   <!-- ── GUIDES ── -->
   @if(!$guides->isEmpty())
-  <section class="home-section">
+  <section class="home-section" data-reveal>
     <div class="hs-head">
       <div>
         <span class="sec-eyebrow">Learn before you buy</span>
@@ -268,7 +281,7 @@
     </div>
     <div class="guide-grid">
       @foreach($guides as $g)
-        <a class="guide-card" href="{{ route('articles.show', $g->slug) }}">
+        <a class="guide-card" href="{{ route('articles.show', $g->slug) }}" data-reveal>
           <span class="tag">Buying Guide</span>
           <h3>{{ $g->title }}</h3>
           <p>{{ \Illuminate\Support\Str::limit(strip_tags($g->excerpt), 110) }}</p>
@@ -280,7 +293,7 @@
   @endif
 
   <!-- ── POPULAR STORES ── -->
-  <section class="home-section">
+  <section class="home-section" data-reveal>
     <div class="hs-head">
       <div>
         <span class="sec-eyebrow">Trusted sources</span>
@@ -289,13 +302,13 @@
     </div>
     <div class="store-row">
       @foreach($merchants as $m)
-        <a class="store-pill" href="{{ route('merchants.show', $m->slug) }}"><span class="sp-av">{{ strtoupper(substr($m->name, 0, 1)) }}</span>{{ $m->name }}</a>
+        <a class="store-pill" href="{{ route('merchants.show', $m->slug) }}"><span class="sp-av">{{ strtoupper(substr($m->name,0,1)) }}</span>{{ $m->name }}</a>
       @endforeach
     </div>
   </section>
 
   <!-- ── WHY TULONA — bento trust ── -->
-  <section class="home-section">
+  <section class="home-section" data-reveal style="padding-bottom:56px">
     <div class="hs-head">
       <div>
         <span class="sec-eyebrow">Why Tulona</span>
