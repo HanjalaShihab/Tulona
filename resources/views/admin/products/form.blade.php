@@ -221,9 +221,70 @@
               </td>
               <td><span class="status-pill status-{{ $o->status }}">{{ ucfirst($o->status) }}</span></td>
               <td style="white-space:nowrap">
+                <button type="button" class="btn btn-outline btn-sm" onclick="offerRowToggle(this,'offer-edit')">Edit</button>
+                <button type="button" class="btn btn-outline btn-sm" title="Reassign to a different store — keeps URL, prices & availability" onclick="offerRowToggle(this,'offer-store')">Store</button>
                 <form method="POST" action="{{ route('admin.offers.destroy', $o) }}" onsubmit="return confirm('Remove this store offer?')" style="display:inline">
                   @csrf @method('DELETE')
                   <button class="btn btn-danger btn-sm">Remove</button>
+                </form>
+              </td>
+            </tr>
+            <tr class="offer-edit" hidden>
+              <td colspan="6" style="background:var(--surface-2)">
+                <form method="POST" action="{{ route('admin.offers.update', $o) }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end">
+                  @csrf @method('PUT')
+                  <div class="field"><label>Current price</label>
+                    <input type="number" step="any" min="0" name="current_price" value="{{ $o->current_price }}" placeholder="Leave empty if unavailable">
+                  </div>
+                  <div class="field"><label>Original price</label>
+                    <input type="number" step="any" min="0" name="original_price" value="{{ $o->original_price }}">
+                  </div>
+                  <div class="field"><label>Currency</label>
+                    <select name="currency">
+                      @foreach(['BDT','USD','INR','EUR','GBP'] as $cur)<option {{ $o->currency===$cur?'selected':'' }}>{{ $cur }}</option>@endforeach
+                    </select>
+                  </div>
+                  <div class="field"><label>Availability</label>
+                    <select name="availability">
+                      @foreach(['in_stock'=>'In stock','out_of_stock'=>'Out of stock','preorder'=>'Pre-order','unknown'=>'Unknown'] as $avKey=>$avLabel)
+                        <option value="{{ $avKey }}" {{ $o->availability===$avKey?'selected':'' }}>{{ $avLabel }}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                  <div class="field"><label>Status</label>
+                    <select name="status">
+                      <option value="active" {{ $o->status==='active'?'selected':'' }}>Active</option>
+                      <option value="inactive" {{ $o->status==='inactive'?'selected':'' }}>Inactive</option>
+                    </select>
+                  </div>
+                  <div class="field" style="grid-column:1/-1"><label>Affiliate URL</label>
+                    <input type="url" name="affiliate_url" value="{{ $o->affiliate_url }}">
+                  </div>
+                  <div style="display:flex;gap:8px;grid-column:1/-1">
+                    <button class="btn btn-primary btn-sm">Save changes</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('tr').hidden=true">Cancel</button>
+                  </div>
+                </form>
+              </td>
+            </tr>
+            <tr class="offer-store" hidden>
+              <td colspan="6" style="background:var(--surface-2)">
+                <form method="POST" action="{{ route('admin.offers.update', $o) }}" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+                  @csrf @method('PUT')
+                  <div class="field" style="min-width:260px;flex:1">
+                    <label>Move offer to store</label>
+                    <select name="merchant_id" required>
+                      <option value="">— Select new store —</option>
+                      @foreach($merchants as $m)
+                        <option value="{{ $m->id }}" {{ (int) $o->merchant_id === (int) $m->id ? 'selected' : '' }}>{{ $m->name }} ({{ $m->slug }})</option>
+                      @endforeach
+                    </select>
+                    <div class="field-hint">Affiliate URL, prices and availability stay exactly as they are.</div>
+                  </div>
+                  <div style="display:flex;gap:8px">
+                    <button class="btn btn-primary btn-sm">Move offer</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('tr').hidden=true">Cancel</button>
+                  </div>
                 </form>
               </td>
             </tr>
@@ -350,6 +411,14 @@
 @endif
 
 <script>
+function offerRowToggle(btn, cls){
+  const row = btn.closest('tr');
+  const next = row.nextElementSibling;
+  const target = next.classList.contains(cls) ? next : next.nextElementSibling;
+  const wasHidden = target.hidden;
+  document.querySelectorAll('tr.offer-edit, tr.offer-store').forEach(r => r.hidden = true);
+  target.hidden = !wasHidden;
+}
 (function(){
   const tabs = document.querySelectorAll('.tabs-admin button');
   const sections = document.querySelectorAll('.admin-section');

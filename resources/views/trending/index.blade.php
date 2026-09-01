@@ -41,7 +41,7 @@
 
 <div class="container" style="margin-top:56px;padding-bottom:88px">
   @if($products->isEmpty())
-    @include('partials.empty', ['icon' => '&#9633;', 'text' => 'Nothing is trending yet &#8212; check back soon.'])
+    @include('partials.empty', ['icon' => '&#9633;', 'text' => 'Nothing is trending yet — check back soon.'])
   @else
     <div class="tl-split">
       <aside class="tl-side">

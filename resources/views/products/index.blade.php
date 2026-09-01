@@ -29,7 +29,7 @@
   </div>
 
   @if($products->isEmpty())
-    @include('partials.empty', ['icon' => '&#9633;', 'text' => 'No products yet &#8212; the catalog is being built.'])
+    @include('partials.empty', ['icon' => '&#9633;', 'text' => 'No products yet — the catalog is being built.'])
   @else
     <div class="prod-grid" data-reveal>
       @foreach($products as $p)

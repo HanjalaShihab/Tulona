@@ -44,9 +44,9 @@
 
           <div class="field" style="margin-top:16px">
             <label>Price range (&#2547;)</label>
-            <div style="display:flex;gap:8px">
-              <input type="number" name="min_price" value="{{ request('min_price') }}" placeholder="Min" min="0">
-              <input type="number" name="max_price" value="{{ request('max_price') }}" placeholder="Max" min="0">
+            <div class="price-range">
+              <input type="number" name="min_price" value="{{ request('min_price') }}" placeholder="Min" min="0" aria-label="Minimum price">
+              <input type="number" name="max_price" value="{{ request('max_price') }}" placeholder="Max" min="0" aria-label="Maximum price">
             </div>
           </div>
 
@@ -106,4 +106,19 @@
     </div>
   </div>
 </div>
+
+<script>
+(function(){
+  document.querySelectorAll('[data-toggle="filters"]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var panel = btn.nextElementSibling;
+      if(!panel || !panel.classList.contains('filters')) panel = btn.parentElement.querySelector('.filters');
+      if(!panel) return;
+      var open = panel.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.innerHTML = (open ? '&#10005; Hide filters' : '&#9776; Filters');
+    });
+  });
+})();
+</script>
 @endsection

@@ -35,7 +35,7 @@ Products
     <select name="category_id" class="input">
       <option value="">All categories</option>
       @foreach($categories as $c)
-        <option value="{{ $c->id }}" {{ request('category_id')==(string)$c->id?'selected':'' }}>{{ $c->parent?->name.' &#8594; ' }}{{ $c->name }}</option>
+        <option value="{{ $c->id }}" {{ request('category_id')==(string)$c->id?'selected':'' }}>{{ $c->parent?->name.' → ' }}{{ $c->name }}</option>
       @endforeach
     </select>
     <select name="brand_id" class="input">
@@ -74,7 +74,7 @@ Products
       <select name="category_id" class="input" id="bulk-category" style="min-width:160px" disabled>
         <option value="">Select category&#8230;</option>
         @foreach($categories as $c)
-          <option value="{{ $c->id }}">{{ $c->parent?->name.' &#8594; ' }}{{ $c->name }}</option>
+          <option value="{{ $c->id }}">{{ $c->parent?->name.' → ' }}{{ $c->name }}</option>
         @endforeach
       </select>
       <button class="btn btn-outline">Apply</button>
@@ -113,7 +113,7 @@ Products
             </td>
             <td>
               {{ $p->category?->name }}
-              <br><small style="color:var(--ink-3)">{{ $p->brand?->name ?? '&#8212;' }}</small>
+              <br><small style="color:var(--ink-3)">{{ $p->brand?->name ?? '—' }}</small>
             </td>
             <td>{{ $p->offers_count }}</td>
             <td>

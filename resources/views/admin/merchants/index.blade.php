@@ -54,10 +54,10 @@ Merchants
               </span>
             </div>
           </td>
-          <td>{{ $m->network?->name ?? '&#8212;' }}</td>
+          <td>{{ $m->network?->name ?? '—' }}</td>
           <td>{{ $m->product_count }}</td>
           <td>{{ $m->offers_count }}</td>
-          <td>{{ $m->country ?? '&#8212;' }}</td>
+          <td>{{ $m->country ?? '—' }}</td>
           <td>
             {{ $m->last_synced_at?->diffForHumans() ?? 'never' }}
             @if($m->sync_status === 'failed')

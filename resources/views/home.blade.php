@@ -29,7 +29,7 @@
       </h1>
 
       <p class="hero-sub" data-reveal data-delay="80">
-        {{ App\Models\Setting::get('homepage.hero_subtitle', 'We compare products, prices and trusted stores before you buy &#8212; honest data, verified history, no sponsored ranking.') }}
+        {{ App\Models\Setting::get('homepage.hero_subtitle', 'We compare products, prices and trusted stores before you buy — honest data, verified history, no sponsored ranking.') }}
       </p>
 
       <form class="hero-search" role="search" action="{{ route('search.index') }}" method="get" data-reveal data-delay="160">
@@ -220,7 +220,11 @@
               @endif
             </div>
 
-            <a class="tcard-cta" href="{{ route('product.show', $p->slug) }}">Compare prices</a>
+            <div class="tcard-actions">
+              @if($cOffer?->merchant)
+                <a class="tcard-cta tcard-cta--deal" href="{{ route('go.redirect', [$p->slug, $cOffer->merchant->slug]) }}" target="_blank" rel="nofollow sponsored noopener">View deal</a>
+              @endif
+            </div>
           </div>
         </article>
       @endforeach
@@ -269,9 +273,10 @@
           $dStore = $p->activeOffers
             ->filter(fn($o) => $o->status === 'active' && $o->merchant)
             ->first()?->merchant;
+          $dGoSlug = $dOffer?->merchant?->slug ?? $dStore?->slug;
         @endphp
-        <a class="deal-ticket{{ $loop->first ? ' deal-ticket--pick' : '' }}" href="{{ route('product.show', $p->slug) }}">
-          <div class="dt-media">
+        <article class="deal-ticket{{ $loop->first ? ' deal-ticket--pick' : '' }}">
+          <a class="dt-media" href="{{ route('product.show', $p->slug) }}" aria-hidden="true" tabindex="-1">
             @if($dImg)
               <img class="dt-image" src="{{ str_starts_with($dImg->path, 'http') ? $dImg->path : asset('storage/' . $dImg->path) }}" alt="{{ $dImg->alt_text ?: $p->name }}" loading="lazy">
             @else
@@ -284,7 +289,7 @@
             @if($loop->first)
               <span class="dt-tag dt-tag--pick">Top pick today</span>
             @endif
-          </div>
+          </a>
           <div class="dt-body">
             <div class="dt-row1">
               <span class="dt-brand">{{ $p->brand->name ?? $p->category->name }}</span>
@@ -292,7 +297,7 @@
                 <span class="dt-store">{{ $dStore->name }}</span>
               @endif
             </div>
-            <span class="dt-name">{{ $p->name }}</span>
+            <a class="dt-name" href="{{ route('product.show', $p->slug) }}">{{ $p->name }}</a>
             @if($dOffer)
               <div class="dt-price-row">
                 <span class="dt-price">{{ \App\Support\Currency::format((float) $dOffer->current_price, $dOffer->currency) }}</span>
@@ -304,8 +309,12 @@
               </div>
             @endif
           </div>
-          <span class="dt-cta"><span>View deal</span><span class="dt-cta-arrow" aria-hidden="true">&#8594;</span></span>
-        </a>
+          @if($dGoSlug)
+            <a class="dt-cta" href="{{ route('go.redirect', [$p->slug, $dGoSlug]) }}" target="_blank" rel="nofollow sponsored noopener"><span>View deal</span><span class="dt-cta-arrow" aria-hidden="true">&#8594;</span></a>
+          @else
+            <a class="dt-cta" href="{{ route('product.show', $p->slug) }}"><span>View deal</span><span class="dt-cta-arrow" aria-hidden="true">&#8594;</span></a>
+          @endif
+        </article>
       @endforeach
     </div>
   </div>

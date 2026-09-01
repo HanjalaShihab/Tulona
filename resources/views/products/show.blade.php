@@ -151,7 +151,7 @@
                     <span title="Source did not provide status">Unknown</span>
                   @endif
                 </td>
-                <td>{{ $o->discountPercent() ? '-' . round($o->discountPercent(), 1) . '%' : '&#8212;' }}</td>
+                <td>{{ $o->discountPercent() ? '-' . round($o->discountPercent(), 1) . '%' : '—' }}</td>
                 <td>
                   @if($o->isStale($freshnessHours))
                     <span class="badge badge-stale" title="This offer hasn&#8217;t been verified recently &#8212; price may be outdated.">May be outdated</span>

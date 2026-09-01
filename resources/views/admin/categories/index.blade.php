@@ -33,9 +33,9 @@ Categories
             <a href="{{ route('admin.categories.edit', $c) }}"><strong>{{ $c->name }}</strong></a>
             <small style="color:var(--ink-3)">/{{ $c->slug }}</small>
           </td>
-          <td>{{ $c->parent?->name ?? '&#8212;' }}</td>
+          <td>{{ $c->parent?->name ?? '—' }}</td>
           <td>{{ $c->products_count }}</td>
-          <td>{{ $c->is_active ? '&#10003;' : '&#8212;' }}</td>
+          <td>{{ $c->is_active ? '✓' : '—' }}</td>
           <td style="text-align:right">
             <form method="POST" action="{{ route('admin.categories.destroy', $c) }}" onsubmit="return confirm('Delete category?')">
               @csrf @method('DELETE')

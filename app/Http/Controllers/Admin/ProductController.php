@@ -200,16 +200,34 @@ class ProductController extends Controller
         $data = $request->validate([
             'affiliate_url' => 'sometimes|required|url|max:2048',
             'current_price' => 'sometimes|nullable|numeric|min:0',
+            'original_price' => 'sometimes|nullable|numeric|min:0',
+            'currency' => 'sometimes|required|in:BDT,USD,INR,EUR,GBP',
             'availability' => 'sometimes|required|in:in_stock,out_of_stock,preorder,unknown',
             'status' => 'sometimes|required|in:active,inactive',
+            'merchant_id' => 'sometimes|required|exists:merchants,id',
         ]);
+
+        // One offer per merchant per product: reject reassignment onto an existing store.
+        if (isset($data['merchant_id']) && (int) $data['merchant_id'] !== (int) $offer->merchant_id
+            && Offer::where('product_id', $offer->product_id)->where('merchant_id', $data['merchant_id'])->whereKeyNot($offer->id)->exists()) {
+            return back()->withErrors(['merchant_id' => 'This product already has an offer from that merchant — each store gets one row.']);
+        }
 
         DB::transaction(function () use ($offer, $data) {
             $oldPrice = (float) ($offer->current_price ?? 0);
+            $oldMerchantId = $offer->merchant_id;
+            $merchantChanged = isset($data['merchant_id']) && (int) $data['merchant_id'] !== (int) $oldMerchantId;
+
             $offer->update([...$data, 'last_synced_at' => now()]);
 
-            if (isset($data['affiliate_url'])) {
+            // Merchant change must flow into the affiliate record too (§19) even
+            // when the URL itself was not touched.
+            if (isset($data['affiliate_url']) || $merchantChanged) {
                 $this->syncAffiliateOffer($offer, $data);
+            }
+
+            if ($merchantChanged) {
+                AuditLog::record('offer.merchant_changed', $offer, ['from' => $oldMerchantId, 'to' => (int) $data['merchant_id']]);
             }
 
             if (isset($data['current_price']) && (float) $data['current_price'] !== $oldPrice) {

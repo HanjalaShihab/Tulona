@@ -19,7 +19,7 @@
 
 <div class="container" style="margin-top:48px;padding-bottom:64px">
   @if($categories->isEmpty())
-    @include('partials.empty', ['icon' => '&#9633;', 'text' => 'No categories yet &#8212; the catalog is being built.'])
+    @include('partials.empty', ['icon' => '&#9633;', 'text' => 'No categories yet — the catalog is being built.'])
   @else
     <div class="cat-index" role="list">
       @foreach($categories as $c)

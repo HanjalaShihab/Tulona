@@ -19,7 +19,7 @@
   @if($categories->isNotEmpty())
     <div class="chip-links" style="padding-bottom:8px">
       @foreach($categories as $c)
-        <a href="{{ route('categories.show', $c->slug) }}">{{ $c->icon ?? '&#128450;' }} {{ $c->name }}</a>
+        <a href="{{ route('categories.show', $c->slug) }}">{!! $c->icon ?: '&#128450;' !!} {{ $c->name }}</a>
       @endforeach
     </div>
   @endif

@@ -27,6 +27,12 @@ class UrlFetcher
         $path = rawurldecode($parsed['path'] ?? '/');
 
         abort_unless(in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true), 422, 'Unsupported URL scheme.');
+
+        $resolvedIp = gethostbyname($host);
+        if ($resolvedIp && $resolvedIp !== $host && $resolvedIp !== '0.0.0.0' && $resolvedIp !== '::') {
+            abort_if($this->isBlockedIp($resolvedIp), 422, 'Blocked host.');
+        }
+
         $this->assertPublicHost($host);
         $this->assertAllowed($host, $path);
 

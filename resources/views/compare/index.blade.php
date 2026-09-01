@@ -41,7 +41,7 @@
             @endforeach
           </tr>
           <tr><td>Category</td>@foreach($products as $p)<td>{{ $p->category->name }}</td>@endforeach</tr>
-          <tr><td>Rating</td>@foreach($products as $p)<td>{{ $p->rating ? '&#9733; '.$p->rating.'/5 (editorial)' : '&#8212;' }}</td>@endforeach</tr>
+          <tr><td>Rating</td>@foreach($products as $p)<td>{{ $p->rating ? '★ '.$p->rating.'/5 (editorial)' : '—' }}</td>@endforeach</tr>
           @forelse($attributes as $def)
             <tr>
               <td>{{ $def->name }}</td>

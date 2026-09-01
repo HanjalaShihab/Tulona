@@ -9,11 +9,13 @@
 </head>
 <body>
 <div class="admin-shell" id="admin-shell">
-  <div class="scrim" id="admin-scrim" hidden></div>
+  <div class="scrim admin-scrim" id="admin-scrim" hidden></div>
 
-  <aside class="admin-side" id="admin-side">
+  <aside class="admin-side" id="admin-side" aria-label="Admin navigation">
     <div class="side-brand">
-      <span class="side-brand-text">Tulona</span>
+      <a href="{{ route('admin.dashboard') }}" class="side-brand-link" aria-label="Tulona admin home">
+        <span class="side-brand-text">Tulona</span>
+      </a>
     </div>
 
     @php($dashOpen = request()->routeIs('admin.dashboard') || request()->routeIs('admin.analytics*'))
@@ -87,9 +89,9 @@
     </a>
   </aside>
 
-  <div>
+  <div class="admin-content" id="admin-content">
     <div class="admin-topbar">
-      <button class="burger" id="admin-burger" aria-label="Toggle menu" aria-expanded="false">&#9776;</button>
+      <button class="burger" id="admin-burger" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="admin-side">&#9776;</button>
       <h1>@yield('page-title')</h1>
       <div class="spacer"></div>
       <span class="badge badge-pick">Admin</span>
@@ -100,7 +102,7 @@
         <div class="alert alert-ok">{{ session('status') }}</div>
       @endif
       @if($errors->any())
-        <div class="alert alert-err">{{ implode(' &#183; ', $errors->all()) }}</div>
+        <div class="alert alert-err">{{ implode(' · ', $errors->all()) }}</div>
       @endif
       @yield('page')
     </main>
@@ -113,43 +115,77 @@
 
 <script>
 (function () {
-  var shell = document.getElementById('admin-shell'),
-      side  = document.getElementById('admin-side'),
-      scrim = document.getElementById('admin-scrim'),
+  var shell  = document.getElementById('admin-shell'),
+      side   = document.getElementById('admin-side'),
+      scrim  = document.getElementById('admin-scrim'),
       burger = document.getElementById('admin-burger');
 
-  if (localStorage.getItem('tulona_admin_collapsed') === '1') {
+  var MOBILE_BP = 960;
+  var isMobile = function () { return window.innerWidth <= MOBILE_BP; };
+
+  if (!isMobile() && localStorage.getItem('tulona_admin_collapsed') === '1') {
     shell.classList.add('collapsed');
   }
 
+  function setBurgerExpanded(open) {
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function openDrawer() {
+    side.classList.add('open');
+    scrim.hidden = false;
+    requestAnimationFrame(function () { scrim.classList.add('show'); });
+    document.body.classList.add('nav-lock');
+    setBurgerExpanded(true);
+  }
+
+  function closeDrawer() {
+    side.classList.remove('open');
+    scrim.classList.remove('show');
+    document.body.classList.remove('nav-lock');
+    setBurgerExpanded(false);
+    setTimeout(function () { if (!side.classList.contains('open')) scrim.hidden = true; }, 180);
+  }
+
   burger.addEventListener('click', function () {
-    if (window.innerWidth <= 960) {
-      var open = side.classList.toggle('open');
-      scrim.hidden = !open;
-      scrim.classList.toggle('show', open);
-      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (isMobile()) {
+      if (side.classList.contains('open')) closeDrawer(); else openDrawer();
     } else {
-      shell.classList.toggle('collapsed');
-      localStorage.setItem(
-        'tulona_admin_collapsed',
-        shell.classList.contains('collapsed') ? '1' : '0'
-      );
+      var collapsed = shell.classList.toggle('collapsed');
+      localStorage.setItem('tulona_admin_collapsed', collapsed ? '1' : '0');
+      setBurgerExpanded(false);
     }
   });
 
-  scrim.addEventListener('click', function () {
-    side.classList.remove('open');
-    scrim.hidden = true;
-    scrim.classList.remove('show');
+  scrim.addEventListener('click', closeDrawer);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && side.classList.contains('open')) closeDrawer();
+  });
+
+  window.addEventListener('resize', function () {
+    if (!isMobile() && side.classList.contains('open')) closeDrawer();
   });
 
   document.querySelectorAll('.nav-group').forEach(function (group) {
     var toggle = group.querySelector(':scope > a');
+    if (!toggle) return;
+    toggle.setAttribute('role', 'button');
+    toggle.setAttribute('aria-controls', 'nav-sub-dashboard');
+    group.querySelector('.nav-sub')?.setAttribute('id', 'nav-sub-dashboard');
+
     toggle.addEventListener('click', function (e) {
       if (toggle.classList.contains('active')) {
         e.preventDefault();
         var open = group.classList.toggle('open');
         toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+    });
+
+    toggle.addEventListener('keydown', function (e) {
+      if ((e.key === 'Enter' || e.key === ' ') && toggle.classList.contains('active')) {
+        e.preventDefault();
+        toggle.click();
       }
     });
   });

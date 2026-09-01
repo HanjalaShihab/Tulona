@@ -27,72 +27,112 @@
     ['name' => $article->title],
   ]))])
 
-  <article class="article-body">
-    <span class="card-brand">{{ $isGuide ? 'Buying Guide' : 'Review' }} &middot; Updated {{ optional($article->published_at)->diffForHumans() }} &middot; By {{ $article->author }}</span>
-    <h1 style="margin:8px 0 4px;font-size:clamp(24px,3vw,32px)">{{ $article->title }}</h1>
-
-    <div class="alert alert-ok" role="note" style="margin-top:14px">
-      <strong>Affiliate disclosure:</strong> we may earn a commission when you purchase through links on this page. It never affects our picks or costs you extra.
-    </div>
+  <article class="art-page">
+    <header class="art-hero">
+      <span class="art-eyebrow"><span class="art-dot" aria-hidden="true"></span>{{ $isGuide ? 'Buying Guide' : 'Editorial Review' }}</span>
+      <h1 class="art-title">{{ $article->title }}</h1>
+      @if($article->excerpt)
+        <p class="art-lead">{{ $article->excerpt }}</p>
+      @endif
+      <div class="art-meta">
+        <span class="art-meta-item"><strong>By {{ $article->author }}</strong></span>
+        <span class="art-meta-sep" aria-hidden="true"></span>
+        <span class="art-meta-item">Updated {{ optional($article->updated_at)->format('M j, Y') }}</span>
+        <span class="art-meta-sep" aria-hidden="true"></span>
+        <span class="art-meta-item">Independently chosen</span>
+      </div>
+    </header>
 
     @if(!empty($article->selection_criteria))
-      <h2>How we picked</h2>
-      <ul>
-        @foreach($article->selection_criteria as $crit)
-          <li>{{ $crit }}</li>
-        @endforeach
-      </ul>
+      <aside class="art-criteria" aria-label="How we picked">
+        <h2 class="art-criteria-head">How we picked</h2>
+        <ul>
+          @foreach($article->selection_criteria as $crit)
+            <li>{{ $crit }}</li>
+          @endforeach
+        </ul>
+      </aside>
     @endif
 
-    <div class="content">{!! $article->content !!}</div>
+    <div class="art-content content">{!! $article->content !!}</div>
 
     @if($article->products->isNotEmpty())
-      <h2>Our recommendations</h2>
-      @foreach($article->products as $p)
-        @php($best = $p->activeOffers->whereNotNull('current_price')->sortBy(fn ($o) => (float) $o->current_price)->first())
-        <div class="pick-card">
-          <div style="font-size:34px;text-align:center">{{ strtoupper(substr($p->brand->name ?? 'P', 0, 1)) }}</div>
-          <div>
-            <strong><a href="{{ route('product.show', $p->slug) }}">{{ $p->name }}</a></strong>
-            @if($p->pivot->pick_label)
-              <span class="badge badge-pick" style="margin-left:6px">{{ $p->pivot->pick_label }}</span>
-            @endif
-            @if($best)
-              <br><small>{{ \App\Support\Currency::format((float)$best->current_price, $best->currency) }} at {{ $best->merchant->name }}</small>
-            @endif
-            @if($p->pivot->blurb)
-              <br><small style="color:var(--ink-2)">{{ $p->pivot->blurb }}</small>
-            @endif
-          </div>
-          <div>
-            @if($best)
-              <a class="btn btn-buy btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>
-            @endif
-            <a class="btn btn-outline btn-sm" href="{{ route('product.show', $p->slug) }}">Details</a>
-          </div>
+      <section class="art-picks" aria-label="Our recommendations">
+        <div class="art-picks-head">
+          <h2>Our recommendations</h2>
+          <span class="art-picks-count">{{ $article->products->count() }} {{ $article->products->count() === 1 ? 'pick' : 'picks' }}</span>
         </div>
-      @endforeach
+        <div class="art-picks-list">
+          @foreach($article->products as $p)
+            @php($best = $p->activeOffers->whereNotNull('current_price')->sortBy(fn ($o) => (float) $o->current_price)->first())
+            <div class="pick-card">
+              <div class="pick-thumb">
+                @if($p->images->first())
+                  <img src="{{ str_starts_with($p->images->first()->path, 'http') ? $p->images->first()->path : asset('storage/' . $p->images->first()->path) }}" alt="{{ $p->images->first()->alt_text ?: $p->name }}" loading="lazy">
+                @else
+                  <span class="pick-fallback">{{ strtoupper(substr($p->brand->name ?? $p->name, 0, 1)) }}</span>
+                @endif
+                @if($loop->first)
+                  <span class="pick-flag">Top pick</span>
+                @endif
+              </div>
+              <div class="pick-body">
+                <span class="pick-brand">{{ $p->brand->name ?? 'Tulona' }}</span>
+                <a class="pick-name" href="{{ route('product.show', $p->slug) }}">{{ $p->name }}</a>
+                @if($p->pivot->blurb)
+                  <p class="pick-blurb">{{ $p->pivot->blurb }}</p>
+                @endif
+                <div class="pick-price">
+                  @if($best)
+                    <span class="pick-now">{{ \App\Support\Currency::format((float)$best->current_price, $best->currency) }}</span>
+                    <span class="pick-at">at {{ $best->merchant->name }}</span>
+                  @else
+                    <span class="pick-at">Price unavailable</span>
+                  @endif
+                  @if($p->pivot->pick_label)
+                    <span class="badge badge-pick">{{ $p->pivot->pick_label }}</span>
+                  @endif
+                </div>
+              </div>
+              <div class="pick-actions">
+                @if($best)
+                  <a class="pick-buy" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>
+                @endif
+                <a class="pick-details" href="{{ route('product.show', $p->slug) }}">Details</a>
+              </div>
+            </div>
+          @endforeach
+        </div>
+      </section>
     @endif
 
     @if($article->faqs)
-      <h2>Frequently asked questions</h2>
-      @foreach($article->faqs as $faq)
-        <h3 style="margin-top:14px">{{ $faq['question'] }}</h3>
-        <p>{{ $faq['answer'] }}</p>
-      @endforeach
+      <section class="art-faqs" aria-label="Frequently asked questions">
+        <h2>Frequently asked questions</h2>
+        <div class="art-faq-list">
+          @foreach($article->faqs as $faq)
+            <details class="art-faq">
+              <summary>{{ $faq['question'] }}<span class="art-faq-caret" aria-hidden="true">&#9662;</span></summary>
+              <p>{{ $faq['answer'] }}</p>
+            </details>
+          @endforeach
+        </div>
+      </section>
     @endif
-
-    <p style="margin-top:26px"><a href="{{ url('/affiliate-disclosure') }}">How affiliate links work <span aria-hidden="true">&#8594;</span></a></p>
   </article>
 
   @if($related->isNotEmpty())
-    <section class="section" style="padding-bottom:40px;max-width:800px">
+    <section class="art-related" aria-label="Related reading">
       <div class="sec-head"><h2>Related reading</h2></div>
-      <ul style="line-height:2;padding-left:18px">
+      <div class="art-related-grid">
         @foreach($related as $r)
-          <li><a href="{{ route('articles.show', $r->slug) }}">{{ $r->title }}</a></li>
+          <a class="art-related-card" href="{{ route('articles.show', $r->slug) }}">
+            <span class="tag">{{ $r->type === 'guide' ? 'Guide' : 'Review' }}</span>
+            <h3>{{ $r->title }}</h3>
+            <span class="art-related-cta">Read <span aria-hidden="true">&#8594;</span></span>
+          </a>
         @endforeach
-      </ul>
+      </div>
     </section>
   @endif
 </div>
