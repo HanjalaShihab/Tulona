@@ -7,29 +7,30 @@
 @endsection
 
 @section('content')
+<div class="premium-hero">
+  <div class="container">
+    @include('partials.breadcrumbs', ['items' => [
+      ['name' => 'Home', 'url' => route('home')],
+      ['name' => $comparison->title],
+    ]])
+    <h1 data-reveal>{{ $comparison->title }}</h1>
+    @if($comparison->introduction)<p data-reveal data-delay="80">{{ $comparison->introduction }}</p>@endif
+    <div class="hero-meta" data-reveal data-delay="160">@if($comparison->published_at)<span>Last updated {{ $comparison->updated_at->format('F j, Y') }}</span>@endif@if($rows->count())<span>{{ $rows->count() }} products</span>@endif@if($bestPrice)<span>Best price computed</span>@endif</div>
+  </div>
+</div>
 <div class="container">
-  @include('partials.breadcrumbs', ['items' => [
-    ['name' => 'Home', 'url' => route('home')],
-    ['name' => $comparison->title],
-  ]])
-
-  <header style="margin:18px 0 20px">
-    <h1>{{ $comparison->title }}</h1>
-    @if($comparison->introduction)<p style="color:var(--ink-2);max-width:720px">{{ $comparison->introduction }}</p>@endif
-    @if($comparison->published_at)<p style="font-size:13px;color:var(--ink-3)">Last updated {{ $comparison->updated_at->format('F j, Y') }}</p>@endif
-  </header>
 
   @if($bestPrice && $bestDeal)
-    <div class="verdict-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
+    <div class="verdict-grid">
       @foreach([
         ['k'=>'Best Price','v'=>\App\Support\Currency::format($bestPrice['price'], $bestPrice['merchant']->currency ?? 'BDT'),'s'=>$bestPrice['product']->name .' · '. $bestPrice['merchant']->name,'u'=>route('go.redirect', [$bestPrice['product']->slug, $bestPrice['merchant']->slug])],
         ['k'=>'Best Overall Deal','v'=>\App\Support\Currency::format($bestDeal['price'], $bestDeal['merchant']->currency ?? 'BDT'),'s'=>$bestDeal['product']->name .' · '. $bestDeal['merchant']->name,'u'=>route('go.redirect', [$bestDeal['product']->slug, $bestDeal['merchant']->slug])],
       ] as $card)
-        <div class="pane" style="display:flex;flex-direction:column;gap:8px">
+        <div class="pane verdict-card">
           <span class="badge badge-pick">{{ $card['k'] }}</span>
           <span class="price-xl">{{ $card['v'] }}</span>
           <span style="font-size:14px;color:var(--ink-2)">{{ $card['s'] }}</span>
-          <a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ $card['u'] ?: '#' }}">Buy now</a>
+          <a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ $card['u'] ?: '#' }}">Buy now →</a>
         </div>
       @endforeach
     </div>

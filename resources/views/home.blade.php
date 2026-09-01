@@ -64,7 +64,6 @@
       <div class="hv-orb" aria-hidden="true"></div>
 
       <div class="hv-stack">
-        <!-- Showcase card -->
         @if($heroProducts->isNotEmpty())
           @php $hp = $heroProducts->first(); $hpImg = $hp->images->firstWhere('is_main') ?: $hp->images->first(); $hpOffer = $hp->activeOffers->whereNotNull('current_price')->sortBy('current_price')->first(); @endphp
           <div class="hv-card hv-card--main" data-tilt>
@@ -114,12 +113,11 @@
   </div>
 </section>
 
-<div class="container">
-
-  <!-- ── CATEGORIES — bento tiles ── -->
-  @if(isset($categories) && $categories->isNotEmpty())
-  <section class="home-section" data-reveal>
-    <div class="hs-head">
+<!-- ── CATEGORIES — bento tiles ── -->
+@if(isset($categories) && $categories->isNotEmpty())
+<section class="home-section">
+  <div class="container">
+    <div class="hs-head" data-reveal>
       <div>
         <span class="sec-eyebrow">Explore</span>
         <h2>Browse by category</h2>
@@ -131,17 +129,19 @@
         <a class="cat-bento-tile" href="{{ route('categories.show', $c->slug) }}" data-reveal>
           <span class="cbt-ico">{{ $c->icon ?? '▦' }}</span>
           <span class="cbt-name">{{ $c->name }}</span>
-          <span class="cbt-go">→</span>
+          <span class="cbt-go">Explore →</span>
         </a>
       @endforeach
     </div>
-  </section>
-  @endif
+  </div>
+</section>
+@endif
 
-  <!-- ── TRENDING ── -->
-  @if(!$trending->isEmpty() && (App\Models\Setting::get('homepage.show_trending', true))))
-  <section class="home-section" data-reveal>
-    <div class="hs-head">
+<!-- ── TRENDING ── -->
+@if(!$trending->isEmpty() && (App\Models\Setting::get('homepage.show_trending', true))))
+<section class="home-section">
+  <div class="container">
+    <div class="hs-head" data-reveal>
       <div>
         <span class="sec-eyebrow">Hot right now</span>
         <h2>Trending Products</h2>
@@ -150,10 +150,9 @@
       <a class="hs-link" href="{{ route('search.index') }}?sort=popular">View all →</a>
     </div>
     <div class="prod-grid prod-grid--home">@foreach($trending as $p)@include('partials.product-card', ['product' => $p])@endforeach</div>
-  </section>
-  @endif
-
-</div>
+  </div>
+</section>
+@endif
 
 <!-- ── TODAY'S BEST DEALS — dark aurora band ── -->
 @if(!$deals->isEmpty() && (App\Models\Setting::get('homepage.show_deals', true))))
@@ -164,7 +163,7 @@
       <div>
         <span class="sec-eyebrow sec-eyebrow--light">Limited time</span>
         <h2 style="color:#fff">Today's Best Deals</h2>
-        <p class="sec-sub" style="color:#94a3b8">Genuine ≥5% verified discounts only — no inflated “was” prices.</p>
+        <p class="sec-sub" style="color:#94a3b8">Genuine ≥5% verified discounts only — no inflated "was" prices.</p>
       </div>
       <a class="hs-link hs-link--light" href="{{ route('deals.index') }}">All deals →</a>
     </div>
@@ -195,7 +194,7 @@
             </div>
             @endif
           </div>
-          <span class="dc-cta">View →</span>
+          <span class="dc-cta">View deal →</span>
         </a>
       @endforeach
     </div>
@@ -203,12 +202,11 @@
 </section>
 @endif
 
-<div class="container">
-
-  <!-- ── PRICE DROPS — horizontal scroller ── -->
-  @if(!$drops->isEmpty() && (App\Models\Setting::get('homepage.show_price_drops', true))))
-  <section class="home-section" data-reveal>
-    <div class="hs-head">
+<!-- ── PRICE DROPS — horizontal scroller ── -->
+@if(!$drops->isEmpty() && (App\Models\Setting::get('homepage.show_price_drops', true))))
+<section class="home-section">
+  <div class="container">
+    <div class="hs-head" data-reveal>
       <div>
         <span class="sec-eyebrow">Falling prices</span>
         <h2>Recent price drops</h2>
@@ -227,8 +225,11 @@
         </div>
       </div>
     </div>
-  </section>
-  @endif
+  </div>
+</section>
+@endif
+
+<div class="container">
 
   <!-- ── TOP SELLING ── -->
   @if(!$topSelling->isEmpty())
@@ -308,7 +309,7 @@
   </section>
 
   <!-- ── WHY TULONA — bento trust ── -->
-  <section class="home-section" data-reveal style="padding-bottom:56px">
+  <section class="home-section" data-reveal style="padding-bottom:64px">
     <div class="hs-head">
       <div>
         <span class="sec-eyebrow">Why Tulona</span>
@@ -316,10 +317,10 @@
       </div>
     </div>
     <div class="trust-grid">
-      <div class="panel trust-item"><span class="ico" aria-hidden="true">⚖</span><div><strong>Compare multiple stores</strong><small>See who really has the lowest price, side by side — per product.</small></div></div>
-      <div class="panel trust-item"><span class="ico" aria-hidden="true">📉</span><div><strong>Track better prices</strong><small>Verified price history — not fake discounts. Stale offers are flagged.</small></div></div>
-      <div class="panel trust-item"><span class="ico" aria-hidden="true">◎</span><div><strong>Research before buying</strong><small>Guides and thoughtful filters that tell both sides.</small></div></div>
-      <div class="panel trust-item"><span class="ico" aria-hidden="true">♡</span><div><strong>We don't sell anything</strong><small>You always buy from the store you choose. We just bring clarity.</small></div></div>
+      <div class="trust-item"><span class="ico" aria-hidden="true">⚖</span><div><strong>Compare multiple stores</strong><small>See who really has the lowest price, side by side — per product.</small></div></div>
+      <div class="trust-item"><span class="ico" aria-hidden="true">📉</span><div><strong>Track better prices</strong><small>Verified price history — not fake discounts. Stale offers are flagged.</small></div></div>
+      <div class="trust-item"><span class="ico" aria-hidden="true">◎</span><div><strong>Research before buying</strong><small>Guides and thoughtful filters that tell both sides.</small></div></div>
+      <div class="trust-item"><span class="ico" aria-hidden="true">♡</span><div><strong>We don't sell anything</strong><small>You always buy from the store you choose. We just bring clarity.</small></div></div>
     </div>
   </section>
 

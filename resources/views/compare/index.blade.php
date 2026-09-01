@@ -1,11 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container" style="padding-top:22px;padding-bottom:40px">
-  <header style="margin-bottom:16px">
-    <h1>Compare Products</h1>
-    <p style="color:var(--ink-2)">Add up to 4 products. Comparison is category-aware: phones show phone specs, GPUs show GPU specs.</p>
-  </header>
+<div class="premium-hero">
+  <div class="container">
+    <h1 data-reveal>Compare Products</h1>
+    <p data-reveal data-delay="80">Add up to 4 products. Comparison is category-aware: phones show phone specs, GPUs show GPU specs.</p>
+    <div class="hero-meta" data-reveal data-delay="160"><span>Category-aware specs</span><span>Up to 4 products</span></div>
+  </div>
+</div>
+<div class="container" style="padding-top:26px;padding-bottom:40px">
 
   <form method="get" action="{{ route('compare.index') }}" class="form-grid" style="max-width:520px;gap:8px;margin-bottom:26px">
     <input type="text" name="products" value="{{ $slugs->implode(',') }}" placeholder="product-slug-1, product-slug-2…"

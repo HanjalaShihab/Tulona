@@ -1,4 +1,4 @@
-/* Tulona — animations & interactions. Zero dependencies, tiny, respects prefers-reduced-motion. */
+/* Tulona — Premium animations & interactions. Zero dependencies, tiny, respects prefers-reduced-motion. */
 (function () {
   'use strict';
 
@@ -48,7 +48,7 @@
     el.addEventListener('click', function () { setDrawer(false); });
   });
 
-  /* Reveal-on-scroll */
+  /* Reveal-on-scroll with stagger */
   var revealEls = doc.querySelectorAll('[data-reveal]');
   var canObserve = 'IntersectionObserver' in window;
   function revealAll() {
@@ -65,7 +65,7 @@
           io.unobserve(el);
         }
       });
-    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
     revealEls.forEach(function (el) {
       var d = parseInt(el.getAttribute('data-delay'), 10) || 0;
       if (d) el.style.transitionDelay = d + 'ms';
@@ -82,12 +82,12 @@
         var el = entry.target;
         var target = parseFloat(el.getAttribute('data-count'));
         var suffix = el.getAttribute('data-suffix') || '';
-        var dur = 1500;
+        var dur = 1600;
         var startTs = null;
         function frame(ts) {
           if (startTs === null) startTs = ts;
           var p = Math.min((ts - startTs) / dur, 1);
-          var eased = 1 - Math.pow(1 - p, 3);
+          var eased = 1 - Math.pow(1 - p, 4);
           el.textContent = Math.round(target * eased).toLocaleString() + suffix;
           if (p < 1) requestAnimationFrame(frame);
         }
@@ -151,22 +151,21 @@
     track.appendChild(clone);
   });
 
-  /* Auto-reveal for premium grids if author missed data-reveal */
-  document.querySelectorAll('.prod-grid, .deal-grid, .guide-grid, .cat-bento').forEach(function (grid) {
+  /* Auto-reveal for premium grids */
+  document.querySelectorAll('.prod-grid, .deal-grid, .guide-grid, .cat-bento, .trust-grid, .stat-cards, .ana-kpis').forEach(function (grid) {
     if (!grid.hasAttribute('data-reveal')) {
-      grid.setAttribute('data-reveal','');
-      // stagger children for premium cascade without extra markup
+      grid.setAttribute('data-reveal', '');
       grid.querySelectorAll(':scope > *').forEach(function (child, i) {
-        if (!child.hasAttribute('data-reveal') && i < 8) {
-          child.setAttribute('data-reveal','');
-          child.setAttribute('data-delay', String((i%4)*80));
+        if (!child.hasAttribute('data-reveal') && i < 12) {
+          child.setAttribute('data-reveal', '');
+          child.setAttribute('data-delay', String((i % 6) * 60));
         }
       });
     }
   });
-  // PDP and section headers get subtle reveal too
-  document.querySelectorAll('.premium-hero h1, .premium-hero p, .hs-head, .pdp-title, .best-price-box').forEach(function (el) {
-    if (!el.hasAttribute('data-reveal')) el.setAttribute('data-reveal','');
+  /* PDP and section headers */
+  document.querySelectorAll('.premium-hero h1, .premium-hero p, .premium-hero .hero-meta, .hs-head, .pdp-title, .best-price-box, .sec-head').forEach(function (el) {
+    if (!el.hasAttribute('data-reveal')) el.setAttribute('data-reveal', '');
   });
 
   /* Gentle 3D tilt on hero cards (fine pointers only) */
@@ -177,8 +176,8 @@
         if (raf) return;
         raf = requestAnimationFrame(function () {
           var r = card.getBoundingClientRect();
-          var px = (e.clientX - r.left) / r.width -  0.5;
-          var py = (e.clientY - r.top) / r.height -  0.5;
+          var px = (e.clientX - r.left) / r.width - 0.5;
+          var py = (e.clientY - r.top) / r.height - 0.5;
           var rx = (px * 7).toFixed(2);
           var ry = ((-(py * 9)).toFixed(2));
           card.style.transform = 'perspective(900px) rotateY(' + rx + 'deg) rotateX(' + ry + 'deg) translateY(-6px)';
@@ -186,8 +185,46 @@
         });
       });
       card.addEventListener('mouseleave', function () {
+        card.style.transition = 'transform 0.5s cubic-bezier(.4,0,.2,1)';
         card.style.transform = '';
+        setTimeout(function () { card.style.transition = ''; }, 500);
       });
     });
   }
+
+  /* Parallax-lite: subtle movement on scroll for hero orbs */
+  if (!reduced && window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
+    var orbs = document.querySelectorAll('.ha-orb');
+    if (orbs.length) {
+      var orbRaf = null;
+      window.addEventListener('scroll', function () {
+        if (orbRaf) return;
+        orbRaf = requestAnimationFrame(function () {
+          var y = window.scrollY || 0;
+          var factor = Math.min(y * 0.08, 60);
+          orbs.forEach(function (orb, i) {
+            var dir = i % 2 === 0 ? 1 : -1;
+            orb.style.transform = 'translateY(' + (factor * dir) + 'px)';
+          });
+          orbRaf = null;
+        });
+      }, { passive: true });
+    }
+  }
+
+  /* Magnetic hover on buttons (fine pointers) */
+  if (!reduced && window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
+    document.querySelectorAll('.btn-primary').forEach(function (btn) {
+      btn.addEventListener('mousemove', function (e) {
+        var r = btn.getBoundingClientRect();
+        var x = e.clientX - r.left - r.width / 2;
+        var y = e.clientY - r.top - r.height / 2;
+        btn.style.transform = 'translateY(-2px) translate(' + (x * 0.08) + 'px,' + (y * 0.08) + 'px)';
+      });
+      btn.addEventListener('mouseleave', function () {
+        btn.style.transform = '';
+      });
+    });
+  }
+
 })();
