@@ -1,8 +1,8 @@
 @props(['items']) {{-- [{name,url|optional}] --}}
-<nav class="crumbs" aria-label="Breadcrumb">
+<nav class="breadcrumbs" aria-label="Breadcrumb">
   @foreach($items as $i => $item)
     @if(!$loop->last && !empty($item['url']))
-      <a href="{{ $item['url'] }}">{{ $item['name'] }}</a><span class="sep" aria-hidden="true">›</span>
+      <a href="{{ $item['url'] }}">{{ $item['name'] }}</a><span class="sep" aria-hidden="true">&#8250;</span>
     @else
       <span aria-current="page">{{ $item['name'] }}</span>
     @endif

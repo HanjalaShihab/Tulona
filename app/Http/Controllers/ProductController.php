@@ -19,6 +19,25 @@ class ProductController extends Controller
         protected RecommendationService $recommendations,
     ) {}
 
+    public function trending(): View
+    {
+        $products = Product::published()
+            ->where('is_trending', true)
+            ->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])
+            ->withCount(['activeOffers as offer_count'])
+            ->orderByDesc('popularity_score')
+            ->limit(12)
+            ->get();
+
+        return view('trending.index', [
+            'products' => $products,
+            'seo' => [
+                'title' => 'Trending Products — Tulona',
+                'description' => 'The products everyone is comparing this week on Tulona — ranked, with live store prices and honest history.',
+            ],
+        ]);
+    }
+
     public function show(Request $request, string $slug): View
     {
         $product = Product::where('slug', $slug)

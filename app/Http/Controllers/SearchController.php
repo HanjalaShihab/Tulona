@@ -15,7 +15,10 @@ class SearchController extends Controller
     public function index(Request $request): View
     {
         $q = trim((string) $request->query('q', ''));
-        $results = $q !== '' ? $this->search->search($q) : [];
+        $results = ['products' => collect(), 'categories' => collect(), 'brands' => collect(), 'merchants' => collect(), 'articles' => collect()];
+        if ($q !== '') {
+            $results = $this->search->search($q);
+        }
 
         return view('search', [
             'q' => $q,

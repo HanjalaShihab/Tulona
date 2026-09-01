@@ -38,7 +38,7 @@
   <header class="site-header">
     <div class="header-in">
       <button class="nav-toggle" data-drawer-open type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
-      <a class="logo" href="{{ route('home') }}"><span class="logo-mark" aria-hidden="true">T</span><span class="logo-text">Tulona<span>na</span></span></a>
+      <a class="logo" href="{{ route('home') }}"><span class="logo-mark" aria-hidden="true">T</span><span class="logo-text">Tulo<span>na</span></span></a>
       <nav class="main-nav" aria-label="Main">
         <a class="nav-link{{ request()->routeIs('deals.*') ? ' active' : '' }}" href="{{ route('deals.index') }}">Deals</a>
         <a class="nav-link{{ request()->routeIs('drops.*') ? ' active' : '' }}" href="{{ route('drops.index') }}">Price Drops</a>
@@ -50,9 +50,13 @@
           <button class="cat-trigger" type="button" aria-expanded="false"><span class="ct-ico">&#9638;</span><span class="ct-label">Categories</span><span class="ct-caret">&#8964;</span></button>
           <div class="mega">
             <div class="mega-head">Browse categories</div>
-            <div class="mega-grid">
+            <div class="mega-list">
               @foreach($navCategories as $c)
-              <a href="{{ route('categories.show', $c['slug']) }}"><span class="mega-ico">{{ $c['icon'] ?? '&#9638;' }}</span><span>{{ $c['name'] }}</span></a>
+              <a href="{{ route('categories.show', $c['slug']) }}">
+                <span class="ml-num">{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                <span class="ml-name">{{ $c['name'] }}</span>
+                <span class="ml-arrow" aria-hidden="true">&#8594;</span>
+              </a>
               @endforeach
             </div>
           </div>
@@ -71,7 +75,7 @@
 
   <div class="drawer" data-drawer aria-hidden="true">
     <div class="drawer-head">
-      <a class="logo" href="{{ route('home') }}"><span class="logo-mark" aria-hidden="true">T</span><span class="logo-text">Tulona<span>na</span></span></a>
+      <a class="logo" href="{{ route('home') }}"><span class="logo-mark" aria-hidden="true">T</span><span class="logo-text">Tulo<span>na</span></span></a>
       <button class="drawer-close" data-drawer-close type="button" aria-label="Close menu">&times;</button>
     </div>
     <form class="drawer-search" role="search" action="{{ route('search.index') }}" method="get">
@@ -87,9 +91,9 @@
     @if(!empty($navCategories))
     <div class="drawer-title">Categories</div>
     <nav class="drawer-cats" aria-label="Categories">
-      @foreach($navCategories as $c)
-      <a href="{{ route('categories.show', $c['slug']) }}">{{ $c['icon'] ?? '&#9638;' }} {{ $c['name'] }}</a>
-      @endforeach
+@foreach($navCategories as $c)
+      <a href="{{ route('categories.show', $c['slug']) }}"><span class="dc-num">{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}</span><span class="dc-name">{{ $c['name'] }}</span></a>
+    @endforeach
     </nav>
     @endif
     <div class="drawer-foot">Free forever &middot; Honest data &middot; You always buy from the store you choose</div>
@@ -106,7 +110,7 @@
     <div class="container">
       <div class="footer-grid footer-top">
         <div class="footer-brand">
-          <a class="logo logo--light" href="{{ route('home') }}"><span class="logo-mark" aria-hidden="true">T</span><span class="logo-text">Tulona<span>na</span></span></a>
+<a class="logo logo--light" href="{{ route('home') }}"><span class="logo-mark" aria-hidden="true">T</span><span class="logo-text">Tulo<span>na</span></span></a>
           <p>Find the right product at the right price. We compare products, prices and deals from trusted stores so you can buy with confidence.</p>
           <div class="footer-trust">
             <span>&#10003; No fake discounts</span><span>&#10003; Verified price history</span><span>&#10003; You buy from the store</span>

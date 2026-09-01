@@ -82,7 +82,7 @@ Product Drafts
       </div>
     </div>
   @empty
-    @include('partials.empty', ['icon' => '📄', 'text' => 'No drafts yet — upload a CSV above to get started.'])
+    @include('partials.empty', ['icon' => '&#128196;', 'text' => 'No drafts yet — upload a CSV above to get started.'])
   @endforelse
 
   <div style="margin-top:14px">{{ $drafts->links() }}</div>

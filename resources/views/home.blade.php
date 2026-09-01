@@ -127,31 +127,52 @@
   </div>
 </section>
 
-@if(isset($categories) && $categories->isNotEmpty())
-<section class="home-section">
-  <div class="container">
-    <div class="hs-head" data-reveal>
-      <div>
-        <span class="sec-eyebrow">Explore</span>
-        <h2>Browse by category</h2>
+@if(!$newArrivals->isEmpty())
+<section class="new-marquee" data-new-marquee>
+  <div class="nm-viewport">
+    <div class="nm-track">
+      <div class="nm-group">
+        @foreach($newArrivals as $p)
+          @php
+            $nmImg = $p->images->firstWhere('is_main') ?: $p->images->first();
+            $nmOffer = $p->activeOffers->whereNotNull('current_price')->sortBy('current_price')->first();
+            $nmOrig = $nmOffer && $nmOffer->original_price && $nmOffer->original_price > $nmOffer->current_price ? $nmOffer->original_price : null;
+          @endphp
+          <a class="nm-tile" href="{{ route('product.show', $p->slug) }}">
+            <span class="nm-img">
+              @if($nmImg)
+                <img src="{{ str_starts_with($nmImg->path, 'http') ? $nmImg->path : asset('storage/' . $nmImg->path) }}" alt="" loading="lazy">
+              @else
+                <span class="nm-fallback">{{ strtoupper(substr($p->name, 0, 1)) }}</span>
+              @endif
+            </span>
+            <span class="nm-body">
+              <span class="nm-brand">{{ $p->brand->name ?? 'Tulona' }}</span>
+              <span class="nm-name">{{ $p->name }}</span>
+            </span>
+            <span class="nm-price">
+              <span class="nm-now">@if($nmOffer){{ \App\Support\Currency::format((float) $nmOffer->current_price, $nmOffer->currency ?? 'BDT') }}@else&#8212;@endif</span>
+              @if($nmOrig)
+                <span class="nm-old">{{ \App\Support\Currency::format((float) $nmOrig, $nmOffer->currency ?? 'BDT') }}</span>
+                <span class="nm-save">-{{ round($nmOffer->discountPercent(), 1) }}%</span>
+              @endif
+            </span>
+          </a>
+        @endforeach
       </div>
-      <a class="hs-link" href="{{ route('products.index') }}">All categories &#8594;</a>
     </div>
-    <div class="cat-bento">
-      @foreach($categories->take(8) as $c)
-        <a class="cat-bento-tile" href="{{ route('categories.show', $c->slug) }}" data-reveal>
-          <span class="cbt-ico">{{ $c->icon ?? '&#9633;' }}</span>
-          <span class="cbt-name">{{ $c->name }}</span>
-          <span class="cbt-go">Explore &#8594;</span>
-        </a>
-      @endforeach
+  </div>
+  <div class="nm-controls-row" data-reveal data-delay="100">
+    <div class="nm-controls">
+      <button type="button" class="nm-btn" data-nm-prev aria-label="Previous arrivals"><span aria-hidden="true">&#8592;</span></button>
+      <button type="button" class="nm-btn" data-nm-next aria-label="Next arrivals"><span aria-hidden="true">&#8594;</span></button>
     </div>
   </div>
 </section>
 @endif
 
 @if(!$trending->isEmpty() && App\Models\Setting::get('homepage.show_trending', true))
-<section class="home-section">
+<section class="trend-home">
   <div class="container">
     <div class="hs-head" data-reveal>
       <div>
@@ -159,11 +180,49 @@
         <h2>Trending Products</h2>
         <p class="sec-sub">Most viewed and compared this week.</p>
       </div>
-      <a class="hs-link" href="{{ route('search.index') }}?sort=popular">View all &#8594;</a>
+      <a class="hs-link" href="{{ route('trending.index') }}">View all &#8594;</a>
     </div>
-    <div class="prod-grid prod-grid--home">
+
+    <div class="trend-grid">
       @foreach($trending as $p)
-        @include('partials.product-card', ['product' => $p])
+        @php
+          $cImg = $p->images->firstWhere('is_main') ?: $p->images->first();
+          $cOffer = $p->activeOffers->whereNotNull('current_price')->sortBy('current_price')->first();
+          $cOrig = $p->activeOffers
+            ->filter(fn($o) => $o->original_price && $o->original_price > $o->current_price)
+            ->sortByDesc(fn($o) => $o->discountPercent())->first();
+          $cStores = $p->active_offers_count ?? $p->activeOffers->count();
+        @endphp
+        <article class="tcard" data-reveal data-delay="{{ ($loop->index % 4) * 60 }}">
+          <a class="tcard-img" href="{{ route('product.show', $p->slug) }}" aria-hidden="true" tabindex="-1">
+            @if($cImg)
+              <img src="{{ str_starts_with($cImg->path, 'http') ? $cImg->path : asset('storage/' . $cImg->path) }}" alt="{{ $cImg->alt_text ?: $p->name }}" loading="lazy">
+            @else
+              <span class="tcard-fallback">{{ strtoupper(substr($p->name, 0, 1)) }}</span>
+            @endif
+          </a>
+          <span class="tcard-rank">No. {{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+
+          <div class="tcard-body">
+            <span class="tcard-brand">{{ $p->brand->name ?? 'Tulona' }}</span>
+            <a class="tcard-name" href="{{ route('product.show', $p->slug) }}">{{ $p->name }}</a>
+            <span class="tcard-stores">From {{ $cStores }} {{ $cStores == 1 ? 'store' : 'stores' }}</span>
+
+            <div class="tcard-price">
+              @if($cOffer)
+                <span class="tcard-now">{{ \App\Support\Currency::format((float) $cOffer->current_price, $cOffer->currency ?? 'BDT') }}</span>
+                @if($cOrig)
+                  <span class="tcard-old">{{ \App\Support\Currency::format((float) $cOrig->original_price, $cOrig->currency ?? 'BDT') }}</span>
+                  <span class="tcard-save">-{{ round($cOrig->discountPercent(), 1) }}%</span>
+                @endif
+              @else
+                <span class="tcard-na">Price unavailable</span>
+              @endif
+            </div>
+
+            <a class="tcard-cta" href="{{ route('product.show', $p->slug) }}">Compare prices</a>
+          </div>
+        </article>
       @endforeach
     </div>
   </div>
@@ -171,18 +230,34 @@
 @endif
 
 @if(!$deals->isEmpty() && App\Models\Setting::get('homepage.show_deals', true))
-<section class="home-band">
-  <div class="band-glow" aria-hidden="true"></div>
+<section class="deals-premium">
+  <div class="deals-backdrop" aria-hidden="true">
+    <span class="deals-tex"></span>
+    <span class="deals-orb deals-orb--a"></span>
+    <span class="deals-orb deals-orb--b"></span>
+  </div>
   <div class="container">
-    <div class="hs-head hs-head--light" data-reveal>
-      <div>
-        <span class="sec-eyebrow sec-eyebrow--light">Limited time</span>
-        <h2>Today&#8217;s Best Deals</h2>
-        <p class="sec-sub" style="color:#94a3b8">Genuine &#8805;5% verified discounts only &#8212; no inflated &#8220;was&#8221; prices.</p>
-      </div>
-      <a class="hs-link hs-link--light" href="{{ route('deals.index') }}">All deals &#8594;</a>
+    <div class="deals-ticker" data-reveal>
+      <span class="dtc-pulse" aria-hidden="true"></span>
+      <span class="dtc-text">Verified live cuts &mdash; updated today</span>
+      <span class="dtc-note">Genuine &#8805;5% discount only</span>
     </div>
-    <div class="deal-grid" data-reveal>
+
+    <div class="deals-head" data-reveal>
+      <div class="deals-head-copy">
+        <span class="deals-eyebrow"><span class="de-eyebrow-dot" aria-hidden="true"></span>Limited-time price cuts</span>
+        <h2 class="deals-title">Today&rsquo;s <em>Best Deals</em></h2>
+        <p class="deals-sub">Genuine, data-backed savings from our own price history &mdash; no inflated &ldquo;was&rdquo; prices, ever.</p>
+      </div>
+      <div class="deals-head-meta">
+        <span class="deals-count">{{ $deals->count() }}<small>live today</small></span>
+        <a class="deals-link" href="{{ route('deals.index') }}">All deals <span aria-hidden="true">&#8594;</span></a>
+      </div>
+    </div>
+
+    <div class="deals-rule" aria-hidden="true"><span class="dr-diamond"></span></div>
+
+    <div class="deals-grid" data-reveal>
       @foreach($deals as $p)
         @php
           $dImg = $p->images->firstWhere('is_main') ?: $p->images->first();
@@ -191,30 +266,45 @@
             ->filter(fn($o) => $o->original_price && $o->original_price > $o->current_price)
             ->sortByDesc(fn($o) => $o->discountPercent())
             ->first();
+          $dStore = $p->activeOffers
+            ->filter(fn($o) => $o->status === 'active' && $o->merchant)
+            ->first()?->merchant;
         @endphp
-        <a class="deal-card deal-card--dark" href="{{ route('product.show', $p->slug) }}">
-          <div class="dc-img">
+        <a class="deal-ticket{{ $loop->first ? ' deal-ticket--pick' : '' }}" href="{{ route('product.show', $p->slug) }}">
+          <div class="dt-media">
             @if($dImg)
-              <img src="{{ str_starts_with($dImg->path, 'http') ? $dImg->path : asset('storage/' . $dImg->path) }}" alt="{{ $dImg->alt_text ?: $p->name }}" loading="lazy">
+              <img class="dt-image" src="{{ str_starts_with($dImg->path, 'http') ? $dImg->path : asset('storage/' . $dImg->path) }}" alt="{{ $dImg->alt_text ?: $p->name }}" loading="lazy">
             @else
-              <span class="dc-fallback">{{ substr($p->brand->name ?? $p->name, 0, 1) }}</span>
+              <span class="dt-fallback">{{ substr($p->brand->name ?? $p->name, 0, 1) }}</span>
             @endif
-          </div>
-          <div class="dc-body">
-            <span class="dc-brand">{{ $p->brand->name ?? $p->category->name }}</span>
-            <span class="dc-name">{{ $p->name }}</span>
             @if($dOffer)
-              <div class="dc-prices">
-                <span class="dc-new">{{ \App\Support\Currency::format((float) $dOffer->current_price, $dOffer->currency) }}</span>
-                <span class="dc-old">{{ \App\Support\Currency::format((float) $dOffer->original_price, $dOffer->currency) }}</span>
+              <span class="dt-discount">&#8722;{{ round($dOffer->discountPercent()) }}<small>%</small></span>
+            @endif
+            <span class="dt-num">{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+            @if($loop->first)
+              <span class="dt-tag dt-tag--pick">Top pick today</span>
+            @endif
+          </div>
+          <div class="dt-body">
+            <div class="dt-row1">
+              <span class="dt-brand">{{ $p->brand->name ?? $p->category->name }}</span>
+              @if($dStore)
+                <span class="dt-store">{{ $dStore->name }}</span>
+              @endif
+            </div>
+            <span class="dt-name">{{ $p->name }}</span>
+            @if($dOffer)
+              <div class="dt-price-row">
+                <span class="dt-price">{{ \App\Support\Currency::format((float) $dOffer->current_price, $dOffer->currency) }}</span>
+                <span class="dt-old">{{ \App\Support\Currency::format((float) $dOffer->original_price, $dOffer->currency) }}</span>
               </div>
-              <div class="dc-save">
-                <span class="amount">Save {{ \App\Support\Currency::format((float) $dOffer->original_price - (float) $dOffer->current_price, $dOffer->currency) }}</span>
-                <span class="drop">&#8595;{{ round($dOffer->discountPercent(), 1) }}%</span>
+              <div class="dt-save">
+                <span class="amount">You save {{ \App\Support\Currency::format((float) $dOffer->original_price - (float) $dOffer->current_price, $dOffer->currency) }}</span>
+                <span class="min">{{ $p->offer_count ?? $p->activeOffers->count() }} store(s)</span>
               </div>
             @endif
           </div>
-          <span class="dc-cta">View deal &#8594;</span>
+          <span class="dt-cta"><span>View deal</span><span class="dt-cta-arrow" aria-hidden="true">&#8594;</span></span>
         </a>
       @endforeach
     </div>
@@ -249,37 +339,96 @@
 @endif
 
 @if(!$topSelling->isEmpty())
-<section class="home-section">
+<section class="topsel-section">
   <div class="container">
-    <div class="hs-head" data-reveal>
+    <div class="topsel-head" data-reveal>
       <div>
-        <span class="sec-eyebrow">Best sellers</span>
-        <h2>Top Selling Products</h2>
+        <span class="topsel-eyebrow"><span class="te-dot" aria-hidden="true"></span>Bangladesh is buying</span>
+        <h2 class="topsel-title">Top Selling <em>Products</em></h2>
+        <p class="topsel-sub">The most researched &amp; compared items this week &#8212; ranked by real demand, never sponsored.</p>
       </div>
+      <a class="topsel-link" href="{{ route('products.index') }}">All products <span aria-hidden="true">&#8594;</span></a>
     </div>
-    <div class="prod-grid prod-grid--home">
-      @foreach($topSelling as $p)
-        @include('partials.product-card', ['product' => $p])
-      @endforeach
-    </div>
-  </div>
-</section>
-@endif
 
-@if(!$newArrivals->isEmpty())
-<section class="home-section">
-  <div class="container">
-    <div class="hs-head" data-reveal>
-      <div>
-        <span class="sec-eyebrow">Just added</span>
-        <h2>New Arrivals</h2>
+    @php $top = $topSelling->first(); @endphp
+    @if($top)
+      @php
+        $tImg = $top->images->firstWhere('is_main') ?: $top->images->first();
+        $tBest = $top->activeOffers
+          ->filter(fn($o) => $o->status === 'active' && $o->current_price !== null)
+          ->min('current_price');
+        $tOrig = $top->activeOffers
+          ->filter(fn($o) => $o->original_price && $o->original_price > $o->current_price)
+          ->sortByDesc(fn($o) => $o->discountPercent())
+          ->first();
+      @endphp
+      <div class="topsel-layout" data-reveal>
+        <a class="topsel-feature" href="{{ route('product.show', $top->slug) }}">
+          <div class="topsel-fmedia">
+            @if($tImg)
+              <img class="topsel-fimage" src="{{ str_starts_with($tImg->path, 'http') ? $tImg->path : asset('storage/' . $tImg->path) }}" alt="{{ $tImg->alt_text ?: $top->name }}" loading="lazy">
+            @else
+              <span class="topsel-ffallback">{{ substr($top->brand->name ?? $top->name, 0, 1) }}</span>
+            @endif
+            <span class="topsel-frank">01</span>
+            <span class="topsel-fbadge">No. 1 bestseller</span>
+          </div>
+          <div class="topsel-fbody">
+            <span class="topsel-fbrand">{{ $top->brand->name ?? $top->category->name }}</span>
+            <h3 class="topsel-fname">{{ $top->name }}</h3>
+            <div class="topsel-fprice">
+              @if($tBest !== null)
+                <span class="topsel-fnow">{{ \App\Support\Currency::format((float) $tBest) }}</span>
+                @if($tOrig)
+                  <span class="topsel-fold">{{ \App\Support\Currency::format((float) $tOrig->original_price, $tOrig->currency) }}</span>
+                  <span class="badge badge-deal">&#8722;{{ round($tOrig->discountPercent(), 1) }}%</span>
+                @endif
+              @else
+                <span class="badge badge-out">Price unavailable</span>
+              @endif
+            </div>
+            <span class="topsel-fmeta">From {{ $top->activeOffers->count() }} {{ $top->activeOffers->count() == 1 ? 'store' : 'stores' }} &#8226; verified history</span>
+          </div>
+          <span class="topsel-fcta"><span>Shop it now</span><span aria-hidden="true">&#8594;</span></span>
+        </a>
+
+        <div class="topsel-list" role="list">
+          @foreach($topSelling->skip(1) as $p)
+            @php
+              $rImg = $p->images->firstWhere('is_main') ?: $p->images->first();
+              $rBest = $p->activeOffers
+                ->filter(fn($o) => $o->status === 'active' && $o->current_price !== null)
+                ->min('current_price');
+            @endphp
+            <a class="topsel-row" href="{{ route('product.show', $p->slug) }}" role="listitem">
+              <span class="topsel-rank">{{ str_pad($loop->iteration + 1, 2, '0', STR_PAD_LEFT) }}</span>
+              <span class="topsel-thumb">
+                @if($rImg)
+                  <img src="{{ str_starts_with($rImg->path, 'http') ? $rImg->path : asset('storage/' . $rImg->path) }}" alt="{{ $rImg->alt_text ?: $p->name }}" loading="lazy">
+                @else
+                  <span class="topsel-tfallback">{{ substr($p->brand->name ?? $p->name, 0, 1) }}</span>
+                @endif
+              </span>
+              <span class="topsel-info">
+                <span class="topsel-brand">{{ $p->brand->name ?? $p->category->name }} &#8226; {{ $p->activeOffers->count() }} store(s)</span>
+                <span class="topsel-name">{{ $p->name }}</span>
+              </span>
+              <span class="topsel-price">
+                @if($rBest !== null)
+                  <span class="topsel-now">{{ \App\Support\Currency::format((float) $rBest) }}</span>
+                  @if($drop = $p->latestDrop ?? null)
+                    <span class="badge badge-drop">&#8595; {{ round($drop->drop_percent) }}%</span>
+                  @endif
+                @else
+                  <span class="badge badge-out">&#8212;</span>
+                @endif
+              </span>
+            </a>
+          @endforeach
+          <a class="topsel-more" href="{{ route('products.index') }}">Browse all bestsellers <span aria-hidden="true">&#8594;</span></a>
+        </div>
       </div>
-    </div>
-    <div class="prod-grid prod-grid--home">
-      @foreach($newArrivals as $p)
-        @include('partials.product-card', ['product' => $p])
-      @endforeach
-    </div>
+    @endif
   </div>
 </section>
 @endif
@@ -343,6 +492,30 @@
     </div>
   </div>
 </section>
+
+@if(isset($categories) && $categories->isNotEmpty())
+<section class="home-section">
+  <div class="container">
+    <div class="hs-head" data-reveal>
+      <div>
+        <span class="sec-eyebrow">Explore</span>
+        <h2>Browse by category</h2>
+      </div>
+      <a class="hs-link" href="{{ route('categories.index') }}">All categories &#8594;</a>
+    </div>
+    <div class="cat-index" role="list">
+      @foreach($categories->take(8) as $c)
+        <a class="cat-index-row" href="{{ route('categories.show', $c->slug) }}" data-reveal data-delay="{{ $loop->index * 40 }}" role="listitem">
+          <span class="ci-num">{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+          <span class="ci-name">{{ $c->name }}</span>
+          <span class="ci-count">{{ number_format($c->product_count ?? 0) }} products</span>
+          <span class="ci-arrow" aria-hidden="true">&#8594;</span>
+        </a>
+      @endforeach
+    </div>
+  </div>
+</section>
+@endif
 
 <section class="home-section">
   <div class="container">

@@ -15,7 +15,10 @@ class HomeController extends Controller
     public function index(Request $request): View
     {
         $data = [
-            'categories' => Category::whereNull('parent_id')->where('is_active', true)->orderBy('sort_order')->get(),
+            'categories' => Category::whereNull('parent_id')->where('is_active', true)
+                ->orderBy('sort_order')
+                ->withCount(['products as product_count' => fn ($q) => $q->where('status', 'published')])
+                ->get(),
             'trending' => Product::published()->where('is_trending', true)->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])->limit(8)->get(),
             'topSelling' => Product::published()->where('is_top_selling', true)->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])->limit(8)->get(),
             'featured' => Product::published()->where('is_featured', true)->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])->limit(4)->get(),

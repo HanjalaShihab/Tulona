@@ -26,7 +26,9 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/search', [SearchController::class, 'index'])->name('search.index');
 Route::get('/suggest', [SearchController::class, 'suggest'])->middleware('throttle:60,1')->name('search.suggest');
 
+Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/products', [CategoryController::class, 'all'])->name('products.index');
+Route::get('/trending', [ProductController::class, 'trending'])->name('trending.index');
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 Route::get('/category/{slug}', [CategoryController::class, 'show'])->name('categories.show');
 

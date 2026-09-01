@@ -50,9 +50,9 @@
                         <td>
                             <span class="status-pill status-{{ $p->hasAffiliate ? 'active' : 'draft' }}">Published</span>
                             @if(! $p->hasAffiliate)
-                                <span class="chip chip-warn" title="No active offer with an affiliate URL — this product earns no commission">⚠ no affiliate link</span>
+                                <span class="chip chip-warn" title="No active offer with an affiliate URL — this product earns no commission">&#9888; no affiliate link</span>
                             @elseif(! $p->hasPrice)
-                                <span class="chip chip-warn" title="Active offers are missing a current price">⚠ no price</span>
+                                <span class="chip chip-warn" title="Active offers are missing a current price">&#9888; no price</span>
                             @endif
                         </td>
                     </tr>

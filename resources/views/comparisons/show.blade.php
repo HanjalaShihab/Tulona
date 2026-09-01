@@ -30,7 +30,7 @@
           <span class="badge badge-pick">{{ $card['k'] }}</span>
           <span class="price-xl">{{ $card['v'] }}</span>
           <span style="font-size:14px;color:var(--ink-2)">{{ $card['s'] }}</span>
-          <a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ $card['u'] ?: '#' }}">Buy now →</a>
+          <a class="btn btn-buy btn-sm" rel="nofollow sponsored noopener" href="{{ $card['u'] ?: '#' }}">Buy now →</a>
         </div>
       @endforeach
     </div>
@@ -97,7 +97,7 @@
               @foreach($row['columns'] as $col)
                 <td>
                   @if($col['affiliate_url'])
-                    <a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$prod->slug, $col['merchant']->slug]) }}">{{ $comparison->cta_text ?: 'Buy now' }} — {{ $col['merchant_name'] }}</a>
+                    <a class="btn btn-buy btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$prod->slug, $col['merchant']->slug]) }}">{{ $comparison->cta_text ?: 'Buy now' }} — {{ $col['merchant_name'] }}</a>
                   @else
                     <span style="color:var(--ink-3);font-size:13px">No link</span>
                   @endif
@@ -124,7 +124,7 @@
       @endif
     </section>
   @empty
-    @include('partials.empty', ['icon'=>'⚖️','text'=>'No published products in this comparison yet.'])
+    @include('partials.empty', ['icon'=>'&#9878;','text'=>'No published products in this comparison yet.'])
   @endforelse
 
   @if($comparison->verdict)
@@ -134,6 +134,6 @@
     </section>
   @endif
 
-  <p class="disclosure" style="margin-top:22px"><span aria-hidden="true">ℹ️</span><span>Some "Buy now" links are affiliate links — Tulona may earn a commission at no extra cost to you. Prices and availability may change without notice.</span></p>
+  <p class="disclosure" style="margin-top:22px"><span aria-hidden="true">&#8505;</span><span>Some "Buy now" links are affiliate links &#8212; Tulona may earn a commission at no extra cost to you. Prices and availability may change without notice.</span></p>
 </div>
 @endsection

@@ -9,7 +9,7 @@
 </div>
 <div class="container" style="max-width:760px;padding-top:32px;padding-bottom:56px">
   <div class="guide-card" style="padding:36px;text-align:center" data-reveal>
-    <span style="font-size:3rem;display:block;margin-bottom:12px">✉️</span>
+    <span style="font-size:3rem;display:block;margin-bottom:12px">&#9993;</span>
     <h2 style="font-size:1.5rem;margin-bottom:12px">Get in touch</h2>
     <p style="color:var(--ink-2);font-size:1.05rem">Reach the editorial team at:<br><strong style="font-size:1.2rem;color:var(--brand)">hello@tulona.example</strong></p>
     <p style="color:var(--ink-3);margin-top:20px">(replace with your production email in production)</p>

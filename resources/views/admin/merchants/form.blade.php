@@ -34,7 +34,7 @@
     <textarea name="configuration" rows="3" placeholder='{"affiliate_generator_url":"https://merchant.example.com/affiliate"}'>{{ old('configuration', $merchant->configuration ? json_encode($merchant->configuration) : '') }}</textarea></div>
   <div class="field"><label>SEO title</label><input type="text" name="seo_title" value="{{ old('seo_title', $merchant->seo_title) }}"></div>
   <div class="field"><label>SEO description</label><textarea name="seo_description" rows="2">{{ old('seo_description', $merchant->seo_description) }}</textarea></div>
-  <button class="btn btn-primary">💾 Save merchant</button>
+  <button class="btn btn-primary">&#128190; Save merchant</button>
 </form>
 <p style="margin-top:14px"><a href="{{ route('admin.merchants.index') }}">← Back</a></p>
 @endsection

@@ -21,14 +21,14 @@
 
     <h2 style="font-size:1.3rem;margin-bottom:14px">Our principles</h2>
     <div class="trust-grid" style="grid-template-columns:1fr 1fr">
-      <div class="trust-item" style="padding:16px"><span class="ico">🚫</span><div><strong>No fabrication</strong><small>No fake prices, reviews or discounts — ever.</small></div></div>
-      <div class="trust-item" style="padding:16px"><span class="ico">📊</span><div><strong>Transparent rankings</strong><small>Based on data, not commissions.</small></div></div>
-      <div class="trust-item" style="padding:16px"><span class="ico">⚖️</span><div><strong>Disclosed relationships</strong><small>Affiliate links disclosed on every page.</small></div></div>
-      <div class="trust-item" style="padding:16px"><span class="ico">↻</span><div><strong>Fresh data</strong><small>Stale data flagged as "may be outdated".</small></div></div>
+      <div class="trust-item" style="padding:16px"><span class="ico">&#128683;</span><div><strong>No fabrication</strong><small>No fake prices, reviews or discounts &#8212; ever.</small></div></div>
+      <div class="trust-item" style="padding:16px"><span class="ico">&#128202;</span><div><strong>Transparent rankings</strong><small>Based on data, not commissions.</small></div></div>
+      <div class="trust-item" style="padding:16px"><span class="ico">&#9878;</span><div><strong>Disclosed relationships</strong><small>Affiliate links disclosed on every page.</small></div></div>
+      <div class="trust-item" style="padding:16px"><span class="ico">&#8635;</span><div><strong>Fresh data</strong><small>Stale data flagged as "may be outdated".</small></div></div>
     </div>
 
     <div style="margin-top:32px;text-align:center">
-      <a class="btn btn-primary btn-lg" href="{{ route('products.index') }}">Browse the catalog →</a>
+      <a class="btn btn-primary btn-lg" href="{{ route('products.index') }}">Browse the catalog &#8594;</a>
     </div>
   </div>
 </div>

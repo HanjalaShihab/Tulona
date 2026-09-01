@@ -24,9 +24,53 @@
   @if($products->isEmpty())
     @include('partials.empty', ['icon' => '&#128176;', 'text' => 'No active deals right now - check back soon or browse the catalog.'])
   @else
-    <div class="prod-grid" data-reveal>
+    <div class="deals-index-grid" data-reveal>
       @foreach($products as $p)
-        @include('partials.product-card', ['product' => $p])
+        @php
+          $dImg = $p->images->firstWhere('is_main') ?: $p->images->first();
+          $dOffer = $p->activeOffers
+            ->filter(fn($o) => $o->status === 'active' && $o->current_price !== null)
+            ->filter(fn($o) => $o->original_price && $o->original_price > $o->current_price)
+            ->sortByDesc(fn($o) => $o->discountPercent())
+            ->first();
+          $dDiscount = $dOffer ? round($dOffer->discountPercent(), 1) : (isset($p->best_ratio) ? round((1 - (float) $p->best_ratio) * 100, 1) : null);
+          $dCurrent = $dOffer ? (float) $dOffer->current_price : (float) ($p->best_price ?? 0);
+          $dOriginal = $dOffer ? (float) $dOffer->original_price : (float) ($p->max_original ?? 0);
+          $dStores = $p->offers_count ?? ($p->active_offers_count ?? $p->activeOffers->count());
+        @endphp
+        <article class="tcard" data-reveal data-delay="{{ ($loop->index % 4) * 50 }}">
+          <a class="tcard-img" href="{{ route('product.show', $p->slug) }}" aria-hidden="true" tabindex="-1">
+            @if($dImg)
+              <img src="{{ str_starts_with($dImg->path, 'http') ? $dImg->path : asset('storage/' . $dImg->path) }}" alt="{{ $dImg->alt_text ?: $p->name }}" loading="lazy">
+            @else
+              <span class="tcard-fallback">{{ strtoupper(substr($p->name, 0, 1)) }}</span>
+            @endif
+            @if($dDiscount !== null)
+              <span class="tcard-off">&minus;{{ rtrim(rtrim(number_format($dDiscount, 1, '.', ''), '0'), '.') }}<small>%</small></span>
+            @endif
+          </a>
+          <div class="tcard-body">
+            <div class="tcard-meta">
+              <span class="tcard-brand">{{ $p->brand->name ?? 'Tulona' }}</span>
+              <span class="tcard-stores">From {{ $dStores }} {{ $dStores == 1 ? 'store' : 'stores' }}</span>
+            </div>
+            <a class="tcard-name" href="{{ route('product.show', $p->slug) }}">{{ $p->name }}</a>
+
+            <div class="tcard-price">
+              @if($dCurrent > 0)
+                <span class="tcard-now">{{ \App\Support\Currency::format($dCurrent, $dOffer->currency ?? 'BDT') }}</span>
+                @if($dOriginal > $dCurrent)
+                  <span class="tcard-old">{{ \App\Support\Currency::format($dOriginal, $dOffer->currency ?? 'BDT') }}</span>
+                  <span class="tcard-save">Save {{ \App\Support\Currency::format((float) $dOriginal - (float) $dCurrent, $dOffer->currency ?? 'BDT') }}</span>
+                @endif
+              @else
+                <span class="tcard-na">Price unavailable</span>
+              @endif
+            </div>
+
+            <a class="tcard-cta" href="{{ route('product.show', $p->slug) }}">View deal</a>
+          </div>
+        </article>
       @endforeach
     </div>
   @endif

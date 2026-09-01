@@ -13,6 +13,20 @@ use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
+    public function index(): View
+    {
+        $categories = Category::whereNull('parent_id')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->withCount(['products as product_count' => fn ($q) => $q->where('status', 'published')])
+            ->get();
+
+        return view('categories.index', [
+            'categories' => $categories,
+            'seo' => ['title' => 'All Categories — Tulona', 'description' => 'Browse every category on Tulona with verified pricing and history.'],
+        ]);
+    }
+
     public function all(Request $request): View
     {
         $query = Product::published()

@@ -66,7 +66,7 @@ Product Generator
         <span style="margin-left:auto;color:var(--ink-3);font-size:12.5px">{{ $c->children_count }} sub</span>
       </div>
     @empty
-      @include('partials.empty', ['icon' => '🗂️', 'text' => 'No categories yet — add some in Categories first.'])
+      @include('partials.empty', ['icon' => '&#128450;', 'text' => 'No categories yet — add some in Categories first.'])
     @endforelse
     <p style="font-size:12.5px;color:var(--ink-3);margin-top:12px">Not listed? Use “➕ Other / new category…” in step 2 to create one on the fly.</p>
   </div>

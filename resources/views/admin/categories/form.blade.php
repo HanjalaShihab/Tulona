@@ -16,7 +16,7 @@
   <div class="field" style="grid-column:1/-1"><label>Description</label><textarea name="description" rows="2">{{ old('description', $category->description) }}</textarea></div>
   <div class="field"><label>SEO title</label><input type="text" name="seo_title" value="{{ old('seo_title', $category->seo_title) }}"></div>
   <div class="field"><label>SEO description</label><textarea name="seo_description" rows="2">{{ old('seo_description', $category->seo_description) }}</textarea></div>
-  <button class="btn btn-primary">💾 Save</button>
+  <button class="btn btn-primary">&#128190; Save</button>
 </form>
 <p style="margin-top:14px"><a href="{{ route('admin.categories.index') }}">← Back</a></p>
 @endsection

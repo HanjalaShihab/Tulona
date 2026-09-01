@@ -58,6 +58,103 @@
     track.appendChild(clone);
   });
 
+  /* New-arrivals marquee — infinite auto-drift, pause on hover, step controls */
+  var nm = doc.querySelector('[data-new-marquee]');
+  if (nm) {
+    (function () {
+      var viewport = nm.querySelector('.nm-viewport');
+      var track = nm.querySelector('.nm-track');
+      var group = nm.querySelector('.nm-group');
+      var prev = nm.querySelector('[data-nm-prev]');
+      var next = nm.querySelector('[data-nm-next]');
+      if (!viewport || !track || !group) return;
+
+      var COPIES = 6;
+      for (var c = 1; c < COPIES; c++) {
+        var copy = group.cloneNode(true);
+        copy.setAttribute('aria-hidden', 'true');
+        copy.querySelectorAll('a').forEach(function (a) { a.setAttribute('tabindex', '-1'); });
+        track.appendChild(copy);
+      }
+
+      var speed = 52;
+      var pos = 0, groupW = 0, tileW = 0;
+      var hovered = false, pausedDoc = false, stepping = false;
+      var stepStart = 0, target = 0, stepTs = 0;
+      var STEP_MS = 320;
+      var last = null;
+
+      function measure() {
+        groupW = group.getBoundingClientRect().width;
+        var first = group.querySelector('.nm-tile');
+        tileW = first ? first.getBoundingClientRect().width + 14 : 0;
+        if (groupW > 0) pos = ((pos % groupW) + groupW) % groupW;
+      }
+      measure();
+      window.addEventListener('resize', measure);
+
+      doc.addEventListener('visibilitychange', function () {
+        pausedDoc = doc.hidden;
+        if (!pausedDoc) last = null;
+      });
+
+      function pause() { hovered = true; }
+      function resume() { hovered = false; last = null; }
+      nm.addEventListener('mouseenter', pause);
+      nm.addEventListener('mouseleave', resume);
+      track.addEventListener('mouseenter', pause);
+      track.addEventListener('mouseleave', resume);
+
+      function setTransform() {
+        track.style.transform = 'translate3d(' + (-pos) + 'px,0,0)';
+      }
+
+      function autoScroll() {
+        return !reduced && !hovered && !stepping && !pausedDoc;
+      }
+
+      function frame(ts) {
+        if (last === null) last = ts;
+        var dt = Math.min((ts - last) / 1000, 0.05);
+        last = ts;
+
+        if (stepping) {
+          var t = Math.min((ts - stepTs) / STEP_MS, 1);
+          var e = 1 - Math.pow(1 - t, 3);
+          pos = stepStart + (target - stepStart) * e;
+          if (groupW > 0) {
+            if (pos < 0) pos += groupW;
+            if (pos > groupW) pos -= groupW;
+          }
+          if (t >= 1) {
+            pos = ((target % groupW) + groupW) % groupW;
+            stepping = false;
+          }
+        } else if (autoScroll()) {
+          pos += speed * dt;
+          if (groupW > 0 && pos >= groupW) pos -= groupW;
+        }
+        setTransform();
+        requestAnimationFrame(frame);
+      }
+
+      function step(dir) {
+        if (stepping || !tileW || groupW <= 0) return;
+        stepStart = pos;
+        stepTs = performance.now();
+        target = pos + dir * tileW;
+        if (target >= groupW) target -= groupW;
+        if (target < 0) target += groupW;
+        stepping = true;
+      }
+      if (prev) prev.addEventListener('click', function () { step(-1); });
+      if (next) next.addEventListener('click', function () { step(1); });
+
+      setTransform();
+      requestAnimationFrame(frame);
+    })();
+  }
+
   /* Auto-reveal for premium grids */
   document.querySelectorAll('.prod-grid, .deal-grid, .guide-grid, .cat-bento, .trust-grid, .stat-cards, .ana-kpis').forEach(function (grid) {
     if (!grid.hasAttribute('data-reveal')) {

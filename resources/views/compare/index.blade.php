@@ -17,7 +17,7 @@
   </form>
 
   @if($slugs->count() > 0 && $products->count() < 2)
-    @include('partials.empty', ['icon'=>'⚖️','text'=>'Could not find those products (or fewer than 2 matched). Open a product page and use "Add to compare".'])
+    @include('partials.empty', ['icon'=>'&#9878;','text'=>'Could not find those products (or fewer than 2 matched). Open a product page and use "Add to compare".'])
   @elseif($products->count() >= 2)
     <div class="tbl-scroll pane" style="padding:0">
       <table class="compare-matrix" style="width:100%;border-collapse:collapse">
@@ -41,7 +41,7 @@
             @endforeach
           </tr>
           <tr><td>Category</td>@foreach($products as $p)<td>{{ $p->category->name }}</td>@endforeach</tr>
-          <tr><td>Rating</td>@foreach($products as $p)<td>{{ $p->rating ? '★ '.$p->rating.'/5 (editorial)' : '—' }}</td>@endforeach</tr>
+          <tr><td>Rating</td>@foreach($products as $p)<td>{{ $p->rating ? '&#9733; '.$p->rating.'/5 (editorial)' : '&#8212;' }}</td>@endforeach</tr>
           @forelse($attributes as $def)
             <tr>
               <td>{{ $def->name }}</td>
@@ -68,7 +68,7 @@
           <tr><td>Buy</td>
             @foreach($products as $p)
               @php($best = $p->activeOffers->whereNotNull('current_price')->sortBy(fn ($o) => (float) $o->current_price)->first())
-              <td>@if($best)<a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>
+              <td>@if($best)<a class="btn btn-buy btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>
                   @else<span class="badge badge-out">Unavailable</span>@endif</td>
             @endforeach
           </tr>
@@ -76,7 +76,7 @@
       </table>
     </div>
   @else
-    @include('partials.empty', ['icon'=>'⚖️','text'=>'Open any product page and press “Add to compare” to build a comparison.'])
+    @include('partials.empty', ['icon'=>'&#9878;','text'=>'Open any product page and press "Add to compare" to build a comparison.'])
   @endif
 </div>
 @endsection

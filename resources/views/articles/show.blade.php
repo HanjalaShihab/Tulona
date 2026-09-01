@@ -66,7 +66,7 @@
           </div>
           <div>
             @if($best)
-              <a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>
+              <a class="btn btn-buy btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>
             @endif
             <a class="btn btn-outline btn-sm" href="{{ route('product.show', $p->slug) }}">Details</a>
           </div>

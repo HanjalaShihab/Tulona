@@ -17,19 +17,28 @@
 
   <div class="pdp">
     <div class="pdp-gallery" data-reveal>
-      @if($img = $product->images->firstWhere('is_main') ?: $product->images->first())
-        <div class="main-img">
-          <img src="{{ str_starts_with($img->path, 'http') ? $img->path : asset('storage/' . $img->path) }}" alt="{{ $img->alt_text ?: $product->name }}" width="480" height="360" fetchpriority="high">
-        </div>
-      @else
-        <div class="main-img" style="font-family:var(--font-display);font-weight:800;font-size:3rem;color:var(--brand)">
-          {{ strtoupper(substr($product->brand->name ?? 'T', 0, 1)) }}
+      <div class="pdp-media">
+        @if($img = $product->images->firstWhere('is_main') ?: $product->images->first())
+          <img src="{{ str_starts_with($img->path, 'http') ? $img->path : asset('storage/' . $img->path) }}" alt="{{ $img->alt_text ?: $product->name }}" fetchpriority="high">
+        @else
+          <span class="main-fallback">{{ strtoupper(substr($product->brand->name ?? 'T', 0, 1)) }}</span>
+        @endif
+      </div>
+      @php
+        $bestOrig = $bestOffer && $bestOffer->original_price && (float) $bestOffer->original_price > (float) $bestOffer->current_price
+          ? (float) $bestOffer->original_price : null;
+      @endphp
+      @if($bestOrig)
+        <div class="pdp-savebanner">
+          <span>You save the difference</span>
+          <strong>{{ \App\Support\Currency::format($bestOrig - (float) $bestOffer->current_price, $bestOffer->currency ?? 'BDT') }}</strong>
+          <span>at the best store</span>
         </div>
       @endif
     </div>
 
     <div data-reveal data-delay="100">
-      <span class="card-brand">{{ $product->brand?->name }}</span>
+      <span class="pdp-brand">{{ $product->brand?->name }}</span>
       <h1 class="pdp-title">{{ $product->name }}</h1>
       <div class="pdp-meta">
         <a href="{{ route('categories.show', $product->category->slug) }}">{{ $product->category->name }}</a>
@@ -46,21 +55,26 @@
 
       @if($minPrice !== null)
         <div class="best-price-box">
-          <div>
-            <small style="color:var(--ink-2);font-weight:600">Best price</small>
-            <br>
-            <span class="price-xl">{{ \App\Support\Currency::format($minPrice, $bestOffer->currency) }}</span>
+          <div class="bpb-price">
+            <small class="bpb-label">Best price</small>
+            <div class="bpb-row">
+              <span class="price-xl">{{ \App\Support\Currency::format($minPrice, $bestOffer->currency) }}</span>
+              @if($bestOrig)
+                <s class="price-old pdp-old">{{ \App\Support\Currency::format($bestOrig, $bestOffer->currency) }}</s>
+                <span class="badge badge-deal">-{{ round($bestOffer->discountPercent(), 1) }}%</span>
+              @endif
+            </div>
+            <small class="bpb-sub">incl. all store offers &middot; verified within {{ $freshnessHours }}h</small>
           </div>
-          <div style="font-size:14px;color:var(--ink-2)">
-            Available from <strong>{{ $offers->whereNotNull('current_price')->count() }}</strong>
-            {{ $offers->whereNotNull('current_price')->count() == 1 ? 'store' : 'stores' }}
+          <div class="bpb-info">
+            <span>Available from <strong>{{ $offers->whereNotNull('current_price')->count() }}</strong>
+              {{ $offers->whereNotNull('current_price')->count() == 1 ? 'store' : 'stores' }}</span>
             @if($maxPrice > $minPrice)
-              <br>Save up to <strong>{{ \App\Support\Currency::format($maxPrice - $minPrice, $bestOffer->currency) }}</strong> at another store.
+              <span>Save up to <strong>{{ \App\Support\Currency::format($maxPrice - $minPrice, $bestOffer->currency) }}</strong> at another store</span>
             @endif
           </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-left:auto">
-            <a class="btn btn-outline" href="#offers">Compare Prices</a>
-            <a class="btn btn-primary btn-lg" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$product->slug, $bestOffer->merchant->slug]) }}">Buy now &#8594;</a>
+          <div class="bpb-actions">
+            <a class="btn btn-buy btn-lg" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$product->slug, $bestOffer->merchant->slug]) }}">Buy now &#8594;</a>
           </div>
         </div>
       @else
@@ -68,7 +82,22 @@
       @endif
 
       @if($product->summary_editorial || $product->short_description)
-        <p style="margin-top:16px;color:var(--ink-2);line-height:1.7">{{ $product->summary_editorial ?: $product->short_description }}</p>
+        <p class="pdp-summary">{{ $product->summary_editorial ?: $product->short_description }}</p>
+      @endif
+
+      @if($product->pros || $product->cons)
+        <div class="pdp-fastfacts">
+          @if($product->pros)
+            <ul class="ff-list ff-pros">
+              @foreach(array_slice($product->pros, 0, 4) as $pro)<li><span class="ff-ico">&#10003;</span>{{ $pro }}</li>@endforeach
+            </ul>
+          @endif
+          @if($product->cons)
+            <ul class="ff-list ff-cons">
+              @foreach(array_slice($product->cons, 0, 4) as $con)<li><span class="ff-ico">&#10007;</span>{{ $con }}</li>@endforeach
+            </ul>
+          @endif
+        </div>
       @endif
     </div>
   </div>
@@ -131,7 +160,7 @@
                   @endif
                 </td>
                 <td>
-                  <a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$product->slug, $o->merchant->slug]) }}">Buy now</a>
+                  <a class="btn btn-buy btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$product->slug, $o->merchant->slug]) }}">Buy now</a>
                 </td>
               </tr>
             @endforeach
