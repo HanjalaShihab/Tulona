@@ -24,7 +24,7 @@ class ProductController extends Controller
     {
         $query = $request->query();
 
-        $products = Product::with(['brand:id,name', 'category:id,name'])
+        $products = Product::with(['brand:id,name', 'category:id,name', 'images'])
             ->withCount('offers')
             ->withTrashed()
             ->when($query['q'] ?? null, fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
@@ -43,6 +43,12 @@ class ProductController extends Controller
             'categories' => Category::orderBy('name')->get(),
             'brands' => Brand::orderBy('name')->get(),
             'merchants' => Merchant::orderBy('name')->get(),
+            'stats' => [
+                'total' => Product::withTrashed()->count(),
+                'published' => Product::where('status', 'published')->count(),
+                'draft' => Product::where('status', 'draft')->count(),
+                'pending' => Product::where('status', 'pending_review')->count(),
+            ],
         ]);
     }
 

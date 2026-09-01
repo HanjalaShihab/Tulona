@@ -48,7 +48,35 @@
     el.addEventListener('click', function () { setDrawer(false); });
   });
 
-  /* Reveal-on-scroll with stagger */
+  /* Marquee duplication for seamless loops */
+  doc.querySelectorAll('[data-marquee]').forEach(function (marquee) {
+    var track = marquee.querySelector('.marquee-track');
+    var group = marquee.querySelector('.marquee-group');
+    if (!track || !group) return;
+    var clone = group.cloneNode(true);
+    clone.setAttribute('aria-hidden', 'true');
+    track.appendChild(clone);
+  });
+
+  /* Auto-reveal for premium grids */
+  document.querySelectorAll('.prod-grid, .deal-grid, .guide-grid, .cat-bento, .trust-grid, .stat-cards, .ana-kpis').forEach(function (grid) {
+    if (!grid.hasAttribute('data-reveal')) {
+      grid.setAttribute('data-reveal', '');
+      grid.querySelectorAll(':scope > *').forEach(function (child, i) {
+        if (!child.hasAttribute('data-reveal') && i < 12) {
+          child.setAttribute('data-reveal', '');
+          child.setAttribute('data-delay', String((i % 6) * 60));
+        }
+      });
+    }
+  });
+  /* PDP and section headers */
+  document.querySelectorAll('.premium-hero h1, .premium-hero p, .premium-hero .hero-meta, .hs-head, .pdp-title, .best-price-box, .sec-head').forEach(function (el) {
+    if (!el.hasAttribute('data-reveal')) el.setAttribute('data-reveal', '');
+  });
+
+  /* Reveal-on-scroll with stagger (moved AFTER auto-reveal so every
+     dynamically-flagged element is observed and actually becomes visible) */
   var revealEls = doc.querySelectorAll('[data-reveal]');
   var canObserve = 'IntersectionObserver' in window;
   function revealAll() {
@@ -140,33 +168,6 @@
       }
     });
   }
-
-  /* Marquee duplication for seamless loops */
-  doc.querySelectorAll('[data-marquee]').forEach(function (marquee) {
-    var track = marquee.querySelector('.marquee-track');
-    var group = marquee.querySelector('.marquee-group');
-    if (!track || !group) return;
-    var clone = group.cloneNode(true);
-    clone.setAttribute('aria-hidden', 'true');
-    track.appendChild(clone);
-  });
-
-  /* Auto-reveal for premium grids */
-  document.querySelectorAll('.prod-grid, .deal-grid, .guide-grid, .cat-bento, .trust-grid, .stat-cards, .ana-kpis').forEach(function (grid) {
-    if (!grid.hasAttribute('data-reveal')) {
-      grid.setAttribute('data-reveal', '');
-      grid.querySelectorAll(':scope > *').forEach(function (child, i) {
-        if (!child.hasAttribute('data-reveal') && i < 12) {
-          child.setAttribute('data-reveal', '');
-          child.setAttribute('data-delay', String((i % 6) * 60));
-        }
-      });
-    }
-  });
-  /* PDP and section headers */
-  document.querySelectorAll('.premium-hero h1, .premium-hero p, .premium-hero .hero-meta, .hs-head, .pdp-title, .best-price-box, .sec-head').forEach(function (el) {
-    if (!el.hasAttribute('data-reveal')) el.setAttribute('data-reveal', '');
-  });
 
   /* Gentle 3D tilt on hero cards (fine pointers only) */
   if (!reduced && window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
