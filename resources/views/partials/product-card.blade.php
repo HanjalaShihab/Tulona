@@ -55,7 +55,7 @@
         ->whereNotNull('current_price')
         ->sortBy(fn($o) => [$o->availability === 'in_stock' ? 0 : 1, (float) $o->current_price])
         ->first())
-        <a class="btn btn-outline btn-sm"
+            <a class="btn btn-outline btn-sm view-deal-btn"
            rel="nofollow sponsored noopener"
            href="{{ route('go.redirect', [$product->slug, optional($cheap->merchant)->slug]) }}">View Deal</a>
       @endif

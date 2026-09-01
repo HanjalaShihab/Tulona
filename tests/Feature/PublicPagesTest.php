@@ -85,7 +85,7 @@ class PublicPagesTest extends TestCase
         $this->get('/deals')->assertOk();
         $this->get('/price-drops')->assertOk();
         $this->get('/guides')->assertOk()->assertSee('Best GPUs Under');
-        $this->get('/guides/best-gpus-under-100000-bd')->assertOk()->assertSee('Affiliate disclosure');
+        $this->get('/guides/best-gpus-under-100000-bd')->assertOk()->assertSee('How we picked');
         $this->get('/merchant/daraz')->assertOk()->assertSee('Shopping at Daraz BD');
         $this->get('/brand/gigabyte')->assertOk();
         $this->get('/sitemap.xml')->assertOk()->assertHeader('Content-Type', 'application/xml');

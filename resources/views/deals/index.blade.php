@@ -54,21 +54,25 @@
               <span class="tcard-brand">{{ $p->brand->name ?? 'Tulona' }}</span>
               <span class="tcard-stores">From {{ $dStores }} {{ $dStores == 1 ? 'store' : 'stores' }}</span>
             </div>
-            <a class="tcard-name" href="{{ route('product.show', $p->slug) }}">{{ $p->name }}</a>
+            <h3 class="tcard-name truncated" style="font-size:0.875rem; line-height:1.25;">
+              <a href="{{ route('product.show', $p->slug) }}">{{ $p->name }}</a>
+            </h3>
 
             <div class="tcard-price">
               @if($dCurrent > 0)
-                <span class="tcard-now">{{ \App\Support\Currency::format($dCurrent, $dOffer->currency ?? 'BDT') }}</span>
-                @if($dOriginal > $dCurrent)
-                  <span class="tcard-old">{{ \App\Support\Currency::format($dOriginal, $dOffer->currency ?? 'BDT') }}</span>
-                  <span class="tcard-save">Save {{ \App\Support\Currency::format((float) $dOriginal - (float) $dCurrent, $dOffer->currency ?? 'BDT') }}</span>
-                @endif
+                <div class="price-row">
+                  <span class="tcard-now price-current">{{ \App\Support\Currency::format($dCurrent, $dOffer->currency ?? 'BDT') }}</span>
+                  @if($dOriginal > $dCurrent)
+                    <span class="tcard-old price-original">{{ \App\Support\Currency::format($dOriginal, $dOffer->currency ?? 'BDT') }}</span>
+                    <span class="tcard-save">Save {{ \App\Support\Currency::format((float) $dOriginal - (float) $dCurrent, $dOffer->currency ?? 'BDT') }}</span>
+                  @endif
+                </div>
               @else
-                <span class="tcard-na">Price unavailable</span>
+                <span class="tcard-na price-unavailable">Price unavailable</span>
               @endif
             </div>
 
-            <a class="tcard-cta" href="{{ route('product.show', $p->slug) }}">View deal</a>
+            <a class="tcard-cta btn btn-primary view-deal-btn" href="{{ route('product.show', $p->slug) }}">View deal</a>
           </div>
         </article>
       @endforeach

@@ -96,7 +96,7 @@
               </div>
               <div class="pick-actions">
                 @if($best)
-                  <a class="pick-buy" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>
+                  <a class="pick-buy view-deal-btn" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>
                 @endif
                 <a class="pick-details" href="{{ route('product.show', $p->slug) }}">Details</a>
               </div>
