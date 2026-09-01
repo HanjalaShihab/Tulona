@@ -1,9 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-  @include('partials.breadcrumbs', ['items' => [['name'=>'Home','url'=>route('home')],['name'=>'All Products']]])
-  <header style="padding-bottom:10px"><h1>All Products</h1></header>
+<div class="premium-hero">
+  <div class="container">
+    @include('partials.breadcrumbs', ['items' => [['name'=>'Home','url'=>route('home')],['name'=>'All Products']]])
+    <h1 data-reveal>All Products</h1>
+    <p data-reveal data-delay="80">Browse every product on Tulona — multi-store price comparison with honest history.</p>
+    <div class="hero-meta" data-reveal data-delay="160"><span>{{ number_format($products->total()) }} products</span><span>Live pricing</span><span>72h freshness</span></div>
+  </div>
+</div>
+<div class="container" style="margin-top:24px">
 
   <div class="sort-bar">
     <label for="sort">Sort:</label>
@@ -18,7 +24,7 @@
   @if($products->isEmpty())
     @include('partials.empty', ['icon'=>'📦','text'=>'No products yet — the catalog is being built.'])
   @else
-    <div class="prod-grid">@foreach($products as $p)@include('partials.product-card', ['product' => $p])@endforeach</div>
+    <div class="prod-grid" data-reveal>@foreach($products as $p)@include('partials.product-card', ['product' => $p])@endforeach</div>
   @endif
   {{ $products->links('partials.pagination') }}
 </div>

@@ -1,8 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-  <h1 style="padding:20px 0 6px">{{ $q ? 'Search results for “'.$q.'”' : 'Search' }}</h1>
+<div class="premium-hero">
+  <div class="container">
+    <h1 data-reveal>{{ $q ? 'Search results for “'.$q.'”' : 'Search' }}</h1>
+    <p data-reveal data-delay="80">{{ $q ? 'Honest store pricing — no sponsored ranking.' : 'Search products, brands, categories and guides.' }}</p>
+  </div>
+</div>
+<div class="container" style="margin-top:24px">
 
   @if($q === '')
     @include('partials.empty', ['icon'=>'🔍','text'=>'Type something in the search box above — e.g. “RTX 5070”, “iPhone”, “skincare”.'])

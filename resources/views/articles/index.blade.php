@@ -1,11 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-  <header style="padding:22px 0 4px">
-    <h1>{{ $type === 'guide' ? 'Buying Guides' : 'Editorial Reviews' }}</h1>
-    <p style="color:var(--ink-2)">Independent, useful content — no SEO spam. Every guide states how we picked, what we rejected, and who should skip the product entirely.</p>
-  </header>
+<div class="premium-hero">
+  <div class="container">
+    <h1 data-reveal>{{ $type === 'guide' ? 'Buying Guides' : 'Editorial Reviews' }}</h1>
+    <p data-reveal data-delay="80">Independent, useful content — no SEO spam. Every guide states how we picked, what we rejected, and who should skip the product entirely.</p>
+    <div class="hero-meta" data-reveal data-delay="160"><span>{{ $articles->total() }} articles</span><span>No sponsored picks</span></div>
+  </div>
+</div>
+<div class="container" style="margin-top:24px">
 
   @if($articles->isEmpty())
     @include('partials.empty', ['icon'=>'📝','text'=>'Nothing published here yet.'])

@@ -1,11 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-  <header style="padding:22px 0 4px">
-    <h1>Recent Price Drops</h1>
-    <p style="color:var(--ink-2)">Products whose prices recently went down at trusted stores — ranked using our own verified price history.</p>
-  </header>
+<div class="premium-hero">
+  <div class="container">
+    <h1 data-reveal>Recent Price Drops</h1>
+    <p data-reveal data-delay="80">Products whose prices recently went down at trusted stores — ranked using our own verified price history.</p>
+    <div class="hero-meta" data-reveal data-delay="160"><span>{{ $drops->total() ?? $drops->count() }} drops</span><span>Live history</span></div>
+  </div>
+</div>
+<div class="container" style="margin-top:24px">
 
   <div class="sort-bar chip-links" style="padding-top:10px">
     <a href="{{ route('drops.index', ['sort'=>'percent']) }}" {{ $sort==='percent' ? 'class=on' : '' }}>Largest % drop</a>

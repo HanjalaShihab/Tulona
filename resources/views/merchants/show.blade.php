@@ -1,19 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-  @include('partials.breadcrumbs', ['items' => [['name'=>'Home','url'=>route('home')],['name'=>$merchant->name]]])
-  <header style="padding-bottom:12px">
-    <h1>Shopping at {{ $merchant->name }}</h1>
-    <p style="color:var(--ink-2);max-width:760px">
-      {{ $merchant->description ?: "Products available at {$merchant->name}, as listed on Tulona. Clicking through takes you to {$merchant->name}'s own website where you complete your purchase." }}
-    </p>
-    <p style="font-size:13px;color:var(--ink-3);margin-top:6px">
-      {{ $productCount }} products · Country: {{ $merchant->country }} · Currencies: {{ implode(', ', $merchant->currencies) }}
-      · Data last synced: {{ $merchant->last_synced_at?->diffForHumans() ?? 'recently (imported data)' }}
-    </p>
-    <p class="note">Tulona is an independent comparison service and is not owned by or affiliated with {{ $merchant->name }} unless explicitly stated.</p>
-  </header>
+<div class="premium-hero">
+  <div class="container">
+    @include('partials.breadcrumbs', ['items' => [['name'=>'Home','url'=>route('home')],['name'=>$merchant->name]]])
+    <h1 data-reveal>Shopping at {{ $merchant->name }}</h1>
+    <p data-reveal data-delay="80">{{ $merchant->description ?: "Products available at {$merchant->name}, as listed on Tulona. Clicking through takes you to {$merchant->name}'s own website where you complete your purchase." }}</p>
+    <div class="hero-meta" data-reveal data-delay="160"><span>{{ $productCount }} products</span><span>{{ $merchant->country }}</span><span>Last synced {{ $merchant->last_synced_at?->diffForHumans() ?? 'recently' }}</span></div>
+    <p class="note" style="color:#64748b; margin-top:10px;">Tulona is independent and not affiliated with {{ $merchant->name }} unless stated.</p>
+  </div>
+</div>
+<div class="container" style="margin-top:24px">
 
   @if($categories->isNotEmpty())
     <div class="chip-links" style="padding-bottom:8px">

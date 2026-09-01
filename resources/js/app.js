@@ -151,6 +151,24 @@
     track.appendChild(clone);
   });
 
+  /* Auto-reveal for premium grids if author missed data-reveal */
+  document.querySelectorAll('.prod-grid, .deal-grid, .guide-grid, .cat-bento').forEach(function (grid) {
+    if (!grid.hasAttribute('data-reveal')) {
+      grid.setAttribute('data-reveal','');
+      // stagger children for premium cascade without extra markup
+      grid.querySelectorAll(':scope > *').forEach(function (child, i) {
+        if (!child.hasAttribute('data-reveal') && i < 8) {
+          child.setAttribute('data-reveal','');
+          child.setAttribute('data-delay', String((i%4)*80));
+        }
+      });
+    }
+  });
+  // PDP and section headers get subtle reveal too
+  document.querySelectorAll('.premium-hero h1, .premium-hero p, .hs-head, .pdp-title, .best-price-box').forEach(function (el) {
+    if (!el.hasAttribute('data-reveal')) el.setAttribute('data-reveal','');
+  });
+
   /* Gentle 3D tilt on hero cards (fine pointers only) */
   if (!reduced && window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
     doc.querySelectorAll('[data-tilt]').forEach(function (card) {

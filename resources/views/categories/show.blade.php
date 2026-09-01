@@ -1,17 +1,27 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-  @include('partials.breadcrumbs', ['items' => [
-    ['name' => 'Home', 'url' => route('home')],
-    ['name' => ($category->parent?->name ?? '').' Category', 'url' => $category->parent ? route('categories.show', $category->parent->slug) : null],
-    ['name' => $category->name],
-  ]])
-
-  <header style="padding-bottom:10px">
-    <h1>{{ $category->name }}</h1>
-    {!! $category->intro_content ? '<p style="color:var(--ink-2);max-width:760px">'.e($category->description).'</p>' : ($category->description ? '<p style="color:var(--ink-2);max-width:760px">'.e($category->description).'</p>' : '') !!}
-  </header>
+<div class="premium-hero">
+  <div class="container">
+    @include('partials.breadcrumbs', ['items' => [
+      ['name' => 'Home', 'url' => route('home')],
+      ['name' => ($category->parent?->name ?? '').' Category', 'url' => $category->parent ? route('categories.show', $category->parent->slug) : null],
+      ['name' => $category->name],
+    ]])
+    <h1 data-reveal>{{ $category->name }}</h1>
+    @if($category->description || $category->intro_content)
+      <p data-reveal data-delay="80">{!! $category->intro_content ? e($category->intro_content) : e($category->description) !!}</p>
+    @else
+      <p data-reveal data-delay="80">Compare {{ mb_strtolower($category->name) }} prices across trusted stores — verified history, no fake discounts.</p>
+    @endif
+    <div class="hero-meta" data-reveal data-delay="160">
+      <span>{{ number_format($products->total()) }} products</span>
+      <span>{{ $brands->count() }} brands</span>
+      <span>Live store pricing</span>
+    </div>
+  </div>
+</div>
+<div class="container" style="margin-top:24px">
 
   @if($subcategories->isNotEmpty())
     <div class="chip-links" style="padding-bottom:8px">
@@ -65,7 +75,7 @@
       @if($products->isEmpty())
         @include('partials.empty', ['icon'=>'🔍','text'=>'No products match these filters yet. Try clearing filters or check back soon.'])
       @else
-        <div class="prod-grid">
+        <div class="prod-grid" data-reveal>
           @foreach($products as $p)@include('partials.product-card', ['product' => $p])@endforeach
         </div>
       @endif
