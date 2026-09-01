@@ -19,15 +19,16 @@
 @endsection
 
 @section('content')
+@php($isGuide = $article->type === 'guide')
 <div class="container">
   @include('partials.breadcrumbs', ['items' => array_values(array_filter([
-    ['name'=>'Home','url'=>route('home')],
-    ['name'=>$article->type === 'guide' ? 'Guides':'Reviews','url'=>$article->type==='guide'?route('guides.index'):route('reviews.index')],
-    ['name'=>$article->title],
+    ['name' => 'Home', 'url' => route('home')],
+    ['name' => $isGuide ? 'Guides' : 'Reviews', 'url' => $isGuide ? route('guides.index') : route('reviews.index')],
+    ['name' => $article->title],
   ]))])
 
   <article class="article-body">
-    <span class="card-brand">{{ $article->type === 'guide' ? 'Buying Guide' : 'Review' }} · Updated {{ optional($article->published_at)->diffForHumans() }} · By {{ $article->author }}</span>
+    <span class="card-brand">{{ $isGuide ? 'Buying Guide' : 'Review' }} &middot; Updated {{ optional($article->published_at)->diffForHumans() }} &middot; By {{ $article->author }}</span>
     <h1 style="margin:8px 0 4px;font-size:clamp(24px,3vw,32px)">{{ $article->title }}</h1>
 
     <div class="alert alert-ok" role="note" style="margin-top:14px">
@@ -36,33 +37,43 @@
 
     @if(!empty($article->selection_criteria))
       <h2>How we picked</h2>
-      <ul>@foreach($article->selection_criteria as $crit)<li>{{ $crit }}</li>@endforeach</ul>
+      <ul>
+        @foreach($article->selection_criteria as $crit)
+          <li>{{ $crit }}</li>
+        @endforeach
+      </ul>
     @endif
 
     <div class="content">{!! $article->content !!}</div>
 
-    {{-- Recommended products with honest blurbs + CTAs --}}
     @if($article->products->isNotEmpty())
       <h2>Our recommendations</h2>
       @foreach($article->products as $p)
         @php($best = $p->activeOffers->whereNotNull('current_price')->sortBy(fn ($o) => (float) $o->current_price)->first())
         <div class="pick-card">
-          <div style="font-size:34px;text-align:center">{{ strtoupper(substr($p->brand->name ?? 'P',0,1)) }}</div>
+          <div style="font-size:34px;text-align:center">{{ strtoupper(substr($p->brand->name ?? 'P', 0, 1)) }}</div>
           <div>
             <strong><a href="{{ route('product.show', $p->slug) }}">{{ $p->name }}</a></strong>
-            @if($p->pivot->pick_label)<span class="badge badge-pick" style="margin-left:6px">{{ $p->pivot->pick_label }}</span>@endif
-            @if($best)<br><small>{{ \App\Support\Currency::format((float)$best->current_price, $best->currency) }} at {{ $best->merchant->name }}</small>@endif
-            @if($p->pivot->blurb)<br><small style="color:var(--ink-2)">{{ $p->pivot->blurb }}</small>@endif
+            @if($p->pivot->pick_label)
+              <span class="badge badge-pick" style="margin-left:6px">{{ $p->pivot->pick_label }}</span>
+            @endif
+            @if($best)
+              <br><small>{{ \App\Support\Currency::format((float)$best->current_price, $best->currency) }} at {{ $best->merchant->name }}</small>
+            @endif
+            @if($p->pivot->blurb)
+              <br><small style="color:var(--ink-2)">{{ $p->pivot->blurb }}</small>
+            @endif
           </div>
           <div>
-            @if($best)<a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>@endif
+            @if($best)
+              <a class="btn btn-primary btn-sm" rel="nofollow sponsored noopener" href="{{ route('go.redirect', [$p->slug, $best->merchant->slug]) }}">View Deal</a>
+            @endif
             <a class="btn btn-outline btn-sm" href="{{ route('product.show', $p->slug) }}">Details</a>
           </div>
         </div>
       @endforeach
     @endif
 
-    {{-- FAQ --}}
     @if($article->faqs)
       <h2>Frequently asked questions</h2>
       @foreach($article->faqs as $faq)
@@ -71,14 +82,16 @@
       @endforeach
     @endif
 
-    <p style="margin-top:26px"><a href="{{ url('/affiliate-disclosure') }}">How affiliate links work →</a></p>
+    <p style="margin-top:26px"><a href="{{ url('/affiliate-disclosure') }}">How affiliate links work <span aria-hidden="true">&#8594;</span></a></p>
   </article>
 
   @if($related->isNotEmpty())
     <section class="section" style="padding-bottom:40px;max-width:800px">
       <div class="sec-head"><h2>Related reading</h2></div>
       <ul style="line-height:2;padding-left:18px">
-        @foreach($related as $r)<li><a href="{{ route('articles.show', $r->slug) }}">{{ $r->title }}</a></li>@endforeach
+        @foreach($related as $r)
+          <li><a href="{{ route('articles.show', $r->slug) }}">{{ $r->title }}</a></li>
+        @endforeach
       </ul>
     </section>
   @endif
