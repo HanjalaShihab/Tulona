@@ -72,10 +72,10 @@ class PublicPagesTest extends TestCase
     {
         $this->seedSite();
 
+        // Global product-vs-product comparison removed — keep Store Compare on PDP instead.
         $this->get('/compare?products=nvidia-rtx-5070,galaxy-s26-ultra')
-            ->assertOk()
-            ->assertSee('Best price')
-            ->assertSee('View Deal');
+            ->assertNotFound();
+        $this->get('/product/nvidia-rtx-5070')->assertSee('Compare Stores');
     }
 
     public function test_deals_price_drops_guides_merchants_sitemap(): void

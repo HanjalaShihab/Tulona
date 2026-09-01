@@ -6,7 +6,6 @@ use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\ComparisonController;
 use App\Http\Controllers\Admin\CsvDraftController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ImportController;
@@ -96,16 +95,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::put('settings/homepage', [SettingController::class, 'updateHomepage'])->name('settings.homepage');
     });
 
-    // Comparisons (§29–§37)
-    Route::middleware('can:manage-content')->group(function () {
-        Route::resource('comparisons', ComparisonController::class)->except('show');
-        Route::post('comparisons/{comparison}/add-offer', [ComparisonController::class, 'addOffer'])->name('comparisons.add-offer');
-        Route::put('comparisons/{comparison}/sync-products', [ComparisonController::class, 'syncProducts'])->name('comparisons.sync-products');
-        Route::put('comparisons/{comparison}/sync-offer-overrides', [ComparisonController::class, 'syncOfferOverrides'])->name('comparisons.sync-offer-overrides');
-        Route::post('comparisons/{comparison}/scrape', [ComparisonController::class, 'scrape'])->name('comparisons.scrape');
-        Route::post('comparisons/{comparison}/attach-common', [ComparisonController::class, 'attachCommon'])->name('comparisons.attach-common');
-    });
-
     // Imports (§16: upload, URL scrape, preview confirm, cancel) — analyst
     // accounts are read-only and must not view raw scraped import data.
     Route::middleware('can:run-imports')->group(function () {
@@ -132,7 +121,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
             Route::get('products', [AnalyticsController::class, 'products'])->name('products');
             Route::get('clicks', [AnalyticsController::class, 'clicks'])->name('clicks');
             Route::get('search', [AnalyticsController::class, 'search'])->name('search');
-            Route::get('comparisons', [AnalyticsController::class, 'comparisons'])->name('comparisons');
             Route::get('categories', [AnalyticsController::class, 'categories'])->name('categories');
             Route::get('sources', [AnalyticsController::class, 'sources'])->name('sources');
             Route::get('devices', [AnalyticsController::class, 'devices'])->name('devices');

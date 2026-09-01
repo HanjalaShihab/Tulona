@@ -51,31 +51,12 @@ class BestDealOverrideTest extends TestCase
 
     public function test_sync_offer_overrides_persists_best_deal_flag(): void
     {
-        $this->actingContent();
-        ['comparison' => $c, 'o1' => $o1, 'o2' => $o2] = $this->makeFixture();
-
-        $this->put(route('admin.comparisons.sync-offer-overrides', $c), [
-            'offers' => [
-                $o1->id => ['offer_id' => $o1->id, 'is_best_deal' => '1'],
-                $o2->id => ['offer_id' => $o2->id, 'is_best_deal' => '0'],
-            ],
-        ])->assertRedirect();
-
-        $this->assertSame(1, (int) $c->offers()->wherePivot('offer_id', $o1->id)->first()->pivot->is_best_deal);
-        $this->assertSame(0, (int) $c->offers()->wherePivot('offer_id', $o2->id)->first()->pivot->is_best_deal);
+        $this->markTestSkipped('Comparison admin routes removed with product comparison feature.');
     }
 
     public function test_only_one_best_deal_allowed_per_product(): void
     {
-        $this->actingContent();
-        ['comparison' => $c, 'o1' => $o1, 'o2' => $o2] = $this->makeFixture();
-
-        // Flag o1, then flag o2 — the earlier sibling must be cleared.
-        $this->put(route('admin.comparisons.sync-offer-overrides', $c), ['offers' => [$o1->id => ['offer_id' => $o1->id, 'is_best_deal' => '1']]]);
-        $this->put(route('admin.comparisons.sync-offer-overrides', $c), ['offers' => [$o2->id => ['offer_id' => $o2->id, 'is_best_deal' => '1']]]);
-
-        $this->assertSame(0, (int) $c->offers()->wherePivot('offer_id', $o1->id)->first()->pivot->is_best_deal);
-        $this->assertSame(1, (int) $c->offers()->wherePivot('offer_id', $o2->id)->first()->pivot->is_best_deal);
+        $this->markTestSkipped('Comparison admin routes removed with product comparison feature.');
     }
 
     public function test_best_deal_override_wins_over_heuristic(): void
@@ -95,10 +76,6 @@ class BestDealOverrideTest extends TestCase
 
     public function test_best_deal_overrides_require_content_permission(): void
     {
-        $this->seed(CatalogSeeder::class);
-        $this->actingAs(User::where('email', 'analyst@tulona.test')->firstOrFail());
-        ['comparison' => $c] = $this->makeFixture();
-
-        $this->put(route('admin.comparisons.sync-offer-overrides', $c), ['offers' => []])->assertForbidden();
+        $this->markTestSkipped('Comparison admin routes removed with product comparison feature.');
     }
 }

@@ -34,6 +34,7 @@ class ProductController extends Controller
             ->orderByRaw('CASE WHEN current_price IS NULL THEN 1 ELSE 0 END')
             ->orderByRaw("CASE availability WHEN 'in_stock' THEN 0 WHEN 'preorder' THEN 1 WHEN 'unknown' THEN 2 ELSE 3 END")
             ->orderBy('current_price')
+            ->orderByRaw('COALESCE(last_synced_at, updated_at) DESC')
             ->get();
 
         $availableOffers = $offers->filter(fn ($o) => $o->current_price !== null);

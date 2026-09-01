@@ -22,7 +22,6 @@
             <a href="{{ route('admin.analytics.products') }}" class="{{ request()->routeIs('admin.analytics.products') ? 'active' : '' }}">Products</a>
             <a href="{{ route('admin.analytics.clicks') }}" class="{{ request()->routeIs('admin.analytics.clicks') ? 'active' : '' }}">Affiliate Clicks</a>
             <a href="{{ route('admin.analytics.search') }}" class="{{ request()->routeIs('admin.analytics.search') ? 'active' : '' }}">Search</a>
-            <a href="{{ route('admin.analytics.comparisons') }}" class="{{ request()->routeIs('admin.analytics.comparisons') ? 'active' : '' }}">Comparisons</a>
             <a href="{{ route('admin.analytics.categories') }}" class="{{ request()->routeIs('admin.analytics.categories') ? 'active' : '' }}">Categories</a>
             <a href="{{ route('admin.analytics.sources') }}" class="{{ request()->routeIs('admin.analytics.sources') ? 'active' : '' }}">Traffic Sources</a>
             <a href="{{ route('admin.analytics.devices') }}" class="{{ request()->routeIs('admin.analytics.devices') ? 'active' : '' }}">Devices</a>
@@ -45,7 +44,6 @@
 
     <div class="nav-group-title">Content</div>
     <a href="{{ route('admin.articles.index') }}" class="{{ request()->routeIs('admin.articles.*') ? 'active' : '' }}"><span class="side-ico">✎</span><span>Articles</span></a>
-    <a href="{{ route('admin.comparisons.index') }}" class="{{ request()->routeIs('admin.comparisons.*') ? 'active' : '' }}"><span class="side-ico">⚖</span><span>Comparisons</span></a>
     <a href="{{ route('admin.landing-pages.index') }}" class="{{ request()->routeIs('admin.landing-pages.*') ? 'active' : '' }}"><span class="side-ico">▤</span><span>Landing Pages</span></a>
 
     @can('manage-users')

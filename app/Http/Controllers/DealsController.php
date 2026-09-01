@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Comparison;
 use App\Models\Merchant;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,21 +23,8 @@ class DealsController extends Controller
             'products' => $query->paginate(24)->withQueryString(),
             'merchants' => Merchant::where('status', 'active')->orderBy('name')->get(),
             'activeMerchant' => $request->query('merchant'),
-            'comparisons' => $this->comparisons($request->query('merchant')),
             'seo' => ['title' => "Today's Best Deals & Discounts — Tulona", 'description' => 'Real, verified discounts and price drops across trusted stores. No fake urgency — just data.'],
         ]);
-    }
-
-    /** Published comparisons, optionally matching the active merchant store. */
-    protected function comparisons(?string $merchantSlug)
-    {
-        $query = Comparison::published()->withCount('products')->latest('updated_at')->limit(4);
-
-        if ($merchantSlug) {
-            $query->whereHas('offers.merchant', fn ($m) => $m->where('slug', $merchantSlug));
-        }
-
-        return $query->get();
     }
 
     public static function dealQuery(): Builder

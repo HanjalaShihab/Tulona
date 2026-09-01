@@ -173,19 +173,8 @@ class AnalyticsTest extends TestCase
 
     public function test_comparisons_page_counts_clicks_from_comparison_urls(): void
     {
-        $this->actingAnalyst();
-        $f = $this->fixture();
-        $comparison = Comparison::create([
-            'title' => 'Best Gaming Mouse Under ৳3,000',
-            'slug' => 'best-gaming-mouse-under-3000',
-            'status' => 'published', 'published_at' => now(),
-        ]);
-        $this->click($f['product'], $f['merchant'], $f['offer'], ['referrer_page' => '/'.$comparison->slug]);
-
-        $this->get(route('admin.analytics.comparisons'))
-            ->assertOk()
-            ->assertSee('Best Gaming Mouse Under ৳3,000')
-            ->assertSee('Clicks from comparison pages');
+        // Global comparison analytics removed with product comparison feature — skip.
+        $this->markTestSkipped('Comparison analytics route removed with product comparison feature.');
     }
 
     public function test_categories_page_groups_clicks_by_category(): void

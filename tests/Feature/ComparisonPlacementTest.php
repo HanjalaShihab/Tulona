@@ -39,41 +39,21 @@ class ComparisonPlacementTest extends TestCase
 
     public function test_featured_comparison_appears_on_homepage(): void
     {
-        $this->seed(CatalogSeeder::class);
-        $this->comparison(featured: true);
-
-        $this->get('/')
-            ->assertOk()
-            ->assertSee('Shop Smarter: Comparisons')
-            ->assertSee('Best Gaming Mice');
+        $this->markTestSkipped('Global comparison (Shop Smarter) removed — Store Compare on PDP remains.');
     }
 
     public function test_non_featured_comparison_is_hidden_from_homepage(): void
     {
-        $this->seed(CatalogSeeder::class);
-        $this->comparison(featured: false);
-
-        $this->get('/')
-            ->assertOk()
-            ->assertDontSee('Best Gaming Mice');
+        $this->markTestSkipped('Global comparison removed.');
     }
 
     public function test_relevant_comparison_appears_on_category_page(): void
     {
-        $this->seed(CatalogSeeder::class);
-        $this->comparison();
-
-        $this->get('/category/gaming')
-            ->assertOk()
-            ->assertSee('Gaming comparisons')
-            ->assertSee('Best Gaming Mice');
+        $this->markTestSkipped('Category comparison round-ups removed with product comparison feature.');
     }
 
     public function test_comparison_is_publicly_visible(): void
     {
-        $this->seed(CatalogSeeder::class);
-        $this->comparison();
-
-        $this->get('/best-gaming-mice')->assertOk()->assertSee('Best Gaming Mice');
+        $this->markTestSkipped('Published comparison public route removed (replaced by product Store Compare).');
     }
 }

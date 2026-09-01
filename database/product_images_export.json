@@ -1,0 +1,502 @@
+[
+  {
+    "id": 13,
+    "product_id": 13,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/img141201_1336.gif",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 13:51:34",
+    "updated_at": "2026-08-29 13:51:34"
+  },
+  {
+    "id": 14,
+    "product_id": 14,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/d774abe23_206592.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 13:57:42",
+    "updated_at": "2026-08-29 13:57:42"
+  },
+  {
+    "id": 15,
+    "product_id": 15,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/e19fc387a_212325.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 13:58:05",
+    "updated_at": "2026-08-29 13:58:05"
+  },
+  {
+    "id": 16,
+    "product_id": 16,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Englishe_durbolder_jonno_English_Therapy-Saiful_Islam-4695a-215765.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 13:58:25",
+    "updated_at": "2026-08-29 13:58:25"
+  },
+  {
+    "id": 17,
+    "product_id": 17,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Sohoj_Bhashay_English_Grammar-Saiful_Islam-4299a-223842.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 13:58:46",
+    "updated_at": "2026-08-29 13:58:46"
+  },
+  {
+    "id": 18,
+    "product_id": 18,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Englishe_durbolder_jonno_VOCAB_Therapy-Saiful_Islam-babe5-241679.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 13:59:04",
+    "updated_at": "2026-08-29 13:59:04"
+  },
+  {
+    "id": 19,
+    "product_id": 19,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/36dd62638_968.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 14:01:44",
+    "updated_at": "2026-08-29 14:01:44"
+  },
+  {
+    "id": 20,
+    "product_id": 20,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Think_and_Grow_Rich-Napoleon_Hill-760ae-90991.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 14:02:06",
+    "updated_at": "2026-08-29 14:02:06"
+  },
+  {
+    "id": 22,
+    "product_id": 21,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/54f8bd471_177053.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 14:06:37",
+    "updated_at": "2026-08-29 14:06:37"
+  },
+  {
+    "id": 23,
+    "product_id": 22,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/7a06e8a86_205949.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 14:09:09",
+    "updated_at": "2026-08-29 14:09:09"
+  },
+  {
+    "id": 24,
+    "product_id": 23,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/ef11c6ea1_213376.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 14:10:56",
+    "updated_at": "2026-08-29 14:10:56"
+  },
+  {
+    "id": 25,
+    "product_id": 24,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/1b3707c61_62834.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 14:12:43",
+    "updated_at": "2026-08-29 14:12:43"
+  },
+  {
+    "id": 26,
+    "product_id": 25,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/40113bde4_75367.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 14:13:36",
+    "updated_at": "2026-08-29 14:13:36"
+  },
+  {
+    "id": 27,
+    "product_id": 26,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/29d08893a_188064.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 14:13:57",
+    "updated_at": "2026-08-29 14:13:57"
+  },
+  {
+    "id": 28,
+    "product_id": 27,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/A4_Tech_Head_Phone_HS_19_1_Headset_Grey-A4Tech-e7275-98723.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:38:11",
+    "updated_at": "2026-08-29 15:38:11"
+  },
+  {
+    "id": 29,
+    "product_id": 28,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/A4_Tech_Head_Phone_HS_30_Headset-A4Tech-a33cd-98725.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:39:23",
+    "updated_at": "2026-08-29 15:39:23"
+  },
+  {
+    "id": 30,
+    "product_id": 29,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/c4915e23d_195203.JPG",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:39:47",
+    "updated_at": "2026-08-29 15:39:47"
+  },
+  {
+    "id": 31,
+    "product_id": 30,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/OnePlus_Bullets_35mm_Jack_V2_Earphones_B-OnePlus-dc827-222046.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:45:03",
+    "updated_at": "2026-08-29 15:45:03"
+  },
+  {
+    "id": 32,
+    "product_id": 31,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/OnePlus_Nord_Wired_Earphones_Black-OnePlus-39375-265555.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:46:43",
+    "updated_at": "2026-08-29 15:46:43"
+  },
+  {
+    "id": 33,
+    "product_id": 32,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Xiaomi_Capsule_In_ear_Headphones_Space_G-Xiaomi-23605-265558.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:47:13",
+    "updated_at": "2026-08-29 15:47:13"
+  },
+  {
+    "id": 34,
+    "product_id": 33,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/OnePlus_Bullets_Wireless_Z2_In_Ear_Headp-OnePlus-c059e-274115.png",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:47:37",
+    "updated_at": "2026-08-29 15:47:37"
+  },
+  {
+    "id": 35,
+    "product_id": 34,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Motorola_Pace_Ace_145_Ear_Earphone_Pink-Motorola-fffdb-299854.png",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:48:05",
+    "updated_at": "2026-08-29 15:48:05"
+  },
+  {
+    "id": 36,
+    "product_id": 35,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Imilab_imiki_T12_TWS_Bluetooth_Earphone_-Imilab-124f3-310838.png",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:48:30",
+    "updated_at": "2026-08-29 15:48:30"
+  },
+  {
+    "id": 37,
+    "product_id": 36,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Fantech_Chief_II_HG20_Sakura_Edition_RGB-Fantech-d711a-363084.png",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:48:56",
+    "updated_at": "2026-08-29 15:48:56"
+  },
+  {
+    "id": 38,
+    "product_id": 37,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Anker_Soundcore_R50i_TWS_Earbuds-Anker-28967-453522.png",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:49:25",
+    "updated_at": "2026-08-29 15:49:25"
+  },
+  {
+    "id": 39,
+    "product_id": 38,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/b1d6f6795_47576.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:55:58",
+    "updated_at": "2026-08-29 15:55:58"
+  },
+  {
+    "id": 40,
+    "product_id": 39,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/5a0fee93c_49685.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:56:46",
+    "updated_at": "2026-08-29 15:56:46"
+  },
+  {
+    "id": 41,
+    "product_id": 40,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/00ea58560_112222.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 15:57:54",
+    "updated_at": "2026-08-29 15:57:54"
+  },
+  {
+    "id": 42,
+    "product_id": 41,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/5c551ac8c_117663.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:01:33",
+    "updated_at": "2026-08-29 16:01:33"
+  },
+  {
+    "id": 43,
+    "product_id": 42,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Python_Diye_Programing_Shekha_-Tamim_Shahriar_Subeen-bf042-143309.png",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:02:29",
+    "updated_at": "2026-08-29 16:02:29"
+  },
+  {
+    "id": 44,
+    "product_id": 43,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/f0836d0b7_158227.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:02:53",
+    "updated_at": "2026-08-29 16:02:53"
+  },
+  {
+    "id": 45,
+    "product_id": 44,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/8fdd75770_194484.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:03:27",
+    "updated_at": "2026-08-29 16:03:27"
+  },
+  {
+    "id": 46,
+    "product_id": 45,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Hate_Kolome_Javascript_-Junaid_Ahmed-f6980-202772.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:03:49",
+    "updated_at": "2026-08-29 16:03:49"
+  },
+  {
+    "id": 47,
+    "product_id": 46,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/59cd484aa_211527.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:04:44",
+    "updated_at": "2026-08-29 16:04:44"
+  },
+  {
+    "id": 48,
+    "product_id": 47,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/ea2a86399_213517.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:05:20",
+    "updated_at": "2026-08-29 16:05:20"
+  },
+  {
+    "id": 49,
+    "product_id": 48,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/5fe850629_216666.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:05:38",
+    "updated_at": "2026-08-29 16:05:38"
+  },
+  {
+    "id": 50,
+    "product_id": 49,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Sohoj_Banglay_R_Programming_Part_2-Dr_Munshi_Naser_Ibne_Afjal-445af-218980.PNG",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:06:02",
+    "updated_at": "2026-08-29 16:06:02"
+  },
+  {
+    "id": 51,
+    "product_id": 50,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Search_Engine_Optimization-Mahbubur_Rahman_ICT-bc9bc-220116.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:06:20",
+    "updated_at": "2026-08-29 16:06:20"
+  },
+  {
+    "id": 52,
+    "product_id": 51,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Programming_Contest_Somossa_o_Somadhan-Md_Mahbubul_Hasan-52b29-224503.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:07:05",
+    "updated_at": "2026-08-29 16:07:05"
+  },
+  {
+    "id": 53,
+    "product_id": 52,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Python_Diye_Programming_Shekha_4th_Part-Tamim_Shahriar_Subeen-b1b52-224822.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:07:34",
+    "updated_at": "2026-08-29 16:07:34"
+  },
+  {
+    "id": 54,
+    "product_id": 53,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Online_Nirapottai_Cyber_Security-Dr_Lipon_Mustafiz_Syed_Sultan-d6a24-225343.jpeg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:07:59",
+    "updated_at": "2026-08-29 16:07:59"
+  },
+  {
+    "id": 55,
+    "product_id": 54,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Python_Programming_310-Zakir_Hossain-0ad51-226630.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:08:46",
+    "updated_at": "2026-08-29 16:08:46"
+  },
+  {
+    "id": 56,
+    "product_id": 55,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Sohoj_Bhashay_Algorithm-Ihsanul_Islam-ab6e3-227461.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:09:17",
+    "updated_at": "2026-08-29 16:09:17"
+  },
+  {
+    "id": 57,
+    "product_id": 56,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Cyber_Hacking_and_Intelligence-Arif_Mainuddin-f98d0-227568.jpeg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:09:46",
+    "updated_at": "2026-08-29 16:09:46"
+  },
+  {
+    "id": 58,
+    "product_id": 57,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Programming_er_Addotanta-H_M_Nayem-586bc-228332.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:10:13",
+    "updated_at": "2026-08-29 16:10:13"
+  },
+  {
+    "id": 59,
+    "product_id": 58,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Babuder_Jonno_Programming-Prapti_Rahman-5c520-230151.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:10:48",
+    "updated_at": "2026-08-29 16:10:48"
+  },
+  {
+    "id": 60,
+    "product_id": 59,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Smart_Facebook_Marketing-S_M_Aqib_Murshed-2c40a-278081.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:11:09",
+    "updated_at": "2026-08-29 16:11:09"
+  },
+  {
+    "id": 61,
+    "product_id": 60,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Programming_for_Beginner-Ehsanul_Islam-c4b95-281289.png",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:12:16",
+    "updated_at": "2026-08-29 16:12:16"
+  },
+  {
+    "id": 62,
+    "product_id": 61,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Professional_Industrial_Automation-Azadur_Rahman_Azad_-f5b5a-288278.png",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:12:55",
+    "updated_at": "2026-08-29 16:12:55"
+  },
+  {
+    "id": 63,
+    "product_id": 62,
+    "path": "https://rokbucket.rokomari.io/ProductNew20190903/260X372/Python_Programming_in_practice-Dr_Munshi_Naser_Ibne_Afjal-7a93d-306564.jpg",
+    "alt_text": null,
+    "is_main": 1,
+    "sort_order": 1,
+    "created_at": "2026-08-29 16:13:16",
+    "updated_at": "2026-08-29 16:13:16"
+  }
+]

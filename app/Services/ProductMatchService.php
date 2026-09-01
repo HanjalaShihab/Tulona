@@ -27,10 +27,11 @@ class ProductMatchService
             return null;
         }
 
-        $pool = Product::query()
-            ->where('status', 'published')
-            ->whereKeyNot($candidate->id)
-            ->get(['id', 'name', 'brand_id', 'category_id', 'model_number', 'gtin']);
+        $q = Product::query()->where('status', 'published');
+        if ($candidate->id) {
+            $q->whereKeyNot($candidate->id);
+        }
+        $pool = $q->get(['id', 'name', 'brand_id', 'category_id', 'model_number', 'gtin']);
 
         if ($pool->isEmpty()) {
             return null;

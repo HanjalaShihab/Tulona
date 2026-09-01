@@ -6,7 +6,7 @@
         ['admin.analytics.products', 'Products'],
         ['admin.analytics.clicks', 'Affiliate Clicks'],
         ['admin.analytics.search', 'Search'],
-        ['admin.analytics.comparisons', 'Comparisons'],
+
         ['admin.analytics.categories', 'Categories'],
         ['admin.analytics.sources', 'Traffic Sources'],
         ['admin.analytics.devices', 'Devices'],

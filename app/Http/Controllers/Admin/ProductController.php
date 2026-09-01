@@ -133,13 +133,20 @@ class ProductController extends Controller
             'pros' => 'nullable|array', 'cons' => 'nullable|array',
             'rating' => 'nullable|numeric|min:0|max:5',
             'pricing_model' => 'nullable|in:,free,freemium,subscription,one_time',
-            'has_free_plan' => 'boolean',
-            'is_featured' => 'boolean', 'is_trending' => 'boolean', 'is_top_selling' => 'boolean', 'is_editors_pick' => 'boolean',
-            'is_best_value' => 'boolean', 'is_budget_pick' => 'boolean', 'is_premium_pick' => 'boolean',
+            'has_free_plan' => 'nullable|boolean',
+            'is_featured' => 'nullable|boolean', 'is_trending' => 'nullable|boolean', 'is_top_selling' => 'nullable|boolean', 'is_editors_pick' => 'nullable|boolean',
+            'is_best_value' => 'nullable|boolean', 'is_budget_pick' => 'nullable|boolean', 'is_premium_pick' => 'nullable|boolean',
             'status' => 'nullable|in:draft,pending_review,published,archived',
         ];
 
-        return $request->validate($rules);
+        $data = $request->validate($rules);
+
+        // Unchecked checkboxes are absent from request — coerce to false so update clears them.
+        foreach (['has_free_plan','is_featured','is_trending','is_top_selling','is_editors_pick','is_best_value','is_budget_pick','is_premium_pick'] as $flag) {
+            $data[$flag] = $request->boolean($flag);
+        }
+
+        return $data;
     }
 
     // ── Offers ──────────────────────────────────────────────────────────────
@@ -339,7 +346,7 @@ class ProductController extends Controller
     /** Bulk catalogue actions (§48): publish / unpublish / archive / delete / category. */
     public function bulkAction(Request $request): RedirectResponse
     {
-        if (! $request->method() === 'POST') {
+        if ($request->method() !== 'POST') {
             abort(405);
         }
 

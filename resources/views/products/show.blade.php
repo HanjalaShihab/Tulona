@@ -22,7 +22,6 @@
       @else
         <div class="main-img">{{ strtoupper(substr($product->brand->name ?? 'T',0,1)) }}</div>
       @endif
-      <p style="margin-top:12px"><a class="btn btn-outline btn-sm" href="#" onclick="return tulonaAddCompare('{{ $product->slug }}')">＋ Add to compare</a></p>
     </div>
 
     <div>
@@ -156,17 +155,4 @@
   </section>
 </div>
 
-@endsection
-
-@section('scripts')
-<script>
-function tulonaAddCompare(slug){
-  var cur = JSON.parse(localStorage.getItem('tulona_compare') || '[]');
-  if(!cur.includes(slug)) cur.push(slug);
-  cur = cur.slice(-4);
-  localStorage.setItem('tulona_compare', JSON.stringify(cur));
-  window.location = '/compare?products=' + encodeURIComponent(cur.join(','));
-  return false;
-}
-</script>
 @endsection

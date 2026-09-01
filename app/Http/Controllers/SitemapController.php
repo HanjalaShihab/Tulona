@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use App\Models\Brand;
 use App\Models\Category;
-use App\Models\Comparison;
 use App\Models\LandingPage;
 use App\Models\Merchant;
 use App\Models\Product;
@@ -43,8 +42,6 @@ class SitemapController extends Controller
             ->each(fn ($p) => $e->push(['url' => route('product.show', $p->slug), 'lastmod' => $p->updated_at]));
         Article::published()->get()
             ->each(fn ($a) => $e->push(['url' => route('articles.show', $a->slug), 'lastmod' => $a->published_at ?? $a->updated_at]));
-        Comparison::published()->get()
-            ->each(fn ($c) => $e->push(['url' => route('comparisons.show', $c->slug), 'lastmod' => $c->updated_at ?? null]));
         LandingPage::published()->get()
             ->each(fn ($l) => $e->push(['url' => route('landing-pages.show', $l->slug), 'lastmod' => $l->published_at ?? null]));
 

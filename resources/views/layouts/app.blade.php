@@ -33,13 +33,9 @@
     <nav class="main-nav" aria-label="Main">
       <a href="{{ route('deals.index') }}">Deals</a>
       <a href="{{ route('drops.index') }}">Price Drops</a>
-      <a href="{{ route('compare.index') }}">Compare</a>
       <a href="{{ route('guides.index') }}">Guides</a>
       <a href="{{ route('reviews.index') }}">Reviews</a>
     </nav>
-    <div class="nav-cta">
-      <a class="btn btn-outline btn-sm" href="{{ route('compare.index') }}">Compare</a>
-    </div>
   </div>
   <div class="header-tools">
     <div class="cat-menu has-menu">
@@ -80,7 +76,6 @@
         <a href="{{ route('deals.index') }}">Deals</a>
         <a href="{{ route('drops.index') }}">Price Drops</a>
         <a href="{{ route('guides.index') }}">Buying Guides</a>
-        <a href="{{ route('compare.index') }}">Compare Products</a>
       </div>
       <div>
         <h4>Stores</h4>

@@ -154,12 +154,5 @@ class ApiController extends Controller
         return response()->json($this->search->search((string) $request->query('q', '')));
     }
 
-    public function compare(Request $request): JsonResponse
-    {
-        $slugs = collect(explode(',', (string) $request->query('products', '')))->take(4);
 
-        return response()->json(Product::whereIn('slug', $slugs)->where('status', 'published')
-            ->with(['brand:id,name', 'category:id,name', 'activeOffers.merchant:id,name'])
-            ->get());
-    }
 }
