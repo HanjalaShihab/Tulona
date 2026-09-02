@@ -8,6 +8,7 @@ use App\Models\Merchant;
 use App\Models\PriceDropEvent;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class HomeController extends Controller
@@ -40,16 +41,25 @@ class HomeController extends Controller
 
     protected function bestDeals()
     {
+        $aggregated = DB::table('offers')
+            ->select([
+                'product_id',
+                DB::raw('MIN(current_price) as best_price'),
+                DB::raw('MAX(original_price) as max_original'),
+                DB::raw('COUNT(DISTINCT id) as offer_count'),
+            ])
+            ->where('status', 'active')
+            ->whereNotNull('current_price')
+            ->groupBy('product_id')
+            ->havingRaw('MAX(original_price) IS NOT NULL AND MAX(original_price) > MIN(current_price) * 1.05'); // genuine ≥5% discount only
+
         return Product::query()
             ->where('products.status', 'published')
-            ->join('offers', function ($j) {
-                $j->on('offers.product_id', '=', 'products.id')
-                    ->where('offers.status', 'active')->whereNotNull('offers.current_price');
+            ->joinSub($aggregated, 'agg', function ($join) {
+                $join->on('agg.product_id', '=', 'products.id');
             })
-            ->groupBy('products.id')
-            ->selectRaw('products.*, MIN(offers.current_price) as best_price, MAX(offers.original_price) as max_original, COUNT(DISTINCT offers.id) as offer_count')
-            ->havingRaw('max_original IS NOT NULL AND max_original > best_price * 1.05') // genuine ≥5% discount only
-            ->orderByRaw('(max_original - best_price) / max_original DESC')
+            ->select('products.*', 'agg.best_price', 'agg.max_original', 'agg.offer_count')
+            ->orderByRaw('(agg.max_original - agg.best_price) / agg.max_original DESC')
             ->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])
             ->limit(8)
             ->get();

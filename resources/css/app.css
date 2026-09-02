@@ -1081,8 +1081,8 @@ h4,.h4{font-size:1.05rem;font-weight:600;line-height:1.3}
 .deals-index-grid .tcard-name{font-size:1.12rem}
 .deals-index-grid .tcard-price{gap:10px;padding-top:12px}
 .deals-index-grid .tcard-now{font-size:1.45rem;letter-spacing:-.01em}
-.deals-index-grid .tcard-cta{width:100%;justify-content:center;background:transparent;color:var(--color-ink);border:1px solid var(--color-ink);border-radius:999px;margin-top:16px;padding:11px 16px}
-.deals-index-grid .tcard-cta:hover,.deals-index-grid .tcard:hover .tcard-cta{background:var(--color-brand);border-color:var(--color-brand);color:#fff}
+.deals-index-grid .tcard-cta{width:100%;justify-content:center;background:#5eb98d;color:#fff;border:1px solid #5eb98d;border-radius:999px;margin-top:16px;padding:11px 16px}
+.deals-index-grid .tcard-cta:hover,.deals-index-grid .tcard:hover .tcard-cta{background:#4fae85;border-color:#4fae85;color:#fff}
 @media (max-width:640px){.deals-index-grid{gap:14px}.deals-index-grid .tcard{border-radius:12px}.deals-index-grid .tcard-body{padding:16px}.deals-index-grid .tcard-img{padding:14px}.deals-index-grid .tcard-name{font-size:1rem}.deals-index-grid .tcard-now{font-size:1.25rem}.deals-index-grid .tcard-cta{padding:10px 14px;font-size:.7rem}}
 
 /* ─ Listing pages — minimal plum pcards ─────────── */

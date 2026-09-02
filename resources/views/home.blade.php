@@ -222,7 +222,7 @@
 
             <div class="tcard-actions">
               @if($cOffer?->merchant)
-                <a class="tcard-cta tcard-cta--deal view-deal-btn" href="{{ route('go.redirect', [$p->slug, $cOffer->merchant->slug]) }}" target="_blank" rel="nofollow sponsored noopener">View deal</a>
+                <a class="tcard-cta tcard-cta--deal" href="{{ route('go.redirect', [$p->slug, $cOffer->merchant->slug]) }}" target="_blank" rel="nofollow sponsored noopener">View deal</a>
               @endif
             </div>
           </div>
@@ -259,9 +259,7 @@
       </div>
     </div>
 
-    <div class="deals-rule" aria-hidden="true">
-      <span class="dr-diamond"></span>
-    </div>
+    <div class="deals-rule" aria-hidden="true"><span class="dr-diamond"></span></div>
 
     <div class="deals-grid" data-reveal>
       @foreach($deals as $p)
@@ -309,9 +307,9 @@
             @endif
           </div>
           @if($dGoSlug)
-            <a class="dt-cta view-deal-btn" href="{{ route('go.redirect', [$p->slug, $dGoSlug]) }}" target="_blank" rel="nofollow sponsored noopener"><span>View deal</span><span class="dt-cta-arrow" aria-hidden="true">&#8594;</span></a>
+            <a class="dt-cta" href="{{ route('go.redirect', [$p->slug, $dGoSlug]) }}" target="_blank" rel="nofollow sponsored noopener"><span>View deal</span><span class="dt-cta-arrow" aria-hidden="true">&#8594;</span></a>
           @else
-            <a class="dt-cta view-deal-btn" href="{{ route('product.show', $p->slug) }}"><span>View deal</span><span class="dt-cta-arrow" aria-hidden="true">&#8594;</span></a>
+            <a class="dt-cta" href="{{ route('product.show', $p->slug) }}"><span>View deal</span><span class="dt-cta-arrow" aria-hidden="true">&#8594;</span></a>
           @endif
         </article>
       @endforeach

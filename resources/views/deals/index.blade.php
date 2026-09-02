@@ -37,6 +37,7 @@
           $dCurrent = $dOffer ? (float) $dOffer->current_price : (float) ($p->best_price ?? 0);
           $dOriginal = $dOffer ? (float) $dOffer->original_price : (float) ($p->max_original ?? 0);
           $dStores = $p->offers_count ?? ($p->active_offers_count ?? $p->activeOffers->count());
+          $dMerchantSlug = $dOffer?->merchant?->slug;
         @endphp
         <article class="tcard" data-reveal data-delay="{{ ($loop->index % 4) * 50 }}">
           <a class="tcard-img" href="{{ route('product.show', $p->slug) }}" aria-hidden="true" tabindex="-1">
@@ -54,25 +55,25 @@
               <span class="tcard-brand">{{ $p->brand->name ?? 'Tulona' }}</span>
               <span class="tcard-stores">From {{ $dStores }} {{ $dStores == 1 ? 'store' : 'stores' }}</span>
             </div>
-            <h3 class="tcard-name truncated" style="font-size:0.875rem; line-height:1.25;">
-              <a href="{{ route('product.show', $p->slug) }}">{{ $p->name }}</a>
-            </h3>
+            <a class="tcard-name" href="{{ route('product.show', $p->slug) }}">{{ $p->name }}</a>
 
             <div class="tcard-price">
               @if($dCurrent > 0)
-                <div class="price-row">
-                  <span class="tcard-now price-current">{{ \App\Support\Currency::format($dCurrent, $dOffer->currency ?? 'BDT') }}</span>
-                  @if($dOriginal > $dCurrent)
-                    <span class="tcard-old price-original">{{ \App\Support\Currency::format($dOriginal, $dOffer->currency ?? 'BDT') }}</span>
-                    <span class="tcard-save">Save {{ \App\Support\Currency::format((float) $dOriginal - (float) $dCurrent, $dOffer->currency ?? 'BDT') }}</span>
-                  @endif
-                </div>
+                <span class="tcard-now">{{ \App\Support\Currency::format($dCurrent, $dOffer->currency ?? 'BDT') }}</span>
+                @if($dOriginal > $dCurrent)
+                  <span class="tcard-old">{{ \App\Support\Currency::format($dOriginal, $dOffer->currency ?? 'BDT') }}</span>
+                  <span class="tcard-save">Save {{ \App\Support\Currency::format((float) $dOriginal - (float) $dCurrent, $dOffer->currency ?? 'BDT') }}</span>
+                @endif
               @else
-                <span class="tcard-na price-unavailable">Price unavailable</span>
+                <span class="tcard-na">Price unavailable</span>
               @endif
             </div>
 
-            <a class="tcard-cta btn btn-primary view-deal-btn" href="{{ route('product.show', $p->slug) }}">View deal</a>
+            @if($dMerchantSlug)
+              <a class="tcard-cta" href="{{ route('go.redirect', [$p->slug, $dMerchantSlug]) }}" target="_blank" rel="nofollow sponsored noopener">View deal</a>
+            @else
+              <a class="tcard-cta" href="{{ route('product.show', $p->slug) }}">View deal</a>
+            @endif
           </div>
         </article>
       @endforeach

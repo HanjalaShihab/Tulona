@@ -26,16 +26,16 @@ return new class extends Migration
 
         Schema::create('landing_page_product', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('landing_page_id')->constrained()->cascadeOnDelete()->index();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('landing_page_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->unsignedInteger('sort_order')->default(0);
             $table->unique(['landing_page_id', 'product_id']);
         });
 
         Schema::create('landing_page_comparison', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('landing_page_id')->constrained()->cascadeOnDelete()->index();
-            $table->foreignId('comparison_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('landing_page_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('comparison_id')->constrained()->cascadeOnDelete();
             $table->unsignedInteger('sort_order')->default(0);
             $table->unique(['landing_page_id', 'comparison_id']);
         });

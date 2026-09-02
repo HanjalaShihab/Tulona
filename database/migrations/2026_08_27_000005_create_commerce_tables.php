@@ -11,8 +11,8 @@ return new class extends Migration
         // One product → many merchant offers (§23).
         Schema::create('offers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete()->index();
-            $table->foreignId('merchant_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('merchant_id')->constrained()->cascadeOnDelete();
             $table->string('external_product_id')->nullable();
             $table->text('external_url')->nullable();
             $table->text('affiliate_url');
@@ -34,7 +34,7 @@ return new class extends Migration
         // Append-only history; duplicates avoided by service (§27).
         Schema::create('price_history', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('offer_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('offer_id')->constrained()->cascadeOnDelete();
             $table->decimal('price', 14, 2);
             $table->char('currency', 3)->default('BDT');
             $table->timestamp('recorded_at')->index();
@@ -43,7 +43,7 @@ return new class extends Migration
 
         Schema::create('price_drop_events', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('offer_id')->constrained()->cascadeOnDelete();
             $table->decimal('previous_price', 14, 2);
             $table->decimal('current_price', 14, 2);
@@ -55,8 +55,8 @@ return new class extends Migration
 
         Schema::create('deals', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('offer_id')->constrained()->cascadeOnDelete()->index();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('offer_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->string('label')->nullable();
             $table->string('source')->default('price_drop'); // price_drop|merchant_promo
             $table->boolean('is_active')->default(true)->index();
@@ -67,9 +67,9 @@ return new class extends Migration
         // Anonymous click tracking — hashed IP, no PII (§5, §29).
         Schema::create('clicks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('offer_id')->constrained()->cascadeOnDelete()->index();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete()->index();
-            $table->foreignId('merchant_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('offer_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('merchant_id')->constrained()->cascadeOnDelete();
             $table->string('referrer_page')->nullable();   // internal landing page path
             $table->string('ip_hash', 64)->nullable();     // salted hash, never raw IP
             $table->string('user_agent_family', 40)->nullable(); // coarse family only
