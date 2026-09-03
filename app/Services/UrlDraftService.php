@@ -27,7 +27,7 @@ class UrlDraftService
     ) {}
 
     /**
-     * @return array{created: int, errors: int}
+     * @return array{created: int, errors: int, error?: string}
      */
     public function scrapeToDrafts(string $url, ?int $categoryId = null, ?int $merchantId = null): array
     {
@@ -66,7 +66,12 @@ class UrlDraftService
             // knows not every product on the page made it into a draft.
             $errors = $batch->items()->where('status', 'error')->count();
 
-            return ['created' => $created, 'errors' => $errors];
+            $lastError = null;
+            if ($created === 0 && $errors > 0) {
+                $lastError = optional($batch->items()->where('status', 'error')->latest('id')->first())->error;
+            }
+
+            return ['created' => $created, 'errors' => $errors, 'error' => $lastError];
         } finally {
             // The temp batch was only a staging area for the scraped rows — drafts
             // now own the data, so the batch (and its items) are cleaned up.
@@ -120,14 +125,14 @@ class UrlDraftService
             return null;
         }
 
-        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $host = $this->bareHost(parse_url($url, PHP_URL_HOST));
         if ($host === '') {
             return null;
         }
 
         foreach (Merchant::where('status', 'active')->get(['id', 'website_url', 'base_affiliate_url']) as $merchant) {
             foreach ([$merchant->website_url, $merchant->base_affiliate_url] as $candidate) {
-                $candidateHost = $candidate ? strtolower((string) parse_url($candidate, PHP_URL_HOST)) : '';
+                $candidateHost = $candidate ? $this->bareHost(parse_url($candidate, PHP_URL_HOST)) : '';
                 if ($candidateHost !== '' && (str_ends_with($host, $candidateHost) || str_ends_with($candidateHost, $host))) {
                     return $merchant->id;
                 }
@@ -135,5 +140,13 @@ class UrlDraftService
         }
 
         return null;
+    }
+
+    /** Lowercase host without a leading "www." so www.startech.com.bd matches startech.com.bd. */
+    protected function bareHost(?string $host): string
+    {
+        $host = strtolower(trim((string) $host));
+
+        return str_starts_with($host, 'www.') ? substr($host, 4) : $host;
     }
 }

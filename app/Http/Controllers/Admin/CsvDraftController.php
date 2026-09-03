@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Merchant;
 use App\Models\ProductDraft;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Services\CsvDraftService;
 use App\Services\ProductPublishService;
 use App\Services\UrlDraftService;
@@ -36,6 +37,60 @@ class CsvDraftController extends Controller
         ]);
     }
 
+    /**
+     * Download every generated product draft as a CSV — a portable spreadsheet
+     * of the full drafts list (name, prices, merchant, links, image, status…)
+     * for sharing / browsing / offline editing outside the admin.
+     */
+    public function export(): StreamedResponse
+    {
+        $this->authorize('manage-products');
+
+        $query = ProductDraft::query()->latest('id');
+
+        return response()->streamDownload(function () use ($query) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel reads it correctly
+
+            $headers = [
+                'name', 'current_price', 'original_price', 'currency', 'category',
+                'brand', 'merchant', 'sku', 'model_number', 'availability',
+                'affiliate_url', 'external_url', 'image', 'description', 'status',
+            ];
+            fputcsv($out, $headers);
+
+            $query->chunk(200, function ($drafts) use ($out) {
+                foreach ($drafts as $draft) {
+                    $d = is_array($draft->data) ? $draft->data : [];
+                    $images = $d['images'] ?? [];
+                    $image = is_array($images) ? (string) ($images[0] ?? ($d['image'] ?? '')) : (string) ($d['image'] ?? '');
+
+                    fputcsv($out, [
+                        (string) ($d['name'] ?? ''),
+                        $d['current_price'] ?? '',
+                        $d['original_price'] ?? '',
+                        (string) ($d['currency'] ?? 'BDT'),
+                        (string) ($d['category_slug'] ?? ''),
+                        (string) ($d['brand_slug'] ?? ''),
+                        (string) (Merchant::find($d['merchant_id'] ?? null)?->name ?? ''),
+                        (string) ($d['sku'] ?? ''),
+                        (string) ($d['model_number'] ?? ''),
+                        (string) ($d['availability'] ?? ''),
+                        (string) ($d['affiliate_url'] ?? ''),
+                        (string) ($d['external_url'] ?? ''),
+                        $image,
+                        (string) ($d['description'] ?? ''),
+                        (string) $draft->status,
+                    ]);
+                }
+            });
+
+            fclose($out);
+        }, 'products-'.now()->format('Ymd_His').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     /** Step 1 — upload a CSV; every row becomes an editable draft. */
     public function upload(Request $request): RedirectResponse
     {
@@ -43,6 +98,7 @@ class CsvDraftController extends Controller
 
         $request->validate([
             'file' => 'required|file|mimes:csv,txt|max:10240',
+            'default_merchant_id' => 'nullable|integer|exists:merchants,id',
         ]);
 
         $file = $request->file('file');
@@ -54,9 +110,11 @@ class CsvDraftController extends Controller
             return back()->withErrors(['file' => $e->getMessage()]);
         }
 
+        $defaults = ['merchant_id' => $request->integer('default_merchant_id') ?: null];
+
         $created = 0;
         foreach ($rows as $row) {
-            $payload = $this->service->toDraftPayload($row);
+            $payload = $this->service->toDraftPayload($row, $defaults);
             ProductDraft::create([
                 'data' => $payload,
                 'merchant_id' => $payload['merchant_id'] ?? null,
@@ -88,7 +146,10 @@ class CsvDraftController extends Controller
         }
 
         if ($result['created'] === 0) {
-            return back()->withErrors(['generate' => 'No products could be parsed from that URL. Check the link or the merchant connection.'.($result['errors'] ? " ({$result['errors']} row(s) errored)." : '')]);
+            $detail = $result['error'] ?? null;
+            return back()->withErrors(['generate' => 'No products could be parsed from that URL. Check the link or the merchant connection.'
+                .($result['errors'] ? " ({$result['errors']} row(s) errored)." : '')
+                .($detail ? " Last error: {$detail}" : '')]);
         }
 
         $status = "Generated {$result['created']} product draft(s) from that URL — review and edit each one, then post.";
@@ -154,10 +215,15 @@ class CsvDraftController extends Controller
             return null; // category required
         }
 
+        $brandId = $data['brand_id'] ?? null;
+        if (empty($brandId) && ! empty($data['brand_slug'])) {
+            $brandId = $this->resolveBrandId((string) $data['brand_slug']);
+        }
+
         return [
             'name' => $data['name'],
             'merchant_id' => $data['merchant_id'],
-            'brand_id' => $data['brand_id'] ?? null,
+            'brand_id' => $brandId,
             'category_id' => $categoryId ?: null,
             'subcategory_id' => $data['subcategory_id'] ?? null,
             'category' => empty($categoryId) ? $categoryName : null,
@@ -174,6 +240,19 @@ class CsvDraftController extends Controller
             'is_featured' => (bool) ($data['is_featured'] ?? false),
             'is_top_selling' => (bool) ($data['is_top_selling'] ?? false),
         ];
+    }
+
+    /** Resolve (or create) a brand by name/slug so CSV rows keep their brand detail. */
+    protected function resolveBrandId(string $brandName): ?int
+    {
+        $slug = \Illuminate\Support\Str::slug($brandName);
+        $brand = Brand::where('slug', $slug)->orWhereRaw('LOWER(name) = ?', [mb_strtolower($brandName)])->first();
+
+        if ($brand === null) {
+            $brand = Brand::create(['name' => $brandName, 'slug' => $slug]);
+        }
+
+        return $brand->id;
     }
 
     /** Step 2 — open a single draft for editing. */
@@ -240,7 +319,7 @@ class CsvDraftController extends Controller
 
         $offerCount = $result['product']->offers()->count();
         $status = $offerCount > 1
-            ? 'Posted — "'.$result['product']->name.'" sold by '.$offerCount.' stores (Compare Stores updated).'
+            ? 'Posted — "'.$result['product']->name.'" sold by '.$offerCount.' stores (Store Comparison updated).'
             : 'Product posted to "'.$result['categoryName'].'" and is live — '.$result['product']->name.' (id #'.$result['product']->id.')';
 
         return redirect()->route('admin.csv-drafts.index')->with('status', $status);
@@ -253,5 +332,15 @@ class CsvDraftController extends Controller
         $draft->delete();
 
         return back()->with('status', 'Draft removed.');
+    }
+
+    /** Remove every draft row (non-posted drafts are wiped in one go). */
+    public function destroyAll(): RedirectResponse
+    {
+        $this->authorize('manage-products');
+
+        $deleted = ProductDraft::where('status', '!=', 'posted')->delete();
+
+        return back()->with('status', "Removed {$deleted} draft(s). Posted products are untouched.");
     }
 }

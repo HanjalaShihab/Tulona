@@ -200,7 +200,7 @@
 @if($product->exists)
 <div class="admin-section" id="tab-offers">
   <div class="pane">
-    <div class="card-head"><h3>Store offers — Compare Stores</h3><span class="badge badge-pick">{{ $product->offers->count() }} offers</span></div>
+    <div class="card-head"><h3>Store offers — Store Comparison</h3><span class="badge badge-pick">{{ $product->offers->count() }} offers</span></div>
     <p class="field-hint" style="margin-bottom:10px">Each merchant gets one row. Same product from a new store appears side-by-side on the product page (availability → price → freshness).</p>
 
     <div class="table-wrap" style="margin-bottom:14px">
@@ -406,7 +406,7 @@
 @if(!$product->exists)
   <div class="pane" style="margin-top:16px;background:var(--brand-light);border-color:var(--brand-50)">
     <strong>Next steps after creating:</strong>
-    <p class="field-hint">You’ll unlock Offers, Media and Specs tabs once the product exists — add at least one store offer so it appears in “Compare Stores”.</p>
+    <p class="field-hint">You’ll unlock Offers, Media and Specs tabs once the product exists — add at least one store offer so it appears in “Store Comparison”.</p>
   </div>
 @endif
 

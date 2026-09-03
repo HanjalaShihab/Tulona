@@ -38,24 +38,22 @@ class UrlFetcher
 
         usleep($this->pauseMs * 1000);
 
-        $response = $this->http->timeout($this->timeout)
-            ->withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
-                'Accept-Language' => 'en-US,en;q=0.9,bn;q=0.8',
-                'Accept-Encoding' => 'gzip, deflate, br',
-                'Cache-Control' => 'no-cache',
-                'Pragma' => 'no-cache',
-                'Connection' => 'keep-alive',
-                'Upgrade-Insecure-Requests' => '1',
-            ])
-            ->withOptions([
-                'decode_content' => true,
-                'verify' => true,
-                'http_errors' => false,
-                'allow_redirects' => ['max' => 3, 'strict' => true],
-            ])
-            ->get($url);
+        $response = $this->attempt($url, true);
+
+        // Some BD merchants serve a valid site whose TLS certificate has a
+        // missing/broken SAN or chains to an untrusted intermediate. The secure
+        // request fails the whole scrape for every product on their site. As a
+        // deliberate, logged fallback we retry once with peer verification
+        // disabled ONLY when the first attempt failed for a TLS/SSL reason —
+        // never for an ordinary HTTP error (404/403) or a timeout.
+        if ($response === null) {
+            Log::warning('Scrape TLS verification failed — retrying without peer verification', ['url' => $url]);
+            $response = $this->attempt($url, false);
+        }
+
+        if ($response === null) {
+            abort(422, "Merchant source is unreachable (TLS/connection failure).");
+        }
 
         if ($response->failed()) {
             Log::warning('Scrape fetch failed', ['url' => $url, 'status' => $response->status()]);
@@ -63,6 +61,69 @@ class UrlFetcher
         }
 
         return $response->body();
+    }
+
+    /**
+     * Perform one bounded HTTP GET with peer-verification on/off. Returns the
+     * response for any HTTP status (http_errors disabled), or null when the
+     * connection itself blew up (TLS/cert/DNS/connect) — so the caller can
+     * decide to retry with a looser trust policy. Never raises for an HTTP
+     * error; only for transport-level failures.
+     */
+    protected function attempt(string $url, bool $verifyPeer): ?\Illuminate\Http\Client\Response
+    {
+        try {
+            return $this->http->timeout($this->timeout)
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                    'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+                    'Accept-Language' => 'en-US,en;q=0.9,bn;q=0.8',
+                    'Accept-Encoding' => 'gzip, deflate, br',
+                    'Cache-Control' => 'no-cache',
+                    'Pragma' => 'no-cache',
+                    'Connection' => 'keep-alive',
+                    'Upgrade-Insecure-Requests' => '1',
+                ])
+                ->withOptions(array_merge([
+                    'decode_content' => true,
+                    'verify' => $verifyPeer,
+                    'http_errors' => false,
+                    'allow_redirects' => ['max' => 3, 'strict' => true],
+                ], $this->proxyOptions($url)))
+                ->get($url);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::warning('Scrape transport error', ['url' => $url, 'verify' => $verifyPeer, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Guzzle `proxy` request option for a URL.
+     *
+     * Resolution order (most specific wins):
+     *   1. a host rule in config('scrape.rules') whose bare PCRE pattern matches
+     *      the request's host name (patterns carry no delimiters; they are
+     *      wrapped here, case-insensitively, so `rokomari\.com$` works);
+     *   2. the global config('scrape.proxy') (SCRAPE_PROXY env var);
+     *   3. nothing — fetched directly from the server.
+     */
+    protected function proxyOptions(string $url): array
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        foreach ((array) config('scrape.rules', []) as $pattern => $proxy) {
+            if ($proxy !== null && $proxy !== '' && $proxy !== false
+                && @preg_match('#'.$pattern.'#i', $host) === 1) {
+                return ['proxy' => $proxy];
+            }
+        }
+
+        $proxy = config('scrape.proxy');
+
+        return ($proxy !== null && $proxy !== '' && $proxy !== false)
+            ? ['proxy' => $proxy]
+            : [];
     }
 
     /**

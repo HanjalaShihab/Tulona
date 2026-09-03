@@ -45,17 +45,35 @@ Product Drafts
   <form method="POST" action="{{ route('admin.csv-drafts.upload') }}" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     @csrf
     <input type="file" name="file" accept=".csv,.txt" required>
+    <select name="default_merchant_id" style="padding:8px;border:1px solid var(--line);border-radius:6px;background:#fff">
+      <option value="">Auto-detect merchant</option>
+      @foreach($merchants as $m)
+        <option value="{{ $m->id }}">{{ $m->name }}</option>
+      @endforeach
+    </select>
     <button class="btn btn-primary">Upload CSV → create drafts</button>
   </form>
   <small style="color:var(--ink-3);display:block;margin-top:8px">
-    Recognized columns: <code>name</code>, <code>description</code>, <code>category_slug</code>,
-    <code>merchant_slug</code>, <code>price</code>, <code>original_price</code>, <code>currency</code>,
-    <code>affiliate_url</code>, <code>external_url</code>, <code>availability</code>, <code>sku</code>.
+    Pick a merchant above when your CSV has no <code>merchant</code> column — every row without a
+    matching merchant is assigned to it (and affiliate links are built from its <code>base_affiliate_url</code>).
+    Recognized columns: <code>name</code>/<code>title</code>/<code>product name</code>, <code>description</code>,
+    <code>category</code>, <code>brand</code>, <code>merchant</code>/<code>seller</code>, <code>price</code>,
+    <code>original price</code>/<code>mrp</code>/<code>old price</code>, <code>currency</code>,
+    <code>affiliate_url</code>/<code>affiliate link</code>, <code>url</code>/<code>link</code>,
+    <code>availability</code>, <code>sku</code>, <code>image</code>.
   </small>
 </div>
 
-<div class="pane">
+<div class="pane" style="margin-bottom:18px">
   <h2 style="font-size:16px;margin-bottom:4px">Drafts to review</h2>
+  <p style="margin:0 0 10px"><a class="btn btn-outline btn-sm" href="{{ route('admin.csv-drafts.export') }}">⬇ Download all products (CSV)</a></p>
+  @if($pendingCount > 0)
+    <form method="POST" action="{{ route('admin.csv-drafts.destroy-all') }}" onsubmit="return confirm('Remove ALL pending drafts? Posted products are NOT touched.');" style="margin-bottom:8px">
+      @csrf
+      @method('DELETE')
+      <button class="btn btn-outline" style="color:var(--danger)">Remove all pending drafts ({{ $pendingCount }})</button>
+    </form>
+  @endif
   @forelse($drafts as $draft)
     <div style="padding:10px 0;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px">
       <div style="min-width:0">

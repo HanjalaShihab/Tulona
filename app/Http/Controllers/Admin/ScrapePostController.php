@@ -11,6 +11,7 @@ use App\Services\ProductPublishService;
 use App\Services\Scraping\UrlFetcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -70,10 +71,22 @@ class ScrapePostController extends Controller
             }
             $images = array_values(array_unique(array_filter(array_map('strval', $images))));
 
+            // Auto-associate a brand when the page exposes one (best-effort, by
+            // name/slug) so the review form is pre-populated and the post maps it.
+            $brandId = null;
+            if (! empty($details['brand_slug'])) {
+                $brandName = trim((string) $details['brand_slug']);
+                $brand = Brand::whereRaw('LOWER(name) = ?', [mb_strtolower($brandName)])
+                    ->orWhere('slug', Str::slug($brandName))
+                    ->first();
+                $brandId = $brand?->id;
+            }
+
             $draft = [
                 'source_url' => $data['source_url'],
                 'external_url' => $data['source_url'],
                 'merchant_id' => $merchantId,
+                'brand_id' => $brandId,
                 'affiliate_url' => '',
                 'name' => trim((string) ($details['name'] ?? '')),
                 'description' => trim((string) ($details['description'] ?? '')),
@@ -86,6 +99,7 @@ class ScrapePostController extends Controller
                 'sku' => $details['sku'] ?? null,
                 'model_number' => $details['model_number'] ?? null,
                 'gtin' => $details['gtin'] ?? null,
+                'rating' => $details['rating'] ?? null,
             ];
 
             if (empty($draft['name'])) {
@@ -150,7 +164,7 @@ class ScrapePostController extends Controller
 
         $offerCount = $result['product']->offers()->count();
         $status = $offerCount > 1
-            ? 'Posted — "'.$result['product']->name.'" is sold by '.$offerCount.' stores, all shown side by side in the product page Compare Stores section.'
+            ? 'Posted — "'.$result['product']->name.'" is sold by '.$offerCount.' stores, all shown side by side in the product page Store Comparison section.'
             : 'Product posted to "'.$result['categoryName'].'" and is live — '.$result['product']->name.' (id #'.$result['product']->id.')';
 
         return redirect()->route('admin.scrape-post.index')->with('status', $status);

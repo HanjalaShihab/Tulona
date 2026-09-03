@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -30,7 +31,7 @@ return new class extends Migration
             $table->string('website_url')->nullable();
             $table->string('country')->default('BD')->index();
             $table->string('region')->nullable();
-            $table->json('currencies')->default(DB::raw('(JSON_ARRAY("BDT"))'));
+            $table->json('currencies')->nullable();
             $table->string('base_affiliate_url')->nullable();
             $table->string('tracking_template')->nullable();  // e.g. "{affiliate_url}?subid={click}"
             $table->json('feed_config')->nullable();          // official feed/API settings for sync (§26)

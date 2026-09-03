@@ -86,6 +86,7 @@ class ProductPublishService
                     'brand_id' => ($data['brand_id'] ?? null) ? (int) $data['brand_id'] : null,
                     'name' => $data['name'],
                     'sku' => ($data['sku'] ?? null) ?: null,
+                    'rating' => isset($draft['rating']) && is_numeric($draft['rating']) ? (float) $draft['rating'] : null,
                     'short_description' => $description !== null ? Str::limit($description, 500) : null,
                     'description' => $description,
                     'product_type' => 'physical',

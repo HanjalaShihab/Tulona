@@ -330,4 +330,31 @@ class CsvDraftTest extends TestCase
 
         $this->assertSame(0, Product::count());
     }
+
+    public function test_export_downloads_all_drafts_as_csv(): void
+    {
+        $this->actingManager();
+        $merchant = $this->merchant('rokomari');
+        ProductDraft::create([
+            'data' => ['name' => 'The Alchemist', 'merchant_id' => $merchant->id, 'current_price' => '450'],
+            'merchant_id' => $merchant->id,
+            'created_by' => auth()->id(),
+            'status' => 'draft',
+        ]);
+        ProductDraft::create([
+            'data' => ['name' => 'Atomic Habits'],
+            'created_by' => auth()->id(),
+            'status' => 'posted',
+        ]);
+
+        $response = $this->get(route('admin.csv-drafts.export'));
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $csv = $response->streamedContent();
+        $this->assertStringContainsString('name,current_price,original_price,currency,category,brand,merchant', $csv);
+        $this->assertStringContainsString('The Alchemist', $csv);
+        $this->assertStringContainsString('Atomic Habits', $csv);
+        $this->assertStringContainsString('450', $csv);
+    }
 }

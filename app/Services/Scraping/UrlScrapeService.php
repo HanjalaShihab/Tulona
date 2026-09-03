@@ -74,7 +74,25 @@ class UrlScrapeService
             $visited[$pageUrl] = true;
             $counts['pages']++;
 
-            $raw = $this->fetcher->fetch($pageUrl);
+            // A single unreachable/blocked page must never abort the whole
+            // automated batch — mark it failed and move on so the remaining
+            // pages (and merchants in other batches) still get scraped.
+            try {
+                $raw = $this->fetcher->fetch($pageUrl);
+            } catch (\Throwable $e) {
+                $counts['error']++;
+                $errorRows[] = [
+                    'import_batch_id' => $batch->id,
+                    'status' => 'error',
+                    'error' => 'Page failed: '.$e->getMessage(),
+                    'normalized_data' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+                Log::warning('Scrape page skipped', ['batch' => $batch->id, 'url' => $pageUrl, 'error' => $e->getMessage()]);
+
+                continue;
+            }
 
             // Make the current page URL available to HTML parsers so they can
             // resolve relative product links/images discovered on the page.
@@ -195,13 +213,22 @@ class UrlScrapeService
         }
 
         $batch->update([
-            'status' => 'preview',
+            'status' => ($counts['total'] === 0 && $counts['error'] > 0) ? 'failed' : 'preview',
             'total_rows' => $counts['total'],
             'created_count' => $counts['new'],
             'updated_count' => $counts['matched'],
             'skipped_count' => $counts['duplicate'],
             'failed_count' => $counts['error'],
         ]);
+
+        if ($counts['total'] === 0 && $counts['error'] > 0) {
+            $batch->errors()->create([
+                'row_number' => null,
+                'field' => 'source_url',
+                'severity' => 'error',
+                'message' => 'Source could not be scraped (blocked or unreachable).',
+            ]);
+        }
     }
 
     /**

@@ -37,7 +37,7 @@ Product Generator
     <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">
       <small style="color:var(--ink-2);line-height:1.7;display:block">
         💡 <strong>Posting the same product again from another store?</strong> It gets matched
-        automatically and all stores appear on one product page under <em>Compare Stores</em> —
+        automatically and all stores appear on one product page under <em>Store Comparison</em> —
         no duplicates.
       </small>
     </div>

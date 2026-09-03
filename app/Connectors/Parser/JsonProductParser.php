@@ -19,10 +19,14 @@ class JsonProductParser implements ProductParser
         if (! is_array($json)) {
             return;
         }
-
         foreach ($this->extractList($json) as $node) {
             if (! is_array($node)) {
                 continue;
+            }
+            // JSON-LD ItemList wraps each product in a ListItem node — unwrap
+            // it so the Product fields are read from the right level.
+            if (isset($node['item']) && is_array($node['item'])) {
+                $node = $node['item'];
             }
             $row = $this->clean($node);
             if (isset($row['name'], $row['price']) || isset($row['name'], $row['external_url'])) {
@@ -92,6 +96,19 @@ class JsonProductParser implements ProductParser
         $currency = $this->scalarOrNull($pick($node, 'currency', 'currency_code'))
             ?? ($offer0 === null ? null : $this->scalarOrNull($pick($offer0, 'priceCurrency', 'currency')));
 
+        // Brand can be a plain string ("Acme") or a schema.org object like
+        // {"@type":"Brand","name":"No Brand"}; normalise the object form.
+        $brand = $pick($node, 'brand', 'brand_name');
+        if (is_array($brand)) {
+            $brand = $brand['name'] ?? $brand['brandName'] ?? $brand['title'] ?? null;
+        }
+        $images = $node['image'] ?? $node['images'] ?? null;
+        if ($images === null) {
+            $single = $pick($node, 'image_url', 'img', 'thumbnail', 'thumbnailUrl');
+            $images = $single !== null ? $single : null;
+        }
+        $primaryImage = is_array($images) ? ($images[0] ?? null) : $images;
+
         // Original/list price — node level, then offer level, then a nested
         // UnitPriceSpecification, then highPrice when it differs from the
         // current (low) price (AggregateOffer sale pattern).
@@ -116,7 +133,7 @@ class JsonProductParser implements ProductParser
         return [
             'name' => is_scalar($name) ? trim((string) $name) : null,
             'category_slug' => $this->scalarOrNull($pick($node, 'category', 'category_name', 'merchant_category')),
-            'brand_slug' => $this->scalarOrNull($pick($node, 'brand', 'brand_name')),
+            'brand_slug' => $this->scalarOrNull($brand),
             'merchant_slug' => null,
             'price' => is_numeric($price) || is_string($price) ? $price : null,
             'original_price' => $originalPrice,
@@ -129,7 +146,10 @@ class JsonProductParser implements ProductParser
             'model_number' => $this->scalarOrNull($pick($node, 'model_number', 'modelNumber', 'mpn', 'sku_id')),
             'sku' => $this->scalarOrNull($pick($node, 'sku', 'merchant_product_id', 'external_product_id', 'sku', 'id')),
             'description' => $this->scalarOrNull($pick($node, 'description', 'short_description')),
-            'image' => $this->urlOrNull($pick($node, 'image', 'image_url', 'img', 'thumbnail', 'thumbnailUrl')),
+            'image' => $this->urlOrNull($primaryImage),
+            'images' => $images === null
+                ? []
+                : array_values(array_filter(array_map(fn ($i) => $this->urlOrNull($i), is_array($images) ? $images : [$images]))),
         ];
     }
 

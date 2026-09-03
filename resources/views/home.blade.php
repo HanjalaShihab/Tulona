@@ -105,7 +105,7 @@
         <div class="hv-mini-row">
           <div class="hv-mini" data-reveal data-delay="300">
             <span class="hv-mini-ico">&#9878;</span>
-            <strong>Compare Stores</strong>
+            <strong>Store Comparison</strong>
             <small>Side-by-side prices per product</small>
           </div>
           <div class="hv-mini" data-reveal data-delay="380">
@@ -128,7 +128,8 @@
 </section>
 
 @if(!$newArrivals->isEmpty())
-<section class="new-marquee" data-new-marquee>
+<section class="new-marquee" data-new-marquee aria-labelledby="new-arrivals-heading">
+  <h2 id="new-arrivals-heading" class="sr-only">New Arrivals</h2>
   <div class="nm-viewport">
     <div class="nm-track">
       <div class="nm-group">
@@ -351,6 +352,7 @@
       <div>
         <span class="topsel-eyebrow"><span class="te-dot" aria-hidden="true"></span>Bangladesh is buying</span>
         <h2 class="topsel-title">Top Selling <em>Products</em></h2>
+        <span class="sr-only">Top Selling Products</span>
         <p class="topsel-sub">The most researched &amp; compared items this week &#8212; ranked by real demand, never sponsored.</p>
       </div>
       <a class="topsel-link" href="{{ route('products.index') }}">All products <span aria-hidden="true">&#8594;</span></a>

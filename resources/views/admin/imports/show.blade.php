@@ -42,6 +42,7 @@ Generator: {{ $batch->source_type === 'url' ? 'URL scrape #'.$batch->id : $batch
         @csrf
         <button class="btn btn-outline" style="color:var(--danger)">Cancel</button>
       </form>
+      <a class="btn btn-outline" href="{{ route('admin.imports.export', $batch) }}">Download all as CSV</a>
     </div>
 
     <form id="selected-form" method="POST" action="{{ route('admin.imports.selected', $batch) }}" style="margin-top:16px">
@@ -116,6 +117,7 @@ Generator: {{ $batch->source_type === 'url' ? 'URL scrape #'.$batch->id : $batch
         <button class="btn btn-outline">↻ Retry {{ $failedItems }} failed item(s)</button>
       </form>
     @endif
+    <a class="btn btn-outline" style="margin-top:10px" href="{{ route('admin.imports.export', $batch) }}">Download all as CSV</a>
   @elseif(in_array($batch->status, ['failed', 'cancelled']))
     <div class="alert alert-err">{{ $batch->status === 'cancelled' ? 'This import was cancelled.' : 'This scrape failed — see the reasons below.' }}</div>
     @if($batch->status === 'failed')

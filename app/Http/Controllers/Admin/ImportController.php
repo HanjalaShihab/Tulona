@@ -16,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
 
 /** Import flow (§67): upload → validate → preview → confirm → background job → results. */
@@ -275,6 +276,58 @@ class ImportController extends Controller
             'items' => $items,
             'preview' => $batch->errors()->where('severity', 'error')->count() === 0 && ! in_array($batch->status, ['processing', 'completed']),
             'status' => session('status'),
+        ]);
+    }
+
+    /**
+     * Download every scraped product in this batch as a CSV. Not a faithful
+     * re-import format — it's a portable spreadsheet (name, price, original,
+     * currency, brand, sku, image, affiliate link, source URL, status) meant to
+     * be shared / browsed / edited outside the admin.
+     */
+    public function export(ImportBatch $batch): StreamedResponse
+    {
+        $this->authorize('run-imports');
+
+        return response()->streamDownload(function () use ($batch) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel reads it correctly
+
+            $headers = [
+                'name', 'price', 'original_price', 'currency', 'brand', 'sku',
+                'model_number', 'gtin', 'image', 'affiliate_url', 'external_url',
+                'description', 'availability', 'category', 'status', 'product_id',
+            ];
+            fputcsv($out, $headers);
+
+            $batch->items()->orderBy('id')->each(function ($item) use ($out, $headers) {
+                $n = is_array($item->normalized_data) ? $item->normalized_data : [];
+                $images = $n['images'] ?? [];
+                $image = is_array($images) ? (string) ($images[0] ?? ($n['image'] ?? '')) : (string) ($n['image'] ?? '');
+
+                fputcsv($out, [
+                    (string) ($n['name'] ?? ''),
+                    $n['price'] ?? '',
+                    $n['original_price'] ?? '',
+                    (string) ($n['currency'] ?? ''),
+                    (string) ($n['brand_slug'] ?? ''),
+                    (string) ($n['sku'] ?? ''),
+                    (string) ($n['model_number'] ?? ''),
+                    (string) ($n['gtin'] ?? ''),
+                    $image,
+                    (string) ($n['affiliate_url'] ?? $n['external_url'] ?? ''),
+                    (string) ($n['external_url'] ?? ''),
+                    (string) ($n['description'] ?? ''),
+                    (string) ($n['availability'] ?? ''),
+                    (string) ($n['category_slug'] ?? ''),
+                    (string) ($item->status),
+                    $item->product_id ?? '',
+                ]);
+            });
+
+            fclose($out);
+        }, 'products-'.$batch->id.'-'.now()->format('Ymd_His').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 }

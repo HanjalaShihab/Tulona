@@ -66,7 +66,7 @@ class ProductController extends Controller
     {
         // Detect the same product before the unique-slug rule can reject the
         // form: reuse the existing product (all merchant offers then line up in
-        // its Compare Stores section) instead of creating a duplicate.
+        // its Store Comparison section) instead of creating a duplicate.
         $candidate = new Product([
             'name' => trim((string) $request->input('name')),
             'category_id' => filled($request->input('category_id')) ? (int) $request->input('category_id') : null,
@@ -81,7 +81,7 @@ class ProductController extends Controller
 
             return redirect()
                 ->route('admin.products.edit', $match)
-                ->with('status', '“'.$request->input('name').'” already exists (id #'.$match->id.') — no duplicate created. Add the merchant offer there and it appears in Compare Stores.');
+                ->with('status', '“'.$request->input('name').'” already exists (id #'.$match->id.') — no duplicate created. Add the merchant offer there and it appears in Store Comparison.');
         }
 
         $data = $this->validated($request);

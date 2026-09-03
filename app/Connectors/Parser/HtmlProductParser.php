@@ -157,9 +157,59 @@ class HtmlProductParser implements ProductParser
                         $details[$k] = $row[$k];
                     }
                 }
+                if (! empty($row['images'])) {
+                    $details['images'] = array_values(array_unique(array_filter($row['images'])));
+                }
             }
             if (! empty($details)) {
                 break;
+            }
+        }
+
+        // Next.js/SSR structured data: many modern shop fronts embed the full
+        // product object in a __NEXT_DATA__ JSON script. This is often the only
+        // source of the regular-vs-sale price pair, brand, ratings and the full
+        // image gallery. It only FILLS gaps — it never overrides the JSON-LD
+        // values above (schema-structured data is treated as more trustworthy).
+        $next = $this->extractNextData($raw);
+        foreach ([
+            'name', 'price', 'original_price', 'currency', 'brand_slug', 'sku',
+            'model_number', 'gtin', 'description', 'availability',
+        ] as $k) {
+            if (($details[$k] ?? null) === null && isset($next[$k]) && $next[$k] !== null) {
+                $details[$k] = $next[$k];
+            }
+        }
+        if (empty($details['images']) || ! empty($next['images'])) {
+            // Union of structured images (Next.js gallery is typically the most
+            // complete), de-duplicated, keeping order. JSON-LD single image stays
+            // as a fallback when Next.js carries none.
+            $merged = array_values(array_unique(array_merge($next['images'] ?? [], $details['images'] ?? [])));
+            if (! empty($merged)) {
+                $details['images'] = $merged;
+            }
+        }
+        foreach (['rating', 'rating_count'] as $k) {
+            if (isset($next[$k])) {
+                $details[$k] = $next[$k];
+            }
+        }
+
+        // Daraz / Lazada fallback: the product page does not expose the price in
+        // JSON-LD, __NEXT_DATA__ or the DOM. The live price only exists inside an
+        // escaped, server-embedded JS blob named `pdpTrackingData` (fields such as
+        // `pdt_price`, plus an original/list price key when the item is on sale).
+        // Fill only the price gaps with it; everything else stays as-is.
+        if (($details['price'] ?? null) === null || ($details['original_price'] ?? null) === null) {
+            $daraz = $this->extractDarazState($raw);
+            if (isset($daraz['price']) && $daraz['price'] !== null) {
+                $details['price'] = $daraz['price'];
+            }
+            if (isset($daraz['original_price']) && $daraz['original_price'] !== null) {
+                $details['original_price'] = $daraz['original_price'];
+            }
+            if (($details['currency'] ?? null) === null && isset($daraz['currency']) && $daraz['currency'] !== null) {
+                $details['currency'] = $daraz['currency'];
             }
         }
 
@@ -230,7 +280,14 @@ class HtmlProductParser implements ProductParser
                 }
             }
             $images = array_values(array_unique(array_filter($images)));
-            $details['images'] = array_map(fn ($u) => $baseUrl ? ($this->resolveUrl($u, $baseUrl) ?: $u) : $u, $images);
+            $images = array_map(fn ($u) => $baseUrl ? ($this->resolveUrl($u, $baseUrl) ?: $u) : $u, $images);
+            // The DOM pass is the least reliable gallery source — only use it to
+            // ADD images when no structured (JSON-LD / Next.js) gallery was found.
+            if (empty($details['images'])) {
+                $details['images'] = $images;
+            } else {
+                $details['images'] = array_values(array_unique(array_merge($details['images'], $images)));
+            }
 
             // Availability from common markers.
             $bodyText = strtolower((string) $dom->textContent);
@@ -353,7 +410,14 @@ class HtmlProductParser implements ProductParser
             $nodes = $data[$key] ?? null;
             if (is_array($nodes) && array_is_list($nodes)) {
                 foreach ($nodes as $n) {
-                    if (is_array($n) && ($n['@type'] ?? null) === 'Product') {
+                    if (! is_array($n)) {
+                        continue;
+                    }
+                    // JSON-LD ItemList wraps products in ListItem nodes.
+                    if (($n['@type'] ?? null) === 'ListItem' && is_array($n['item'] ?? null)) {
+                        $n = $n['item'];
+                    }
+                    if (($n['@type'] ?? null) === 'Product') {
                         $out[] = $n;
                     }
                 }
@@ -379,6 +443,337 @@ class HtmlProductParser implements ProductParser
         }
 
         return $blocks;
+    }
+
+    /**
+     * Extract structured product data from a Next.js __NEXT_DATA__ JSON script.
+     *
+     * Modern e-commerce shop fronts (a large share of BD merchants) render via
+     * Next.js and embed the full server-rendered product object in
+     * <script id="__NEXT_DATA__">. Unlike the raw DOM (which is often just an
+     * empty SPA shell) this JSON reliably carries the regular-versus-sale price
+     * pair, brand, SKU, description, the full gallery and ratings.
+     *
+     * Returns a normalized subset keyed like JsonProductParser::clean() plus the
+     * extra `images`, `rating` (0-5 rounded) and `rating_count` fields. Empty
+     * when no usable product object is found.
+     */
+    protected function extractNextData(string $raw): array
+    {
+        if (! preg_match('/<script[^>]+id="__NEXT_DATA__"[^>]*>(.*?)<\/script>/is', $raw, $m)) {
+            return [];
+        }
+
+        $tree = json_decode(trim($m[1]), true);
+        if (! is_array($tree)) {
+            return [];
+        }
+
+        // Collect every reasonable product-like object (name present plus a
+        // price-ish signal and/or sku). Picking the MAIN product from the many
+        // (product, similar-products, recently-viewed, wishlist ...) is the hard
+        // part — see pickMainProduct below.
+        $candidates = [];
+        $walk = function (array $branch) use (&$walk, &$candidates): void {
+            foreach ($branch as $value) {
+                if (! is_array($value)) {
+                    continue;
+                }
+                if ($this->looksLikeProduct($value)) {
+                    $candidates[] = $value;
+                }
+                $walk($value);
+            }
+        };
+        $walk($tree);
+
+        if ($candidates === []) {
+            return [];
+        }
+
+        return $this->normalizeNextDataProduct($this->pickMainProduct($candidates));
+    }
+
+    /** A product candidate has a name plus a price signal or an sku. */
+    protected function looksLikeProduct(array $node): bool
+    {
+        if (empty($node['name']) || ! is_scalar($node['name'])) {
+            return false;
+        }
+
+        $priceish = ['price', 'sale_price', 'spacial_price', 'special_price', 'regular_price', 'original_price', 'current_price', 'price_off', 'lowest_price'];
+        foreach ($priceish as $k) {
+            if (isset($node[$k]) && is_scalar($node[$k])) {
+                return true;
+            }
+        }
+
+        return isset($node['sku']) && is_scalar($node['sku']);
+    }
+
+    /**
+     * Choose the main product from the duplicate candidates embedded in a
+     * Next.js state tree (they repeat the product across reducers/fragments and
+     * alongside similar/recent/wishlist items).
+     *
+     * Score each candidate by how strongly it looks like a standalone product
+     * unpack (more price fields + an sku + an id beats a thin similar-product
+     * card which often lacks both prices). The highest score wins.
+     */
+    protected function pickMainProduct(array $candidates): array
+    {
+        $score = function (array $node): int {
+            $s = 0;
+            $priceFields = 0;
+            foreach (['price', 'sale_price', 'spacial_price', 'special_price', 'regular_price', 'original_price', 'current_price'] as $k) {
+                if (isset($node[$k]) && is_scalar($node[$k]) && $node[$k] !== '' && (string) $node[$k] !== '0') {
+                    $priceFields++;
+                }
+            }
+            $s += min($priceFields, 2) * 3;
+            if (isset($node['sku']) && is_scalar($node['sku']) && $node['sku'] !== '') {
+                $s += 2;
+            }
+            if (isset($node['id']) && (is_scalar($node['id']) || is_numeric($node['id'])) && $node['id'] !== '') {
+                $s += 1;
+            }
+            if (isset($node['description']) || isset($node['images'])) {
+                $s += 1;
+            }
+            if (isset($node['regular_price']) && isset($node['sale_price'])) {
+                $s += 2; // presence of an explicit pair strongly marks a main product
+            }
+
+            return $s;
+        };
+
+        usort($candidates, fn ($a, $b) => $score($b) <=> $score($a));
+
+        return $candidates[0];
+    }
+
+    /**
+     * Map a Next.js product object onto canonical detail fields using flexible
+     * key aliases (never site-specific) plus a price-pair resolution.
+     */
+    protected function normalizeNextDataProduct(array $node): array
+    {
+        $s = static fn ($v) => is_scalar($v) ? trim((string) $v) : null;
+
+        $name = $s($node['name'] ?? null);
+        $sku = $s($node['sku'] ?? null);
+
+        // Explicit price keys, in order of preference per role.
+        $price = $s($node['price'] ?? null)
+            ?: $s($node['sale_price'] ?? null)
+            ?: $s($node['spacial_price'] ?? null)
+            ?: $s($node['special_price'] ?? null)
+            ?: $s($node['offer_price'] ?? null)
+            ?: $s($node['current_price'] ?? null)
+            ?: $s($node['now_price'] ?? null)
+            ?: $s($node['final_price'] ?? null);
+        $original = $s($node['original_price'] ?? null)
+            ?: $s($node['regular_price'] ?? null)
+            ?: $s($node['list_price'] ?? null)
+            ?: $s($node['compare_at_price'] ?? null)
+            ?: $s($node['msrp'] ?? null);
+
+        // Value may be a number, a localized string ("৳ 5,950" / "5,950") or a
+        // nested {"amount":..,"currency":..} object — normalize and compare.
+        $toNum = function ($v) {
+            if (is_array($v)) {
+                $v = $v['amount'] ?? $v['value'] ?? $v['price'] ?? null;
+            }
+            if ($v === null) {
+                return null;
+            }
+            $str = is_scalar($v) ? trim((string) $v) : '';
+            $clean = str_replace([',', '৳', 'Tk', 'TK', 'BDT', '$', '₹'], '', $str);
+
+            return is_numeric($clean) ? (float) $clean : null;
+        };
+
+        $priceN = $toNum($price);
+        $originalN = $toNum($original);
+
+        // If only one explicit price exists (or the "sale" price actually looks
+        // higher than the "regular" price, which happens when a store stores the
+        // pre-discount figure under `price`), resolve the pair so the LOWER
+        // value is the current/sale price and the higher is the original.
+        if ($priceN !== null && $originalN !== null && $priceN > $originalN) {
+            [$priceN, $originalN] = [$originalN, $priceN];
+        }
+
+        $image = $this->nextDataImage($node['image'] ?? null) ?: $this->nextDataImage($node['thumbnail'] ?? null);
+
+        $images = [];
+        foreach (['images', 'gallery', 'photo', 'pictures', 'image_gallery', 'product_images'] as $gk) {
+            foreach ((array) ($node[$gk] ?? []) as $img) {
+                if (is_string($img)) {
+                    $images[] = $img;
+                } elseif (is_array($img)) {
+                    foreach (['image', 'src', 'url', 'full', 'large', 'original', 'image_url', 'thumb_url'] as $ik) {
+                        if (isset($img[$ik]) && is_string($img[$ik])) {
+                            $images[] = $img[$ik];
+                            break;
+                        }
+                    }
+                }
+            }
+            if (! empty($images)) {
+                break;
+            }
+        }
+        $images = array_values(array_unique(array_filter($images)));
+        if ($image !== null && ! in_array($image, $images, true)) {
+            array_unshift($images, $image);
+        }
+        if (empty($images) && $image !== null) {
+            $images = [$image];
+        }
+
+        // Ratings: average (0-5 or 0-100) plus a review count.
+        $rating = null;
+        $ratingValue = $s($node['rating'] ?? null)
+            ?: $s($node['rating_value'] ?? null)
+            ?: $s($node['rating_summary_value'] ?? null)
+            ?: $s($node['rating_summary'] ?? null)
+            ?: $s($node['average_rating'] ?? null);
+
+        $ratingCount = $s($node['rating_count'] ?? null)
+            ?: $s($node['reviews_count'] ?? null)
+            ?: $s($node['review_count'] ?? null)
+            ?: $s($node['num_reviews'] ?? null);
+
+        $ratingN = $ratingValue !== null && $ratingValue !== '' && is_numeric($ratingValue) ? (float) $ratingValue : null;
+        if ($ratingN !== null && $ratingN > 5) {
+            $ratingN = round($ratingN / 20, 1); // normalize a /100 score down to /5
+        }
+
+        return array_filter([
+            'name' => $name,
+            'price' => $priceN,
+            'original_price' => $originalN,
+            'currency' => $s($node['currency'] ?? null) ?: $s($node['price_currency'] ?? null),
+            'brand_slug' => $s($node['brand'] ?? null) ?: $s($node['brand_name'] ?? null),
+            'sku' => $sku,
+            'model_number' => $s($node['model_number'] ?? null) ?: $s($node['model'] ?? null),
+            'gtin' => $s($node['gtin'] ?? null) ?: $s($node['ean'] ?? null) ?: $s($node['barcode'] ?? null),
+            'description' => $s($node['description'] ?? null) ?: $s($node['product_details'] ?? null),
+            'availability' => $s($node['availability'] ?? null),
+            'image' => $image,
+            'images' => $images,
+            'rating' => $ratingN,
+            'rating_count' => $ratingCount !== null && $ratingCount !== '' && is_numeric($ratingCount) ? (int) $ratingCount : null,
+        ], static fn ($v) => $v !== null);
+    }
+
+    /** Read one image URL/mapped-object out into a string. */
+    protected function nextDataImage(mixed $value): ?string
+    {
+        if (is_string($value)) {
+            return trim($value) ?: null;
+        }
+        if (is_array($value)) {
+            foreach (['url', 'src', 'image', 'full', 'large', 'original', 'full_url'] as $k) {
+                if (isset($value[$k]) && is_string($value[$k]) && trim($value[$k])) {
+                    return trim($value[$k]);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Daraz / Lazada detail-page fallback.
+     *
+     * Marketplaces that render prices only at runtime (client-side hydrate) put
+     * the final values in an escaped JS literal, e.g.
+     *
+     *   pdpTrackingData = "{\"pdt_price\":\"৳ 320\",\"pdt_discount\":\"-20%\",...}";
+     *
+     * This decodes that literal and pulls out the current and original prices.
+     *
+     * Daraz's convention matters here: `pdt_price` is the *single* price a
+     * non-sale item shows. When the item carries an explicit discount marker
+     * (`pdt_discount` like "-20%" / "20%" / "sale") the rendered `pdt_price` is
+     * the *list* (original) price, so it must be mapped to `original_price`
+     * rather than being presented as the current price. The sale price itself is
+     * only delivered by Daraz's signed client API and is not server-rendered, so
+     * for discounted items we refuse to fabricate a current price the HTML does
+     * not contain.
+     *
+     * Returns an empty array when the blob is absent or holds no usable price.
+     *
+     * @return array{price?: float, original_price?: float, currency?: string}
+     */
+    protected function extractDarazState(string $raw): array
+    {
+        if (preg_match('~pdpTrackingData\s*=\s*"(.*?)";~s', $raw, $m)) {
+            $json = json_decode(str_replace('\\"', '"', $m[1]), true);
+            if (is_array($json)) {
+                $normalise = static fn ($v): ?float => is_scalar($v)
+                    ? (float) preg_replace('/[^0-9.]/', '', str_replace(',', '', (string) $v))
+                    : null;
+
+                $first = static fn (array $keys) => (static function () use ($json, $keys) {
+                    foreach ($keys as $k) {
+                        if (array_key_exists($k, $json) && $json[$k] !== null && $json[$k] !== '') {
+                            return $json[$k];
+                        }
+                    }
+                    return null;
+                })();
+
+                $rawPrice = $first(['pdt_price', 'price', 'pdt_sale_price']);
+                $rawOriginal = $first(['original_price', 'originalPrice', 'cutPrice', 'list_price', 'listPrice', 'pdt_original_price', 'pdt_list_price', 'pdt_price']);
+                $discountRaw = $first(['pdt_discount', 'discount', 'discountPercent', 'sale']);
+
+                // Discount marker: a percentage ("-20%", "20%") or an explicit
+                // "sale"/"discount" flag. When present, the rendered pdt_price is
+                // the list price, NOT a current sale price.
+                $isDiscounted = $discountRaw !== null
+                    && (bool) preg_match('/\d|sale|discount/i', (string) $discountRaw);
+
+                $currency = null;
+                if (isset($json['core']['currencyCode']) && is_scalar($json['core']['currencyCode'])) {
+                    $currency = (string) $json['core']['currencyCode'];
+                } elseif (isset($json['currency']) && is_scalar($json['currency'])) {
+                    $currency = (string) $json['currency'];
+                }
+
+                $out = [];
+
+                if ($isDiscounted) {
+                    // On sale: only an explicit, separate sale-price token may be
+                    // used as the current price. pdt_price becomes the original.
+                    $sale = $first(['pdt_sale_price', 'sale_price', 'price', 'offer_price', 'current_price']);
+                    if ($sale !== null && $sale !== '' && ! in_array($sale, [$rawOriginal, $rawPrice], true)) {
+                        $out['price'] = $normalise($sale);
+                    }
+                    if ($rawOriginal !== null) {
+                        $out['original_price'] = $normalise($rawOriginal);
+                    }
+                } else {
+                    $price = $first(['pdt_sale_price', 'sale_price', 'price', 'offer_price', 'current_price', 'pdt_price']);
+                    if ($price !== null) {
+                        $out['price'] = $normalise($price);
+                    }
+                    if ($rawOriginal !== null && $rawOriginal !== $price) {
+                        $out['original_price'] = $normalise($rawOriginal);
+                    }
+                }
+
+                if ($currency !== null) {
+                    $out['currency'] = $currency;
+                }
+
+                return $out;
+            }
+        }
+
+        return [];
     }
 
     public function defaultHtmlConfig(): array
@@ -473,10 +868,9 @@ class HtmlProductParser implements ProductParser
                 continue;
             }
 
-            // Skip obvious non-product links (nav/menu/login/cart/tags/authors/pages/pagination).
-            // Skip obvious non-product links (root, nav/menu/login/cart/tags/pagination).
-            $path = parse_url($abs, PHP_URL_PATH) ?? '';
-            if (in_array($path, ['', '/'], true) || preg_match('~/tag/|/category/|/page/|(login|cart|checkout|search|contact|about|account|wishlist)~i', $abs) || isset($seen[$abs])) {
+            // Skip obvious non-product links (nav/menu/login/cart/tags/authors/pages/pagination,
+            // app-store/social/footer anchors, anything inside footer/nav/header).
+            if ($this->isNonProductAnchor($a, $abs) || isset($seen[$abs])) {
                 continue;
             }
             $seen[$abs] = true;
@@ -536,6 +930,48 @@ class HtmlProductParser implements ProductParser
         }
 
         yield from $rows;
+    }
+
+    /**
+     * Reject an anchor that surely is not a product card: navigation, footer and
+     * social/app-download links show up as "products" in the universal detector
+     * when they sit near a stray price token or share a neighbour's image. The
+     * public detector must never stage these as products.
+     */
+    protected function isNonProductAnchor(DOMElement $a, string $abs): bool
+    {
+        $path = parse_url($abs, PHP_URL_PATH) ?? '';
+        if (in_array($path, ['', '/'], true) || preg_match('~/tag/|/category/|/page/|(login|cart|checkout|search|contact|about|account|wishlist|logout|register|profile|newsletter|blog|career|faq|help|support|privacy|terms|cookie)~i', $abs)) {
+            return true;
+        }
+
+        // External app-store / social hosts are never product cards.
+        $host = strtolower((string) parse_url($abs, PHP_URL_HOST));
+        if (preg_match('~(play\.google|apps\.apple|appgallery\.huawei|facebook\.com|(twitter|x)\.com|youtube\.com|instagram\.com|linkedin\.com|wa\.me|whatsapp\.com|messenger\.com)~', $host)) {
+            return true;
+        }
+
+        // Anchors living inside footer/nav/header are navigational, not products.
+        $anc = $a->parentNode;
+        while ($anc !== null) {
+            if ($anc instanceof DOMElement) {
+                $tag = strtolower($anc->nodeName);
+                $cls = strtolower((string) $anc->getAttribute('class'));
+                if ($tag === 'footer' || $tag === 'nav' || $tag === 'header'
+                    || preg_match('~\b(footer|foot|bottom-nav|site-nav|main-menu|top-menu|mobile-menu|sidebar)\b~', $cls)) {
+                    return true;
+                }
+            }
+            $anc = $anc->parentNode;
+        }
+
+        // Discriminating anchor label — hit before the name/price signal is read.
+        $label = mb_strtolower(trim((string) $a->textContent)).' '.mb_strtolower((string) $a->getAttribute('title'));
+        if (preg_match('~(app download|download app|android app|ios app|play store|app store|huawei appgallery|facebook|youtube|twitter|instagram|linkedin|whatsapp|follow us|share on|login|log in|sign in|sign up|register|my account|wishlist|cart|checkout|newsletter|about us|contact us|career|privacy policy|terms and? conditions|cookies?|become a.? seller|sell on)~i', $label)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

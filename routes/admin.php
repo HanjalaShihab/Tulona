@@ -61,9 +61,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
     // Upload CSV / generate from URL → review & post products individually (Product Generator)
     Route::middleware('can:manage-products')->group(function () {
         Route::get('csv-drafts', [CsvDraftController::class, 'index'])->name('csv-drafts.index');
+        Route::get('csv-drafts/export', [CsvDraftController::class, 'export'])->name('csv-drafts.export');
         Route::post('csv-drafts/upload', [CsvDraftController::class, 'upload'])->name('csv-drafts.upload');
         Route::post('csv-drafts/generate', [CsvDraftController::class, 'generateFromUrl'])->name('csv-drafts.generate');
         Route::post('csv-drafts/post-all', [CsvDraftController::class, 'postAll'])->name('csv-drafts.post-all');
+        Route::delete('csv-drafts/delete-all', [CsvDraftController::class, 'destroyAll'])->name('csv-drafts.destroy-all');
         Route::get('csv-drafts/{draft}/edit', [CsvDraftController::class, 'edit'])->name('csv-drafts.edit');
         Route::post('csv-drafts/{draft}/post', [CsvDraftController::class, 'post'])->name('csv-drafts.post');
         Route::delete('csv-drafts/{draft}', [CsvDraftController::class, 'destroy'])->name('csv-drafts.destroy');
@@ -109,6 +111,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::post('imports/{batch}/retry', [ImportController::class, 'retry'])->name('imports.retry');         // §15 retry failed batch
         Route::post('imports/{batch}/retry-failed', [ImportController::class, 'retryFailedItems'])->name('imports.retry-failed'); // §16 resume failed items
         Route::get('imports/{batch}', [ImportController::class, 'show'])->name('imports.show');               // results
+        Route::get('imports/{batch}/export', [ImportController::class, 'export'])->name('imports.export');   // download scraped products as CSV
     });
 
     // Analytics & users — aggregated, privacy-friendly visitor/engagement metrics.
