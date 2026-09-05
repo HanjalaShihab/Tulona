@@ -152,7 +152,9 @@ class ImportService
             return 'skipped_count';
         }
 
-        $product = Product::withTrashed()->firstOrNew(['slug' => Str::slug($data['name'])]);
+        $slug = $this->generateUniqueSlug(Str::slug($data['name']), $category->id ?? null);
+
+        $product = Product::withTrashed()->firstOrNew(['slug' => $slug]);
 
         $wasCreated = ! $product->exists;
 
@@ -182,7 +184,7 @@ class ImportService
                 'current_price' => $price,
                 'original_price' => isset($data['original_price']) && is_numeric($op = str_replace([',', '৳'], '', $data['original_price'])) ? (float) $op : null,
                 'currency' => strtoupper($data['currency'] ?? 'BDT'),
-                'availability' => in_array($data['availability'] ?? '', ['in_stock', 'out_of_stock', 'preorder', 'unknown'], true) ? $data['availability'] : 'unknown',
+                'availability' => in_array($data['availability'] ?? '', ['in_stock', 'out_of_stock', 'preorder', 'unknown'], true) ? $data['availability'] : 'in_stock',
                 'source' => 'import',
                 'status' => 'active',
                 'last_synced_at' => now(),
@@ -191,8 +193,19 @@ class ImportService
 
         app(PriceTrackingService::class)->recordPrice($offer, $offer->current_price);
 
-        return $wasCreated ? 'created_count' : 'updated_count';
+return $wasCreated ? 'created_count' : 'updated_count';
     }
 
-    // __REST2__
+    protected function generateUniqueSlug(string $slug, ?int $parentId): string
+    {
+        $uniqueSlug = $slug;
+        $counter = 1;
+        while (Product::where('slug', $uniqueSlug)->where('category_id', $parentId)->exists()) {
+            $uniqueSlug = $slug.'-'.(++$counter);
+        }
+
+        return $uniqueSlug;
+    }
+
+// __REST2__
 }

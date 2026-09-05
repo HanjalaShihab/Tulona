@@ -20,7 +20,7 @@
   </div>
 
   @if($drops->isEmpty())
-    @include('partials.empty', ['icon' => '&#128201;', 'text' => 'No price drops recorded yet. As merchants update prices they will appear here.'])
+    @include('partials.empty', ['icon' => '&#128201;', 'text' => 'No verified price drops in the selected window yet. As merchants update prices, genuine drops appear here.'])
   @else
     <div class="pane tbl-scroll" style="margin-bottom:24px;padding:0;border-radius:var(--radius)">
       <table class="compare-stores">
@@ -36,17 +36,24 @@
         </thead>
         <tbody>
           @foreach($drops as $d)
-            <tr>
-              <td><strong>{{ $d->product->name }}</strong></td>
-              <td>{{ $d->offer?->merchant?->name }}</td>
+            @php $isReverted = $d['is_reverted'] ?? false; @endphp
+            <tr class="{{ $isReverted ? 'drop-reverted' : '' }}">
+              <td><strong>{{ $d['product']->name }}</strong></td>
+              <td>{{ $d['merchant']?->name }}</td>
               <td>
-                <s class="price-old">{{ \App\Support\Currency::format((float)$d->previous_price, $d->currency) }}</s>
+                <s class="price-old">{{ \App\Support\Currency::format((float)$d['live_previous'], $d['currency']) }}</s>
                 &#8594;
-                <strong>{{ \App\Support\Currency::format((float)$d->current_price, $d->currency) }}</strong>
+                <strong>{{ \App\Support\Currency::format((float)$d['live_price'], $d['currency']) }}</strong>
               </td>
-              <td><span class="badge badge-drop">&#8595; {{ round($d->drop_percent, 1) }}% &middot; -{{ \App\Support\Currency::format((float)$d->drop_amount, $d->currency) }}</span></td>
-              <td>{{ $d->occurred_at->diffForHumans() }}</td>
-              <td><a class="btn btn-outline btn-sm" href="{{ route('product.show', $d->product->slug) }}">Compare Prices</a></td>
+              <td>
+                @if($isReverted)
+                  <span class="badge badge-out">price moved back up</span>
+                @else
+                  <span class="badge badge-drop">&#8595; {{ round((float)$d['live_drop_percent'], 1) }}% &middot; -{{ \App\Support\Currency::format((float)$d['live_drop_amount'], $d['currency']) }}</span>
+                @endif
+              </td>
+              <td>@if(isset($d['occurred_at']) && $d['occurred_at']){{ $d['occurred_at']->diffForHumans() }}@endif</td>
+              <td><a class="btn btn-outline btn-sm" href="{{ route('product.show', $d['product']->slug) }}">Compare Prices</a></td>
             </tr>
           @endforeach
         </tbody>

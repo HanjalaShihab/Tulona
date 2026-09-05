@@ -95,9 +95,20 @@
         <button type="button" class="btn btn-outline btn-sm" id="btn-genslug" style="height:38px">Generate</button>
       </div>
 
+      <div class="field" style="margin-bottom:8px">
+        <label>Search categories</label>
+        <input type="text" id="cat-search-single" list="cat-single-list" placeholder="Type to search 644 categories... e.g. Mouse, Keyboard, Camera, Books" autocomplete="off" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px">
+        <datalist id="cat-single-list">
+          @foreach($categories as $c)
+            <option value="{{ $c->name }}"></option>
+            @if($c->parent?->name)<option value="{{ $c->parent->name }} → {{ $c->name }}"></option>@endif
+          @endforeach
+        </datalist>
+        <small style="color:var(--ink-3)">Type to filter the dropdown below — selecting a suggestion auto-selects it.</small>
+      </div>
       <div class="form-grid-2">
         <div class="field"><label>Category *</label>
-          <select name="category_id" required>
+          <select name="category_id" id="cat-single-select" required>
             <option value="">— Select category —</option>
             @foreach($categories as $c)
               <option value="{{ $c->id }}" {{ (int)old('category_id', $product->category_id) === (int)$c->id ? 'selected' : '' }}>
@@ -258,7 +269,14 @@
                     </select>
                   </div>
                   <div class="field" style="grid-column:1/-1"><label>Affiliate URL</label>
-                    <input type="url" name="affiliate_url" value="{{ $o->affiliate_url }}">
+                    <div style="display:flex;gap:8px">
+                      <input type="url" name="affiliate_url" value="{{ $o->affiliate_url }}" style="flex:1" class="js-affiliate-input">
+                      <button type="button" class="btn btn-outline btn-sm js-append-startech">Append StarTech code</button>
+                    </div>
+                    <small style="color:var(--ink-3)">For Star Tech, <code>?tracking=CODE</code> auto-appended. Code from field below.</small>
+                  </div>
+                  <div class="field" style="grid-column:1/-1"><label>StarTech tracking code <span style="font-weight:400;color:var(--ink-3)">— optional custom</span></label>
+                    <input type="text" name="startech_tracking_code" value="{{ config('services.startech.tracking_code') }}" placeholder="6a8fee867aad2" style="max-width:220px">
                   </div>
                   <div style="display:flex;gap:8px;grid-column:1/-1">
                     <button class="btn btn-primary btn-sm">Save changes</button>
@@ -313,17 +331,24 @@
         </div>
       </div>
       <div class="field" style="margin-top:10px"><label>Affiliate URL * <span style="font-weight:400;color:var(--ink-3)">(where “Buy now” goes)</span></label>
-        <input type="url" name="affiliate_url" required placeholder="https://…">
+        <div style="display:flex;gap:8px">
+          <input type="url" name="affiliate_url" id="new-affiliate-url" required placeholder="https://www.startech.com.bd/... or https://…" style="flex:1">
+          <button type="button" class="btn btn-outline btn-sm" id="btn-append-startech-new">Append StarTech code</button>
+        </div>
+        <small style="color:var(--ink-3)">For Star Tech merchant, <code>?tracking=CODE</code> auto-appended on save. Use button for preview.</small>
+      </div>
+      <div class="field" style="margin-top:8px"><label>StarTech tracking code <span style="font-weight:400;color:var(--ink-3)">— optional custom</span></label>
+        <input type="text" name="startech_tracking_code" id="new-startech-code" value="{{ config('services.startech.tracking_code') }}" placeholder="6a8fee867aad2" style="max-width:220px">
       </div>
       <div class="form-grid-3" style="margin-top:10px">
         <div class="field"><label>Current price</label><input type="number" step="0.01" min="0" name="current_price" placeholder="Leave empty if unavailable"></div>
         <div class="field"><label>Original price</label><input type="number" step="0.01" min="0" name="original_price" placeholder="Only if real discount"></div>
         <div class="field"><label>Availability</label>
           <select name="availability">
-            <option value="in_stock">In stock</option>
+            <option value="in_stock" selected>In stock</option>
             <option value="out_of_stock">Out of stock</option>
             <option value="preorder">Pre-order</option>
-            <option value="unknown" selected>Unknown</option>
+            <option value="unknown">Unknown</option>
           </select>
         </div>
       </div>
@@ -453,6 +478,65 @@ function offerRowToggle(btn, cls){
   const sd = document.querySelector('input[name="short_description"]');
   const sdCount = document.getElementById('sd-count');
   if(sd && sdCount){ sd.addEventListener('input', ()=> sdCount.textContent = sd.value.length + '/500'); }
+
+  // StarTech tracking append
+  function appendStartech(url, code){
+    if(!url) return url;
+    code = (code||'').trim() || '{{ config('services.startech.tracking_code') }}';
+    if(!code) return url;
+    if(/[?&]tracking=/i.test(url)) return url.replace(/([?&]tracking=)[^&]*/i, '$1'+encodeURIComponent(code));
+    const sep = url.includes('?') ? '&' : '?';
+    const hashIdx = url.indexOf('#');
+    if(hashIdx !== -1) return url.slice(0,hashIdx) + sep + 'tracking=' + encodeURIComponent(code) + url.slice(hashIdx);
+    return url + sep + 'tracking=' + encodeURIComponent(code);
+  }
+  document.querySelectorAll('.js-append-startech').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const tr = btn.closest('tr') || btn.closest('form');
+      const input = tr.querySelector('.js-affiliate-input') || tr.querySelector('input[name="affiliate_url"]');
+      const codeInput = tr.querySelector('input[name="startech_tracking_code"]');
+      if(input) input.value = appendStartech(input.value.trim(), codeInput ? codeInput.value : '');
+    });
+  });
+  const newAff = document.getElementById('new-affiliate-url');
+  const newCode = document.getElementById('new-startech-code');
+  const newBtn = document.getElementById('btn-append-startech-new');
+  if(newAff && newBtn){
+    newBtn.addEventListener('click', ()=>{ newAff.value = appendStartech(newAff.value.trim(), newCode ? newCode.value : ''); });
+  }
+
+  // searchable single category (product edit) - type to filter / auto-select
+  var catSearchSingle = document.getElementById('cat-search-single');
+  var catSingleSelect = document.getElementById('cat-single-select');
+  if(catSearchSingle && catSingleSelect){
+    catSearchSingle.addEventListener('input', function(){
+      var q = catSearchSingle.value.toLowerCase().trim();
+      for(var i=0;i<catSingleSelect.options.length;i++){
+        var opt=catSingleSelect.options[i];
+        if(!opt.value){ continue; }
+        var txt=opt.textContent.toLowerCase();
+        var show = !q || txt.includes(q);
+        opt.hidden = !show;
+        opt.style.display = show ? '' : 'none';
+      }
+    });
+    catSearchSingle.addEventListener('change', function(){
+      var q = catSearchSingle.value.toLowerCase().trim();
+      if(!q) return;
+      // exact match first
+      for(var i=0;i<catSingleSelect.options.length;i++){
+        var opt=catSingleSelect.options[i];
+        if(opt.textContent.toLowerCase().trim()===q){ catSingleSelect.value=opt.value; return; }
+      }
+      // "Parent → Child" or contains
+      for(var i=0;i<catSingleSelect.options.length;i++){
+        var opt=catSingleSelect.options[i];
+        if(!opt.value) continue;
+        var txt=opt.textContent.toLowerCase();
+        if(txt.includes(q) || q.includes(txt)){ catSingleSelect.value=opt.value; return; }
+      }
+    });
+  }
 })();
 </script>
 

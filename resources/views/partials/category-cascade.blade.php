@@ -2,10 +2,23 @@
   $selParentId = (int) ($selCategory?->parent_id ?? 0);
   $selChildId = (int) ($selCategory?->id ?? 0);
   $tree = $categoryTree;
-  $childIdsOf = function ($pid) use ($tree) { return array_keys($tree['byParentId'][$pid] ?? []); };
-  $childOptions = $selParentId ? collect($childIdsOf($selParentId))->map(fn ($cid) => $tree['byId'][$cid]) : collect();
+  $childOptions = $selParentId ? collect($tree['byParentId'][$selParentId] ?? []) : collect();
 @endphp
 
+<div class="field" style="grid-column:1/-1">
+  <label>Search categories</label>
+  <input type="text" id="cat-search" list="cat-search-list" placeholder="Type to search... e.g. Mouse, Keyboard, Camera, Books" autocomplete="off" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px">
+  <datalist id="cat-search-list">
+    @foreach($tree['parents'] as $parent)
+      <option value="{{ $parent->name }}"></option>
+      @foreach($tree['byParentId'][$parent->id] ?? [] as $child)
+        <option value="{{ $child->name }}"></option>
+        <option value="{{ $parent->name }} → {{ $child->name }}"></option>
+      @endforeach
+    @endforeach
+  </datalist>
+  <small style="color:var(--ink-3)">Type to filter — selecting a suggestion auto-fills the dropdowns below.</small>
+</div>
 <div class="field" style="grid-column:1/-1">
   <label>Category *</label>
   <div style="display:flex;gap:12px;flex-wrap:wrap">
@@ -22,14 +35,17 @@
       @endforeach
     </select>
   </div>
-  <small style="color:var(--ink-3)">Pick a category — its subcategories appear beside it. Subcategory is optional; posted into the category if left blank.</small>
+  <small style="color:var(--ink-3)">Pick a category — its subcategories appear beside it. Or type above to search 644 categories.</small>
 </div>
 
 <script>
 (function () {
   var parent = document.getElementById('cat-parent'),
       child  = document.getElementById('cat-child'),
-      tree   = @json($tree['byParentId']);
+      search = document.getElementById('cat-search'),
+      tree   = @json($tree['byParentId']),
+      byId   = @json($tree['byId']),
+      parents = @json($tree['parents']);
 
   function repopulate() {
     var sel = child.value;
@@ -46,5 +62,62 @@
 
   parent.addEventListener('change', repopulate);
   repopulate();
+
+  // Searchable filter + auto-select
+  if (search) {
+    var allCats = [];
+    parents.forEach(function(p){ allCats.push({id:p.id,name:p.name,parent_id:null}); });
+    Object.keys(tree).forEach(function(pid){
+      (tree[pid]||[]).forEach(function(c){ allCats.push({id:c.id,name:c.name,parent_id:parseInt(pid)}); });
+    });
+    function findByName(name){
+      var n = name.toLowerCase().trim();
+      // exact match first
+      for(var i=0;i<allCats.length;i++){ if(allCats[i].name.toLowerCase()===n) return allCats[i]; }
+      // "Parent → Child" format
+      if(n.includes('→')){
+        var parts=n.split('→').map(s=>s.trim());
+        var childName=parts[parts.length-1];
+        for(var i=0;i<allCats.length;i++){ if(allCats[i].name.toLowerCase()===childName) return allCats[i]; }
+      }
+      // contains match (first)
+      for(var i=0;i<allCats.length;i++){ if(allCats[i].name.toLowerCase().includes(n) || n.includes(allCats[i].name.toLowerCase())) return allCats[i]; }
+      return null;
+    }
+    search.addEventListener('input', function(){
+      var q = search.value.toLowerCase().trim();
+      // Filter parent dropdown - show parent if its name or any child matches
+      for(var i=0;i<parent.options.length;i++){
+        var opt=parent.options[i];
+        if(!opt.value){ continue; }
+        var pname=opt.textContent.toLowerCase();
+        var show = !q;
+        if(q){
+          if(pname.includes(q)) show=true;
+          else {
+            var kids=tree[opt.value]||[];
+            for(var k=0;k<kids.length;k++){ if(kids[k].name.toLowerCase().includes(q)){ show=true; break; } }
+          }
+        }
+        opt.hidden = !show;
+        opt.style.display = show ? '' : 'none';
+      }
+    });
+    // Auto-select only on exact match (when user picks from datalist or types full name)
+    search.addEventListener('change', function(){
+      var hit=findByName(search.value);
+      if(hit){
+        if(hit.parent_id){
+          parent.value=hit.parent_id;
+          repopulate();
+          child.value=hit.id;
+        } else {
+          parent.value=hit.id;
+          repopulate();
+          child.value='';
+        }
+      }
+    });
+  }
 })();
 </script>

@@ -105,7 +105,6 @@
   <section class="section" id="offers" style="margin-top:12px">
     <div class="sec-head" data-reveal>
       <h2>Store Comparison</h2>
-      <span class="sr-only">Compare Stores</span>
     </div>
     @if($offers->isEmpty())
       @include('partials.empty', ['icon' => '&#9633;', 'text' => 'No active offers for this product yet.'])

@@ -211,6 +211,15 @@ h4,.h4{font-size:1.05rem;font-weight:600;line-height:1.3}
 .nav-toggle{display:none;flex-direction:column;gap:5px;padding:8px}
 .nav-toggle span{display:block;width:22px;height:1.5px;background:var(--color-ink);transition:all 180ms cubic-bezier(.4,0,.2,1)}
 
+/* ─ Categorical navbar (Startech-like, below main header, not scrolling) ─ */
+.cat-bar{background:var(--color-surface-2);color:var(--color-ink);border-bottom:1px solid var(--color-line);border-top:1px solid var(--color-line-light)}
+.cat-bar-in{max-width:1240px;margin:0 auto;padding:0 32px;display:flex;align-items:center;gap:28px;height:42px;overflow:hidden}
+.cat-bar-link{font-size:.82rem;font-weight:500;color:var(--color-ink-2);white-space:nowrap;transition:color 180ms;flex-shrink:0}
+.cat-bar-link:hover{color:var(--color-ink)}
+.cat-bar-more{margin-left:auto;font-weight:600;color:var(--color-ember);flex-shrink:0}
+.cat-bar-more:hover{color:var(--color-ember-hover)}
+@media(max-width:900px){.cat-bar{display:none}}
+
 /* ─ Suggestions ─ */
 .suggest{position:absolute;top:calc(100% + 6px);left:-1px;right:-1px;background:var(--color-surface);border:1px solid var(--color-line);box-shadow:0 18px 44px -10px rgba(30,27,22,.16);z-index:60;overflow:hidden;display:none}
 .suggest.open,.suggest.is-open{display:block}
@@ -354,6 +363,19 @@ h4,.h4{font-size:1.05rem;font-weight:600;line-height:1.3}
 .price-old{font-size:.8rem;color:var(--color-ink-4);text-decoration:line-through}
 .card-actions{display:flex;gap:8px;margin-top:14px}
 .card-actions .btn{flex:1;padding:9px 10px;font-size:.76rem}
+@media (max-width:640px){
+  .home-section{padding:48px 0}
+  .prod-grid,.prod-grid--home{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0}
+  .card{padding:14px}
+  .card-img{margin:-14px -14px 10px;padding:8px}
+  .card-name{font-size:.92rem}
+  .price-now{font-size:1rem}
+  .card-actions{flex-direction:column}
+  .card-actions .btn{width:100%}
+}
+@media (max-width:380px){
+  .prod-grid,.prod-grid--home{grid-template-columns:1fr}
+}
 
 /* ─ Deals band ─────────── */
 .home-band{position:relative;overflow:hidden;background:var(--color-deep);padding:88px 0}
@@ -1298,16 +1320,3 @@ h4,.h4{font-size:1.05rem;font-weight:600;line-height:1.3}
 /* ── Shared View Deal button color (all pages) ── */
 .view-deal-btn{background:#155e4ebb!important;color:#fff!important;border-color:#155e4ebb!important}
 .view-deal-btn:hover{background:#155e4e!important;color:#fff!important}
-
-/* Visually hidden, screen-reader only headings */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}

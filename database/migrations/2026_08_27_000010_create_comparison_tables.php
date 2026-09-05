@@ -33,8 +33,8 @@ return new class extends Migration
         // Products in a comparison — reuses canonical Product rows (§29).
         Schema::create('comparison_product', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('comparison_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('comparison_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete()->index();
             $table->unsignedInteger('sort_order')->default(0);
             $table->text('editorial_notes')->nullable();   // why we included it
             $table->string('pick_label')->nullable();      // Best Price / Best Deal override (§36)
@@ -44,9 +44,9 @@ return new class extends Migration
         // Per-merchant offer participation + admin overrides (§34, §35).
         Schema::create('comparison_offer', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('comparison_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('offer_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('comparison_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('offer_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete()->index();
             $table->boolean('is_hidden')->default(false);          // hide merchant offer (§34)
             $table->decimal('override_price', 14, 2)->nullable();   // manual override (§34)
             $table->string('override_availability')->nullable();

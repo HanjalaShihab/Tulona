@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\AuditLog;
 use App\Models\Category;
+use App\Models\Merchant;
 use App\Models\Offer;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Support\StartechAffiliate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -22,6 +24,7 @@ class ProductPublishService
     public function __construct(
         protected ProductMatchService $matcher,
         protected PriceTrackingService $pricing,
+        protected CategoryDetector $detector,
     ) {}
 
     /**
@@ -34,6 +37,27 @@ class ProductPublishService
         $categoryName = null;
 
         $product = DB::transaction(function () use ($data, $draft, &$categoryName) {
+            // Auto-detect category from product name if none selected (covers CSV without category)
+            $hasCategory = ! empty($data['category_id']) || ! empty($data['subcategory_id']) || ! empty(trim((string) ($data['category'] ?? '')));
+            if (! $hasCategory) {
+                $detected = $this->detector->detect($data['name'] ?? '', $data['description'] ?? null);
+                if ($detected) {
+                    $data['category_id'] = $detected->parent_id ? $detected->parent_id : $detected->id;
+                    $data['subcategory_id'] = $detected->parent_id ? $detected->id : null;
+                    if ($detected->parent_id) {
+                        $data['category'] = null;
+                        $data['subcategory'] = $detected->name;
+                    } else {
+                        $data['category'] = $detected->name;
+                    }
+                } else {
+                    // Fallback to Electronics when auto-detect finds no match (prevents empty category creation)
+                    $fallback = Category::where('slug', 'electronics')->first() ?? Category::whereNull('parent_id')->where('is_active', true)->first();
+                    if ($fallback) {
+                        $data['category_id'] = $fallback->id;
+                    }
+                }
+            }
             $category = $this->resolvePostedCategory(
                 $data['category_id'] ?? null,
                 $data['subcategory_id'] ?? null,
@@ -79,7 +103,9 @@ class ProductPublishService
                     $product->update($promote);
                 }
             } else {
-                $product = Product::withTrashed()->firstOrNew(['slug' => Str::slug($data['name'])]);
+                $slug = $this->generateUniqueSlug(Str::slug($data['name']), $category->id);
+
+                $product = Product::withTrashed()->firstOrNew(['slug' => $slug]);
 
                 $product->fill([
                     'category_id' => $category->id,
@@ -103,11 +129,25 @@ class ProductPublishService
 
             $num = fn ($k) => isset($data[$k]) && $data[$k] !== '' && $data[$k] !== null ? (float) $data[$k] : null;
 
+            // Auto-append StarTech tracking (?tracking=CODE) when merchant is Star Tech
+            $affiliateUrlRaw = $data['affiliate_url'] ?? '';
+            $startechCode = $data['startech_tracking_code'] ?? null;
+            if (! empty($affiliateUrlRaw) || ! empty($draft['external_url'])) {
+                $baseForStartech = ! empty($affiliateUrlRaw) ? $affiliateUrlRaw : ($draft['external_url'] ?? '');
+                $affiliateUrlRaw = StartechAffiliate::maybeAppend(
+                    $baseForStartech ?: $affiliateUrlRaw,
+                    (int) $data['merchant_id'],
+                    null,
+                    $draft['external_url'] ?? $affiliateUrlRaw,
+                    $startechCode
+                );
+            }
+
             $offer = Offer::updateOrCreate(
                 ['product_id' => $product->id, 'merchant_id' => $data['merchant_id']],
                 [
                     'external_url' => $draft['external_url'] ?? null,
-                    'affiliate_url' => $data['affiliate_url'] ?? '',
+                    'affiliate_url' => $affiliateUrlRaw ?: ($data['affiliate_url'] ?? ''),
                     'current_price' => $num('current_price'),
                     'original_price' => $num('original_price'),
                     'currency' => $data['currency'],
@@ -118,7 +158,7 @@ class ProductPublishService
                 ]
             );
 
-            $affiliateUrl = $data['affiliate_url'] ?? null;
+            $affiliateUrl = $affiliateUrlRaw ?: ($data['affiliate_url'] ?? null);
             $image = $data['image'] ?? null;
 
             $offer->affiliateOffer()->updateOrCreate([], [
@@ -214,5 +254,16 @@ class ProductPublishService
             'is_active' => true,
             'sort_order' => 0,
         ]);
+    }
+
+    protected function generateUniqueSlug(string $slug, ?int $parentId): string
+    {
+        $uniqueSlug = $slug;
+        $counter = 1;
+        while (Product::where('slug', $uniqueSlug)->where('category_id', $parentId)->exists()) {
+            $uniqueSlug = $slug.'-'.(++$counter);
+        }
+
+        return $uniqueSlug;
     }
 }

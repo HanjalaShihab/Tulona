@@ -60,7 +60,7 @@ Review &amp; Post Product
       <label>Availability</label>
       <select name="availability">
         @foreach(['in_stock','out_of_stock','preorder','unknown'] as $av)
-          <option value="{{ $av }}" {{ old('availability', $draft['availability'] ?? 'unknown') === $av ? 'selected' : '' }}>{{ str_replace('_', ' ', ucfirst($av)) }}</option>
+          <option value="{{ $av }}" {{ old('availability', $draft['availability'] ?? 'in_stock') === $av ? 'selected' : '' }}>{{ str_replace('_', ' ', ucfirst($av)) }}</option>
         @endforeach
       </select>
     </div>
@@ -74,7 +74,17 @@ Review &amp; Post Product
       </select>
     </div>
     @include('partials.category-cascade', ['categoryTree' => $categories, 'selCategory' => $selCategory])
-    <div class="field" style="grid-column:1/-1"><label>Affiliate link *</label><input type="url" name="affiliate_url" value="{{ old('affiliate_url', $draft['affiliate_url'] ?? '') }}" placeholder="https://track.rokkomari.example/?pid=..." required><small style="color:var(--ink-3)">Tracked link used by the "Buy from «Merchant»" button on the product page.</small></div>
+    <div class="field" style="grid-column:1/-1"><label>Affiliate link *</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="url" name="affiliate_url" id="affiliate_url" value="{{ old('affiliate_url', $draft['affiliate_url'] ?? '') }}" placeholder="https://www.startech.com.bd/... or https://track.example/..." required style="flex:1">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-startech-append" title="Append ?tracking=CODE for Star Tech">Append StarTech code</button>
+      </div>
+      <small style="color:var(--ink-3)">For Star Tech, <code>?tracking=CODE</code> is auto-appended on save.</small>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:12px;font-weight:600">StarTech tracking code:</label>
+        <input type="text" name="startech_tracking_code" id="startech_tracking_code" value="{{ old('startech_tracking_code', config('services.startech.tracking_code')) }}" placeholder="6a8fee867aad2" style="width:180px;padding:6px 8px;font-size:12px;border:1px solid var(--line);border-radius:6px">
+      </div>
+    </div>
 
     <h4 style="grid-column:1/-1;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:14px 0 2px">Show on homepage</h4>
     <div class="field" style="grid-column:1/-1;display:flex;gap:20px;flex-wrap:wrap;align-items:center">
@@ -93,4 +103,23 @@ Review &amp; Post Product
 @endif
 
 <p style="margin-top:18px"><a href="{{ route('admin.scrape-post.index') }}">← Back to scrape</a></p>
+<script>
+(function(){
+  const aff = document.getElementById('affiliate_url');
+  const code = document.getElementById('startech_tracking_code');
+  const btn = document.getElementById('btn-startech-append');
+  function appendStartech(url, c){
+    if(!url) return url;
+    c = (c||'').trim() || '{{ config('services.startech.tracking_code') }}';
+    if(/[?&]tracking=/i.test(url)) return url.replace(/([?&]tracking=)[^&]*/i, '$1'+encodeURIComponent(c));
+    const sep = url.includes('?') ? '&' : '?';
+    const h = url.indexOf('#');
+    if(h!==-1) return url.slice(0,h)+sep+'tracking='+encodeURIComponent(c)+url.slice(h);
+    return url+sep+'tracking='+encodeURIComponent(c);
+  }
+  if(btn && aff){
+    btn.addEventListener('click', ()=>{ aff.value = appendStartech(aff.value.trim(), code ? code.value : ''); });
+  }
+})();
+</script>
 @endsection

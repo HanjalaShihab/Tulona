@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
@@ -59,7 +60,7 @@ class CategoryController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:categories,slug,'.($request->route('category')?->id ?? ''),
+            'slug' => 'required|string|max:255|unique:categories,slug,'.($request->route('category')?->id ?? ''),
             'parent_id' => 'nullable|exists:categories,id',
             'description' => 'nullable|string|max:2000',
             'icon' => 'nullable|string|max:50',
@@ -72,6 +73,11 @@ class CategoryController extends Controller
 
         if (! empty($data['parent_id']) && (int) $data['parent_id'] === (int) ($request->route('category')?->id ?? 0)) {
             abort(422, 'A category cannot be its own parent.');
+        }
+
+        // Auto-generate slug from name if empty (defensive - validation ensures it's present)
+        if (empty($data['slug'])) {
+            $data['slug'] = Str::slug($data['name']);
         }
 
         return $data;

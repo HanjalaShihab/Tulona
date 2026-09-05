@@ -64,9 +64,8 @@ Product Drafts
   </small>
 </div>
 
-<div class="pane" style="margin-bottom:18px">
+<div class="pane">
   <h2 style="font-size:16px;margin-bottom:4px">Drafts to review</h2>
-  <p style="margin:0 0 10px"><a class="btn btn-outline btn-sm" href="{{ route('admin.csv-drafts.export') }}">⬇ Download all products (CSV)</a></p>
   @if($pendingCount > 0)
     <form method="POST" action="{{ route('admin.csv-drafts.destroy-all') }}" onsubmit="return confirm('Remove ALL pending drafts? Posted products are NOT touched.');" style="margin-bottom:8px">
       @csrf

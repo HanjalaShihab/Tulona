@@ -410,14 +410,7 @@ class HtmlProductParser implements ProductParser
             $nodes = $data[$key] ?? null;
             if (is_array($nodes) && array_is_list($nodes)) {
                 foreach ($nodes as $n) {
-                    if (! is_array($n)) {
-                        continue;
-                    }
-                    // JSON-LD ItemList wraps products in ListItem nodes.
-                    if (($n['@type'] ?? null) === 'ListItem' && is_array($n['item'] ?? null)) {
-                        $n = $n['item'];
-                    }
-                    if (($n['@type'] ?? null) === 'Product') {
+                    if (is_array($n) && ($n['@type'] ?? null) === 'Product') {
                         $out[] = $n;
                     }
                 }

@@ -6,6 +6,7 @@ use App\Models\Article;
 use App\Models\Offer;
 use App\Models\PriceDropEvent;
 use App\Models\Product;
+use App\Services\MerchandisingService;
 use App\Services\PriceTrackingService;
 use App\Services\RecommendationService;
 use Illuminate\Http\Request;
@@ -17,17 +18,12 @@ class ProductController extends Controller
     public function __construct(
         protected PriceTrackingService $priceTracking,
         protected RecommendationService $recommendations,
+        protected MerchandisingService $merchandising,
     ) {}
 
     public function trending(): View
     {
-        $products = Product::published()
-            ->where('is_trending', true)
-            ->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])
-            ->withCount(['activeOffers as offer_count'])
-            ->orderByDesc('popularity_score')
-            ->limit(12)
-            ->get();
+        $products = $this->merchandising->trending(12);
 
         return view('trending.index', [
             'products' => $products,

@@ -7,10 +7,10 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Merchant;
 use App\Models\ProductDraft;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Services\CsvDraftService;
 use App\Services\ProductPublishService;
 use App\Services\UrlDraftService;
+use App\Support\StartechAffiliate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -34,60 +34,6 @@ class CsvDraftController extends Controller
             'drafts' => ProductDraft::latest()->paginate(50),
             'merchants' => Merchant::orderBy('name')->get(['id', 'name', 'slug']),
             'pendingCount' => ProductDraft::where('status', '!=', 'posted')->count(),
-        ]);
-    }
-
-    /**
-     * Download every generated product draft as a CSV — a portable spreadsheet
-     * of the full drafts list (name, prices, merchant, links, image, status…)
-     * for sharing / browsing / offline editing outside the admin.
-     */
-    public function export(): StreamedResponse
-    {
-        $this->authorize('manage-products');
-
-        $query = ProductDraft::query()->latest('id');
-
-        return response()->streamDownload(function () use ($query) {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel reads it correctly
-
-            $headers = [
-                'name', 'current_price', 'original_price', 'currency', 'category',
-                'brand', 'merchant', 'sku', 'model_number', 'availability',
-                'affiliate_url', 'external_url', 'image', 'description', 'status',
-            ];
-            fputcsv($out, $headers);
-
-            $query->chunk(200, function ($drafts) use ($out) {
-                foreach ($drafts as $draft) {
-                    $d = is_array($draft->data) ? $draft->data : [];
-                    $images = $d['images'] ?? [];
-                    $image = is_array($images) ? (string) ($images[0] ?? ($d['image'] ?? '')) : (string) ($d['image'] ?? '');
-
-                    fputcsv($out, [
-                        (string) ($d['name'] ?? ''),
-                        $d['current_price'] ?? '',
-                        $d['original_price'] ?? '',
-                        (string) ($d['currency'] ?? 'BDT'),
-                        (string) ($d['category_slug'] ?? ''),
-                        (string) ($d['brand_slug'] ?? ''),
-                        (string) (Merchant::find($d['merchant_id'] ?? null)?->name ?? ''),
-                        (string) ($d['sku'] ?? ''),
-                        (string) ($d['model_number'] ?? ''),
-                        (string) ($d['availability'] ?? ''),
-                        (string) ($d['affiliate_url'] ?? ''),
-                        (string) ($d['external_url'] ?? ''),
-                        $image,
-                        (string) ($d['description'] ?? ''),
-                        (string) $draft->status,
-                    ]);
-                }
-            });
-
-            fclose($out);
-        }, 'products-'.now()->format('Ymd_His').'.csv', [
-            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 
@@ -146,10 +92,7 @@ class CsvDraftController extends Controller
         }
 
         if ($result['created'] === 0) {
-            $detail = $result['error'] ?? null;
-            return back()->withErrors(['generate' => 'No products could be parsed from that URL. Check the link or the merchant connection.'
-                .($result['errors'] ? " ({$result['errors']} row(s) errored)." : '')
-                .($detail ? " Last error: {$detail}" : '')]);
+            return back()->withErrors(['generate' => 'No products could be parsed from that URL. Check the link or the merchant connection.'.($result['errors'] ? " ({$result['errors']} row(s) errored)." : '')]);
         }
 
         $status = "Generated {$result['created']} product draft(s) from that URL — review and edit each one, then post.";
@@ -234,7 +177,7 @@ class CsvDraftController extends Controller
             'currency' => $data['currency'] ?? 'BDT',
             'description' => $data['description'] ?? null,
             'image' => $data['image'] ?? null,
-            'availability' => in_array($data['availability'] ?? null, ['in_stock', 'out_of_stock', 'preorder', 'unknown'], true) ? $data['availability'] : 'unknown',
+            'availability' => in_array($data['availability'] ?? null, ['in_stock', 'out_of_stock', 'preorder', 'unknown'], true) ? $data['availability'] : 'in_stock',
             'sku' => $data['sku'] ?? null,
             'is_trending' => (bool) ($data['is_trending'] ?? false),
             'is_featured' => (bool) ($data['is_featured'] ?? false),
@@ -290,9 +233,10 @@ class CsvDraftController extends Controller
             'brand_id' => 'nullable|integer|exists:brands,id',
             'category_id' => 'nullable|integer|exists:categories,id',
             'subcategory_id' => 'nullable|integer|exists:categories,id',
-            'category' => 'nullable|string|max:255|required_without:category_id',
+            'category' => 'nullable|string|max:255',
             'subcategory' => 'nullable|string|max:255',
             'affiliate_url' => 'required|url|max:2048',
+            'startech_tracking_code' => 'nullable|string|max:100',
             'current_price' => 'nullable|numeric|min:0',
             'original_price' => 'nullable|numeric|min:0',
             'currency' => 'required|size:3',
@@ -303,9 +247,11 @@ class CsvDraftController extends Controller
             'is_trending' => 'boolean',
             'is_featured' => 'boolean',
             'is_top_selling' => 'boolean',
-        ], [
-            'category.required_without' => 'Choose a category or type a new one below.',
         ]);
+
+        $code = $data['startech_tracking_code'] ?? null;
+        unset($data['startech_tracking_code']);
+        $data['affiliate_url'] = StartechAffiliate::maybeAppend($data['affiliate_url'], (int) $data['merchant_id'], null, $draft->data['external_url'] ?? $data['affiliate_url'], $code);
 
         $draftData = $draft->data ?? [];
 

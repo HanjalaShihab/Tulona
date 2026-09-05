@@ -7,6 +7,7 @@ use App\Models\ImportBatch;
 use App\Models\Merchant;
 use App\Models\ProductDraft;
 use App\Services\Scraping\UrlScrapeService;
+use App\Support\StartechAffiliate;
 
 /**
  * "Generate from URL" — scrapes a merchant product-list page (JSON feed, JSON-LD
@@ -27,7 +28,7 @@ class UrlDraftService
     ) {}
 
     /**
-     * @return array{created: int, errors: int, error?: string}
+     * @return array{created: int, errors: int}
      */
     public function scrapeToDrafts(string $url, ?int $categoryId = null, ?int $merchantId = null): array
     {
@@ -66,12 +67,7 @@ class UrlDraftService
             // knows not every product on the page made it into a draft.
             $errors = $batch->items()->where('status', 'error')->count();
 
-            $lastError = null;
-            if ($created === 0 && $errors > 0) {
-                $lastError = optional($batch->items()->where('status', 'error')->latest('id')->first())->error;
-            }
-
-            return ['created' => $created, 'errors' => $errors, 'error' => $lastError];
+            return ['created' => $created, 'errors' => $errors];
         } finally {
             // The temp batch was only a staging area for the scraped rows — drafts
             // now own the data, so the batch (and its items) are cleaned up.
@@ -84,21 +80,36 @@ class UrlDraftService
     {
         $images = $n['images'] ?? [];
 
+        $merchantId = $batch->merchant_id ?? $this->resolveMerchantFromUrl($batch->source_url);
+        $affiliateUrl = (string) ($n['affiliate_url'] ?? '');
+        $externalUrl = (string) ($n['external_url'] ?? ($batch->source_url ?? ''));
+        if ($affiliateUrl === '' && $externalUrl !== '' && StartechAffiliate::isStartechMerchantId($merchantId, $externalUrl)) {
+            $affiliateUrl = StartechAffiliate::buildAffiliateUrl($externalUrl);
+        } elseif ($affiliateUrl !== '' && StartechAffiliate::isStartechMerchantId($merchantId, $externalUrl ?: $affiliateUrl)) {
+            $affiliateUrl = StartechAffiliate::buildAffiliateUrl($affiliateUrl);
+        }
+        $categorySlug = (string) ($n['category_slug'] ?? ($batch->category_slug ?? ''));
+        if ($categorySlug === '') {
+            $detected = app(CategoryDetector::class)->detect((string) ($n['name'] ?? ''), (string) ($n['description'] ?? ''));
+            if ($detected) {
+                $categorySlug = $detected->slug;
+            }
+        }
         return [
             'name' => (string) ($n['name'] ?? ''),
             'description' => (string) ($n['description'] ?? ''),
-            'category_slug' => (string) ($n['category_slug'] ?? ($batch->category_slug ?? '')),
+            'category_slug' => $categorySlug,
             'category_id' => null,
             'subcategory' => null,
-            'merchant_id' => $batch->merchant_id ?? $this->resolveMerchantFromUrl($batch->source_url),
-            'affiliate_url' => (string) ($n['affiliate_url'] ?? ''),
-            'external_url' => (string) ($n['external_url'] ?? ($batch->source_url ?? '')),
+            'merchant_id' => $merchantId,
+            'affiliate_url' => $affiliateUrl,
+            'external_url' => $externalUrl,
             'current_price' => isset($n['price']) && $n['price'] !== null && $n['price'] !== ''
                 ? (string) $n['price'] : null,
             'original_price' => isset($n['original_price']) && $n['original_price'] !== null && $n['original_price'] !== ''
                 ? (string) $n['original_price'] : null,
             'currency' => strtoupper((string) ($n['currency'] ?? 'BDT')) ?: 'BDT',
-            'availability' => $n['availability'] ?? 'unknown',
+            'availability' => $n['availability'] ?? 'in_stock',
             'gtin' => (string) ($n['gtin'] ?? ''),
             'model_number' => (string) ($n['model_number'] ?? ''),
             'sku' => (string) ($n['sku'] ?? ''),
@@ -125,28 +136,23 @@ class UrlDraftService
             return null;
         }
 
-        $host = $this->bareHost(parse_url($url, PHP_URL_HOST));
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
         if ($host === '') {
             return null;
         }
 
-        foreach (Merchant::where('status', 'active')->get(['id', 'website_url', 'base_affiliate_url']) as $merchant) {
+        foreach (Merchant::where('status', 'active')->get(['id', 'slug', 'name', 'website_url', 'base_affiliate_url']) as $merchant) {
             foreach ([$merchant->website_url, $merchant->base_affiliate_url] as $candidate) {
-                $candidateHost = $candidate ? $this->bareHost(parse_url($candidate, PHP_URL_HOST)) : '';
+                $candidateHost = $candidate ? strtolower((string) parse_url($candidate, PHP_URL_HOST)) : '';
                 if ($candidateHost !== '' && (str_ends_with($host, $candidateHost) || str_ends_with($candidateHost, $host))) {
                     return $merchant->id;
                 }
             }
+            if (str_contains($host, 'startech') && (str_contains(strtolower($merchant->slug ?? ''), 'startech') || str_contains(strtolower($merchant->name ?? ''), 'star tech'))) {
+                return $merchant->id;
+            }
         }
 
         return null;
-    }
-
-    /** Lowercase host without a leading "www." so www.startech.com.bd matches startech.com.bd. */
-    protected function bareHost(?string $host): string
-    {
-        $host = strtolower(trim((string) $host));
-
-        return str_starts_with($host, 'www.') ? substr($host, 4) : $host;
     }
 }

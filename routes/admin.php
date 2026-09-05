@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CsvDraftController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -61,7 +62,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
     // Upload CSV / generate from URL → review & post products individually (Product Generator)
     Route::middleware('can:manage-products')->group(function () {
         Route::get('csv-drafts', [CsvDraftController::class, 'index'])->name('csv-drafts.index');
-        Route::get('csv-drafts/export', [CsvDraftController::class, 'export'])->name('csv-drafts.export');
         Route::post('csv-drafts/upload', [CsvDraftController::class, 'upload'])->name('csv-drafts.upload');
         Route::post('csv-drafts/generate', [CsvDraftController::class, 'generateFromUrl'])->name('csv-drafts.generate');
         Route::post('csv-drafts/post-all', [CsvDraftController::class, 'postAll'])->name('csv-drafts.post-all');
@@ -94,6 +94,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
     Route::middleware('can:manage-content')->group(function () {
         Route::resource('articles', ArticleController::class)->except('show');
         Route::resource('landing-pages', LandingPageController::class)->except('show');
+        Route::resource('campaigns', CampaignController::class)->except('show');
         Route::put('settings/homepage', [SettingController::class, 'updateHomepage'])->name('settings.homepage');
     });
 

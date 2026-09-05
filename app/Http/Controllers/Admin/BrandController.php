@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class BrandController extends Controller
@@ -49,14 +50,21 @@ class BrandController extends Controller
 
     protected function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:brands,slug,'.($request->route('brand')?->id ?? ''),
+            'slug' => 'required|string|max:255|unique:brands,slug,'.($request->route('brand')?->id ?? ''),
             'logo_path' => 'nullable|url|max:2048',
             'description' => 'nullable|string|max:5000',
             'website_url' => 'nullable|url|max:2048',
             'seo_title' => 'nullable|string|max:255',
             'seo_description' => 'nullable|string|max:500',
         ]);
+
+        // Auto-generate slug from name if empty (defensive)
+        if (empty($data['slug'])) {
+            $data['slug'] = Str::slug($data['name']);
+        }
+
+        return $data;
     }
 }

@@ -25,8 +25,8 @@ return new class extends Migration
         // Products are decoupled from merchants — Offers connect them (§51).
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('category_id')->constrained()->restrictOnDelete();
-            $table->foreignId('brand_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('category_id')->constrained()->restrictOnDelete()->index();
+            $table->foreignId('brand_id')->nullable()->constrained()->nullOnDelete()->index();
             $table->string('name');
             $table->string('slug')->unique();
             $table->string('sku')->nullable()->index();
@@ -57,7 +57,7 @@ return new class extends Migration
 
         Schema::create('product_images', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete()->index();
             $table->string('path');                  // storage-relative path OR permitted remote URL
             $table->string('alt_text')->nullable();
             $table->boolean('is_main')->default(false);
@@ -67,7 +67,7 @@ return new class extends Migration
 
         Schema::create('product_attributes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete()->index();
             $table->foreignId('attribute_definition_id')->constrained()->cascadeOnDelete();
             $table->string('value_text')->nullable()->index();
             $table->decimal('value_number', 12, 3)->nullable()->index();

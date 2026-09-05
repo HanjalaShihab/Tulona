@@ -13,9 +13,9 @@ return new class extends Migration
         // One affiliate offer per merchant product (offer), owned by a canonical product.
         Schema::create('affiliate_offers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('offer_id')->constrained()->cascadeOnDelete(); // the merchant product/listing
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('merchant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('offer_id')->constrained()->cascadeOnDelete()->index(); // the merchant product/listing
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('merchant_id')->constrained()->cascadeOnDelete()->index();
             $table->text('normal_product_url')->nullable();
             $table->text('affiliate_url')->nullable();        // generated or manually pasted (§21)
             $table->string('tracking_identifier')->nullable();
@@ -36,9 +36,9 @@ return new class extends Migration
         // §20 Manual/Automated generation history for every affiliate offer.
         Schema::create('affiliate_link_generations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('affiliate_offer_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('merchant_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('affiliate_offer_id')->constrained()->cascadeOnDelete()->index();
+            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete()->index();
+            $table->foreignId('merchant_id')->nullable()->constrained()->nullOnDelete()->index();
             $table->string('method');                         // manual|automated
             $table->string('status')->default('queued')->index(); // queued|processing|success|failed|invalid
             $table->text('input_url')->nullable();            // product URL pasted into generator (§21)

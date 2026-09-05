@@ -72,6 +72,9 @@
     <a href="{{ route('admin.landing-pages.index') }}" class="{{ request()->routeIs('admin.landing-pages.*') ? 'active' : '' }}">
       <span class="side-ico">&#9783;</span><span>Landing Pages</span>
     </a>
+    <a href="{{ route('admin.campaigns.index') }}" class="{{ request()->routeIs('admin.campaigns.*') ? 'active' : '' }}">
+      <span class="side-ico">&#9889;</span><span>Campaigns</span>
+    </a>
 
     @can('manage-users')
     <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">

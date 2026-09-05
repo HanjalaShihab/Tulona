@@ -38,4 +38,7 @@ return [
     // Token protecting the /tulona/cron/{token} webhook on shared hosting.
     'scheduler_token' => env('SCHEDULER_TOKEN'),
 
+    'startech' => [
+        'tracking_code' => env('STARTECH_TRACKING_CODE', '6a8fee867aad2'),
+    ],
 ];

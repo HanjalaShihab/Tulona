@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Merchant;
 use App\Services\ProductPublishService;
 use App\Services\Scraping\UrlFetcher;
+use App\Support\StartechAffiliate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -93,7 +94,7 @@ class ScrapePostController extends Controller
                 'price' => $price,
                 'original_price' => $original,
                 'currency' => 'BDT',
-                'availability' => $details['availability'] ?? 'unknown',
+                'availability' => $details['availability'] ?? 'in_stock',
                 'images' => $images,
                 'image' => $images[0] ?? null,
                 'sku' => $details['sku'] ?? null,
@@ -141,9 +142,10 @@ class ScrapePostController extends Controller
             'brand_id' => 'nullable|integer|exists:brands,id',
             'category_id' => 'nullable|integer|exists:categories,id',
             'subcategory_id' => 'nullable|integer|exists:categories,id',
-            'category' => 'nullable|string|max:255|required_without:category_id',
+            'category' => 'nullable|string|max:255',
             'subcategory' => 'nullable|string|max:255',
             'affiliate_url' => 'required|url|max:2048',
+            'startech_tracking_code' => 'nullable|string|max:100',
             'current_price' => 'nullable|numeric|min:0',
             'original_price' => 'nullable|numeric|min:0',
             'currency' => 'required|size:3',
@@ -154,9 +156,10 @@ class ScrapePostController extends Controller
             'is_trending' => 'boolean',
             'is_featured' => 'boolean',
             'is_top_selling' => 'boolean',
-        ], [
-            'category.required_without' => 'Choose a landing-page category or type a new one below.',
         ]);
+        $code = $data['startech_tracking_code'] ?? null;
+        unset($data['startech_tracking_code']);
+        $data['affiliate_url'] = StartechAffiliate::maybeAppend($data['affiliate_url'], (int) $data['merchant_id'], null, $draft['external_url'] ?? $data['affiliate_url'], $code);
 
         $result = $service->publish($data, $draft);
 
@@ -187,12 +190,15 @@ class ScrapePostController extends Controller
             return null;
         }
 
-        foreach (Merchant::where('status', 'active')->get(['id', 'website_url', 'base_affiliate_url']) as $merchant) {
+        foreach (Merchant::where('status', 'active')->get(['id', 'slug', 'name', 'website_url', 'base_affiliate_url']) as $merchant) {
             foreach ([$merchant->website_url, $merchant->base_affiliate_url] as $candidate) {
                 $candidateHost = $candidate ? strtolower((string) parse_url($candidate, PHP_URL_HOST)) : '';
                 if ($candidateHost !== '' && (str_ends_with($host, $candidateHost) || str_ends_with($candidateHost, $host))) {
                     return $merchant->id;
                 }
+            }
+            if (str_contains($host, 'startech') && (str_contains(strtolower($merchant->slug ?? ''), 'startech') || str_contains(strtolower($merchant->name ?? ''), 'star tech'))) {
+                return $merchant->id;
             }
         }
 

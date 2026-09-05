@@ -64,7 +64,7 @@ return new class extends Migration
 
         Schema::create('import_errors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('import_batch_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('import_batch_id')->constrained()->cascadeOnDelete()->index();
             $table->unsignedInteger('row_number')->nullable();
             $table->string('field')->nullable();
             $table->text('message');
@@ -74,7 +74,7 @@ return new class extends Migration
 
         Schema::create('sync_logs', function (Blueprint $table) {   // §26 + §65
             $table->id();
-            $table->foreignId('merchant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('merchant_id')->constrained()->cascadeOnDelete()->index();
             $table->string('status');                    // running|success|failed
             $table->unsignedInteger('items_updated')->default(0);
             $table->unsignedInteger('items_failed')->default(0);

@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Services\PriceTrackingService;
 use App\Services\ProductMatchService;
+use App\Support\StartechAffiliate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -160,6 +161,8 @@ class ProductController extends Controller
     public function storeOffer(Request $request, Product $product): RedirectResponse
     {
         $data = $this->offerValidated($request);
+        // Auto-append StarTech tracking code if merchant is Star Tech
+        $data = $this->applyStartechTracking($data);
 
         // Price changes always flow through price tracking (§27) + audit (§93)
         $offer = DB::transaction(function () use ($data, $product) {
@@ -199,6 +202,7 @@ class ProductController extends Controller
     {
         $data = $request->validate([
             'affiliate_url' => 'sometimes|required|url|max:2048',
+            'startech_tracking_code' => 'sometimes|nullable|string|max:100',
             'current_price' => 'sometimes|nullable|numeric|min:0',
             'original_price' => 'sometimes|nullable|numeric|min:0',
             'currency' => 'sometimes|required|in:BDT,USD,INR,EUR,GBP',
@@ -206,6 +210,7 @@ class ProductController extends Controller
             'status' => 'sometimes|required|in:active,inactive',
             'merchant_id' => 'sometimes|required|exists:merchants,id',
         ]);
+        unset($data['startech_tracking_code']);
 
         // One offer per merchant per product: reject reassignment onto an existing store.
         if (isset($data['merchant_id']) && (int) $data['merchant_id'] !== (int) $offer->merchant_id
@@ -213,6 +218,7 @@ class ProductController extends Controller
             return back()->withErrors(['merchant_id' => 'This product already has an offer from that merchant — each store gets one row.']);
         }
 
+        $data = $this->applyStartechTracking($data, $offer->merchant_id);
         DB::transaction(function () use ($offer, $data) {
             $oldPrice = (float) ($offer->current_price ?? 0);
             $oldMerchantId = $offer->merchant_id;
@@ -367,7 +373,7 @@ class ProductController extends Controller
         return back()->with('status', 'Image removed.');
     }
 
-    /** Bulk catalogue actions (§48): publish / unpublish / archive / delete / category. */
+    /** Bulk catalogue actions (§48): publish / unpublish / archive / delete / category / brand. */
     public function bulkAction(Request $request): RedirectResponse
     {
         if ($request->method() !== 'POST') {
@@ -377,8 +383,9 @@ class ProductController extends Controller
         $data = $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'exists:products,id',
-            'action' => 'required|in:publish,unpublish,archive,delete,category',
+            'action' => 'required|in:publish,unpublish,archive,delete,category,brand',
             'category_id' => 'required_if:action,category|exists:categories,id',
+            'brand_id' => 'required_if:action,brand|exists:brands,id',
         ]);
 
         $ids = $data['ids'];
@@ -397,20 +404,22 @@ class ProductController extends Controller
                     ->count(),
                 'delete' => $count = Product::withTrashed()->whereIn('id', $ids)->forceDelete(),
                 'category' => $count = Product::whereIn('id', $ids)->update(['category_id' => $data['category_id']]),
+                'brand' => $count = Product::whereIn('id', $ids)->update(['brand_id' => $data['brand_id']]),
             };
         });
 
-        AuditLog::record('product.bulk_'.$data['action'], null, ['ids' => $ids, 'count' => $count, 'category_id' => $data['category_id'] ?? null]);
+        AuditLog::record('product.bulk_'.$data['action'], null, ['ids' => $ids, 'count' => $count, 'category_id' => $data['category_id'] ?? null, 'brand_id' => $data['brand_id'] ?? null]);
 
         return back()->with('status', "Bulk action '{$data['action']}' applied to {$count} product(s).");
     }
 
     protected function offerValidated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'merchant_id' => 'required|exists:merchants,id',
             'affiliate_url' => 'required|url|max:2048',
             'external_url' => 'nullable|url|max:2048',
+            'startech_tracking_code' => 'nullable|string|max:100',
             'current_price' => 'nullable|numeric|min:0',
             'original_price' => 'nullable|numeric|min:0',
             'currency' => 'required|size:3',
@@ -418,5 +427,25 @@ class ProductController extends Controller
             'shipping_info' => 'nullable|string|max:255',
             'deal_expires_at' => 'nullable|date|after:now',
         ]);
+        // startech_tracking_code is only used to build affiliate_url, not stored on offers
+        unset($data['startech_tracking_code']);
+        return $data;
+    }
+
+    protected function applyStartechTracking(array $data, ?int $fallbackMerchantId = null): array
+    {
+        $merchantId = $data['merchant_id'] ?? $fallbackMerchantId;
+        if (! isset($data['affiliate_url']) || $merchantId === null) {
+            return $data;
+        }
+        $code = request()->input('startech_tracking_code');
+        $data['affiliate_url'] = StartechAffiliate::maybeAppend(
+            $data['affiliate_url'],
+            (int) $merchantId,
+            null,
+            $data['external_url'] ?? $data['affiliate_url'],
+            $code
+        );
+        return $data;
     }
 }

@@ -61,9 +61,6 @@ Product Generator
   <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:12px">
     Open the drafts list to review and edit each product, then post them all or individually.
   </p>
-  <div style="display:flex;gap:10px;flex-wrap:wrap">
-    <a class="btn btn-primary" href="{{ route('admin.csv-drafts.index') }}">Open drafts ({{ $draftCount }})</a>
-    <a class="btn btn-outline" href="{{ route('admin.csv-drafts.export') }}" title="Download every generated product draft as a CSV spreadsheet">⬇ Download all products (CSV)</a>
-  </div>
+  <a class="btn btn-primary" href="{{ route('admin.csv-drafts.index') }}">Open drafts ({{ $draftCount }})</a>
 </div>
 @endsection

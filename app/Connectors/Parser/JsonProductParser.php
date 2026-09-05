@@ -19,14 +19,10 @@ class JsonProductParser implements ProductParser
         if (! is_array($json)) {
             return;
         }
+
         foreach ($this->extractList($json) as $node) {
             if (! is_array($node)) {
                 continue;
-            }
-            // JSON-LD ItemList wraps each product in a ListItem node — unwrap
-            // it so the Product fields are read from the right level.
-            if (isset($node['item']) && is_array($node['item'])) {
-                $node = $node['item'];
             }
             $row = $this->clean($node);
             if (isset($row['name'], $row['price']) || isset($row['name'], $row['external_url'])) {
@@ -147,9 +143,9 @@ class JsonProductParser implements ProductParser
             'sku' => $this->scalarOrNull($pick($node, 'sku', 'merchant_product_id', 'external_product_id', 'sku', 'id')),
             'description' => $this->scalarOrNull($pick($node, 'description', 'short_description')),
             'image' => $this->urlOrNull($primaryImage),
-            'images' => $images === null
-                ? []
-                : array_values(array_filter(array_map(fn ($i) => $this->urlOrNull($i), is_array($images) ? $images : [$images]))),
+            'images' => is_array($images)
+                ? array_values(array_filter(array_map(fn ($i) => $this->urlOrNull($i), $images)))
+                : [],
         ];
     }
 

@@ -32,6 +32,7 @@ Route::get('/trending', [ProductController::class, 'trending'])->name('trending.
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 Route::get('/category/{slug}', [CategoryController::class, 'show'])->name('categories.show');
 
+Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
 Route::get('/brand/{slug}', [BrandController::class, 'show'])->name('brands.show');
 Route::get('/merchant/{slug}', [MerchantController::class, 'show'])->name('merchants.show');
 

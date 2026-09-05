@@ -139,9 +139,9 @@ class ProductMatchService
     /** Longer names can tolerate a token or two differing between merchants. */
     protected function threshold(string $normalized): float
     {
-        $tokens = preg_split('/\s+/', trim($normalized)) ?: [];
-
-        return count($tokens) <= 2 ? 1.0 : (count($tokens) >= 5 ? 0.72 : 0.78);
+        // Require exact match for product merging to prevent
+        // accidentally merging similar-but-different products
+        return 1.0;
     }
 
     protected function rootCategoryId(?int $categoryId): ?int

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\MerchandisingService;
 
 /**
  * Anonymous, contextual recommendations (§47): similar / cheaper alternatives /
@@ -37,9 +38,7 @@ class RecommendationService
 
     public function trending(int $limit = 8)
     {
-        return Product::where('status', 'published')->where('is_trending', true)
-            ->orderByDesc('popularity_score')->limit($limit)
-            ->get();
+        return app(MerchandisingService::class)->trending($limit);
     }
 
     protected function bestPriceFor(Product $product): ?float

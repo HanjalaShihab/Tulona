@@ -24,17 +24,6 @@
 @yield('schema')
 </head>
 <body>
-  <div class="ticker" aria-hidden="true">
-    <div class="ticker-track">
-      <div class="ticker-group">
-        <span class="ticker-item">&#10003; Verified price history &mdash; no fake discounts</span>
-        <span class="ticker-item">&#9878; Side-by-side store comparison on every product</span>
-        <span class="ticker-item">&#8635; Freshness promise &mdash; offers refreshed within 72h</span>
-        <span class="ticker-item">&#9733; Independent rankings &mdash; no sponsored placement</span>
-      </div>
-    </div>
-  </div>
-
   <header class="site-header">
     <div class="header-in">
       <button class="nav-toggle" data-drawer-open type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
@@ -42,6 +31,7 @@
       <nav class="main-nav" aria-label="Main">
         <a class="nav-link{{ request()->routeIs('deals.*') ? ' active' : '' }}" href="{{ route('deals.index') }}">Deals</a>
         <a class="nav-link{{ request()->routeIs('drops.*') ? ' active' : '' }}" href="{{ route('drops.index') }}">Price Drops</a>
+        <a class="nav-link{{ request()->routeIs('brands.*') ? ' active' : '' }}" href="{{ route('brands.index') }}">Brands</a>
         <a class="nav-link{{ request()->routeIs('guides.*') || request()->routeIs('reviews.*') ? ' active' : '' }}" href="{{ route('guides.index') }}">Guides</a>
         <a class="nav-link{{ request()->routeIs('reviews.*') ? ' active' : '' }}" href="{{ route('reviews.index') }}">Reviews</a>
       </nav>
@@ -73,6 +63,15 @@
     </div>
   </header>
 
+  <nav class="cat-bar" aria-label="Categories">
+    <div class="container cat-bar-in">
+      @foreach(array_slice($navCategories, 0, 10) as $c)
+        <a href="{{ route('categories.show', $c['slug']) }}" class="cat-bar-link">{{ $c['name'] }}</a>
+      @endforeach
+      <a href="{{ route('categories.index') }}" class="cat-bar-link cat-bar-more">All Categories →</a>
+    </div>
+  </nav>
+
   <div class="drawer" data-drawer aria-hidden="true">
     <div class="drawer-head">
       <a class="logo" href="{{ route('home') }}"><span class="logo-mark" aria-hidden="true">T</span><span class="logo-text">Tulo<span>na</span></span></a>
@@ -85,6 +84,7 @@
     <nav class="drawer-nav" aria-label="Mobile">
       <a href="{{ route('deals.index') }}"><span>&#128293;</span> Deals</a>
       <a href="{{ route('drops.index') }}"><span>&#128201;</span> Price Drops</a>
+      <a href="{{ route('brands.index') }}"><span>&#127991;</span> Brands</a>
       <a href="{{ route('guides.index') }}"><span>&#128214;</span> Guides</a>
       <a href="{{ route('reviews.index') }}"><span>&#11088;</span> Reviews</a>
     </nav>
@@ -120,6 +120,7 @@
           <h4>Explore</h4>
           <a href="{{ route('deals.index') }}">Deals</a>
           <a href="{{ route('drops.index') }}">Price Drops</a>
+          <a href="{{ route('brands.index') }}">Brands</a>
           <a href="{{ route('guides.index') }}">Buying Guides</a>
           <a href="{{ route('reviews.index') }}">Reviews</a>
         </div>

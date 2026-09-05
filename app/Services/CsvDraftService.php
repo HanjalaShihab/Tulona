@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Merchant;
+use App\Support\StartechAffiliate;
 
 /**
  * Turns an uploaded products CSV into editable ProductDraft rows. Unlike the
@@ -86,16 +87,33 @@ class CsvDraftService
             ?? ($defaults['merchant_id'] ?? null);
 
         $externalUrl = (string) ($row['external_url'] ?? '');
-        $merchantAffiliateBase = $merchantId
-            ? (string) (Merchant::where('id', $merchantId)->value('base_affiliate_url') ?? '')
-            : '';
-        $affiliateUrl = (string) ($row['affiliate_url'] ?? '')
-            ?: $this->buildAffiliateUrl($merchantAffiliateBase, $externalUrl);
+        $rawAffiliateUrl = (string) ($row['affiliate_url'] ?? '');
+
+        // StarTech special: affiliate link is just product URL + ?tracking=CODE (ignore base_affiliate_url)
+        if (StartechAffiliate::isStartechMerchantId($merchantId, $externalUrl ?: $rawAffiliateUrl)) {
+            $productUrl = $rawAffiliateUrl !== '' ? $rawAffiliateUrl : $externalUrl;
+            $affiliateUrl = $productUrl !== '' ? StartechAffiliate::buildAffiliateUrl($productUrl) : '';
+        } else {
+            $merchantAffiliateBase = $merchantId
+                ? (string) (Merchant::where('id', $merchantId)->value('base_affiliate_url') ?? '')
+                : '';
+            $affiliateUrl = $rawAffiliateUrl
+                ?: $this->buildAffiliateUrl($merchantAffiliateBase, $externalUrl);
+        }
+
+        $categorySlug = (string) ($row['category_slug'] ?? '');
+        // Auto-detect category from product name if none provided
+        if ($categorySlug === '' && empty($row['category_id'])) {
+            $detected = app(CategoryDetector::class)->detect((string) ($row['name'] ?? ''), (string) ($row['description'] ?? ''));
+            if ($detected) {
+                $categorySlug = $detected->slug;
+            }
+        }
 
         return [
             'name' => (string) ($row['name'] ?? ''),
             'description' => (string) ($row['description'] ?? ''),
-            'category_slug' => (string) ($row['category_slug'] ?? ''),
+            'category_slug' => $categorySlug,
             'category_id' => null,
             'subcategory' => null,
             'brand_slug' => (string) ($row['brand_slug'] ?? ''),
@@ -144,12 +162,16 @@ class CsvDraftService
 
         if (! empty($url)) {
             $host = strtolower((string) parse_url($url, PHP_URL_HOST));
-            foreach (Merchant::where('status', 'active')->get(['id', 'website_url', 'base_affiliate_url']) as $m) {
+            foreach (Merchant::where('status', 'active')->get(['id', 'slug', 'name', 'website_url', 'base_affiliate_url']) as $m) {
                 foreach ([$m->website_url, $m->base_affiliate_url] as $candidate) {
                     $candidateHost = $candidate ? strtolower((string) parse_url($candidate, PHP_URL_HOST)) : '';
                     if ($candidateHost !== '' && (str_ends_with($host, $candidateHost) || str_ends_with($candidateHost, $host))) {
                         return $m->id;
                     }
+                }
+                // Fallback for StarTech variants: startech.com.bd vs star-tech.com
+                if (str_contains($host, 'startech') && (str_contains(strtolower($m->slug ?? ''), 'startech') || str_contains(strtolower($m->name ?? ''), 'star tech'))) {
+                    return $m->id;
                 }
             }
         }
@@ -176,7 +198,7 @@ class CsvDraftService
             'in_stock', 'in-stock', 'stock', '1', 'true', 'available' => 'in_stock',
             'out_of_stock', 'out-of-stock', '0', 'false', 'sold_out' => 'out_of_stock',
             'preorder', 'pre-order' => 'preorder',
-            default => 'unknown',
+            default => 'in_stock',
         };
     }
 

@@ -117,9 +117,9 @@
 
         @if($drops->isNotEmpty())
           <div class="hv-drop" data-reveal data-delay="460">
-            <span class="hv-drop-badge">&#8595; {{ round($drops->first()->drop_percent) }}%</span>
+            <span class="hv-drop-badge">&#8595; {{ round($drops->first()->live_drop_percent) }}%</span>
             <span class="hv-drop-name">{{ \Illuminate\Support\Str::limit($drops->first()->product->name, 28) }}</span>
-            <span class="hv-drop-hint">recent drop</span>
+            <span class="hv-drop-hint">{{ $drops->first()->price_label ?? 'recent drop' }}</span>
           </div>
         @endif
       </div>
@@ -128,8 +128,7 @@
 </section>
 
 @if(!$newArrivals->isEmpty())
-<section class="new-marquee" data-new-marquee aria-labelledby="new-arrivals-heading">
-  <h2 id="new-arrivals-heading" class="sr-only">New Arrivals</h2>
+<section class="new-marquee" data-new-marquee>
   <div class="nm-viewport">
     <div class="nm-track">
       <div class="nm-group">
@@ -179,7 +178,7 @@
       <div>
         <span class="sec-eyebrow">Hot right now</span>
         <h2>Trending Products</h2>
-        <p class="sec-sub">Most viewed and compared this week.</p>
+        <p class="sec-sub">Products gaining attention this week — ranked by real clicks, views and engagement.</p>
       </div>
       <a class="hs-link" href="{{ route('trending.index') }}">View all &#8594;</a>
     </div>
@@ -245,14 +244,14 @@
     <div class="deals-ticker" data-reveal>
       <span class="dtc-pulse" aria-hidden="true"></span>
       <span class="dtc-text">Verified live cuts &mdash; updated today</span>
-      <span class="dtc-note">Genuine &#8805;5% discount only</span>
+      <span class="dtc-note">Genuine &#8805;15% discount only</span>
     </div>
 
     <div class="deals-head" data-reveal>
       <div class="deals-head-copy">
         <span class="deals-eyebrow"><span class="de-eyebrow-dot" aria-hidden="true"></span>Limited-time price cuts</span>
         <h2 class="deals-title">Today&rsquo;s <em>Best Deals</em></h2>
-        <p class="deals-sub">Genuine, data-backed savings from our own price history &mdash; no inflated &ldquo;was&rdquo; prices, ever.</p>
+        <p class="deals-sub">Genuine &#8805;15% savings — no inflated &ldquo;was&rdquo; prices, ever. Sorted by biggest discount first.</p>
       </div>
       <div class="deals-head-meta">
         <span class="deals-count">{{ $deals->count() }}<small>live today</small></span>
@@ -269,6 +268,7 @@
           $dOffer = $p->activeOffers
             ->filter(fn($o) => $o->status === 'active' && $o->current_price !== null)
             ->filter(fn($o) => $o->original_price && $o->original_price > $o->current_price)
+            ->filter(fn($o) => ($o->discountPercent() ?? 0) >= 15)
             ->sortByDesc(fn($o) => $o->discountPercent())
             ->first();
           $dStore = $p->activeOffers
@@ -303,7 +303,7 @@
               </div>
               <div class="dt-save">
                 <span class="amount">You save {{ \App\Support\Currency::format((float) $dOffer->original_price - (float) $dOffer->current_price, $dOffer->currency) }}</span>
-                <span class="min">{{ $p->offer_count ?? $p->activeOffers->count() }} store(s)</span>
+                <span class="min">{{ $p->active_offers_count ?? $p->activeOffers->count() }} store(s)</span>
               </div>
             @endif
           </div>
@@ -334,8 +334,11 @@
         <div class="marquee-group">
           @foreach($drops as $d)
             <a class="drop-pill" href="{{ route('product.show', $d->product->slug) }}">
-              <span class="dp-badge">&#8595;{{ round($d->drop_percent) }}%</span>
+              <span class="dp-badge">&#8595;{{ round($d->live_drop_percent) }}%</span>
               <span class="dp-name">{{ $d->product->name }}</span>
+              @if(isset($d->price_label))
+                <span class="dp-label">{{ $d->price_label }}</span>
+              @endif
             </a>
           @endforeach
         </div>
@@ -351,9 +354,8 @@
     <div class="topsel-head" data-reveal>
       <div>
         <span class="topsel-eyebrow"><span class="te-dot" aria-hidden="true"></span>Bangladesh is buying</span>
-        <h2 class="topsel-title">Top Selling <em>Products</em></h2>
-        <span class="sr-only">Top Selling Products</span>
-        <p class="topsel-sub">The most researched &amp; compared items this week &#8212; ranked by real demand, never sponsored.</p>
+        <h2 class="topsel-title">Most Clicked <em>Products</em></h2>
+        <p class="topsel-sub">Products receiving the most outbound clicks this month — ranked by real demand, never sponsored.</p>
       </div>
       <a class="topsel-link" href="{{ route('products.index') }}">All products <span aria-hidden="true">&#8594;</span></a>
     </div>
@@ -379,7 +381,7 @@
               <span class="topsel-ffallback">{{ substr($top->brand->name ?? $top->name, 0, 1) }}</span>
             @endif
             <span class="topsel-frank">01</span>
-            <span class="topsel-fbadge">No. 1 bestseller</span>
+            <span class="topsel-fbadge">No. 1 most clicked</span>
           </div>
           <div class="topsel-fbody">
             <span class="topsel-fbrand">{{ $top->brand->name ?? $top->category->name }}</span>
@@ -395,7 +397,7 @@
                 <span class="badge badge-out">Price unavailable</span>
               @endif
             </div>
-            <span class="topsel-fmeta">From {{ $top->activeOffers->count() }} {{ $top->activeOffers->count() == 1 ? 'store' : 'stores' }} &#8226; verified history</span>
+            <span class="topsel-fmeta">{{ number_format($top->period_clicks ?? 0) }} clicks this month &#8226; {{ $top->activeOffers->count() }} store(s)</span>
           </div>
           <span class="topsel-fcta"><span>Shop it now</span><span aria-hidden="true">&#8594;</span></span>
         </a>
@@ -433,7 +435,7 @@
               </span>
             </a>
           @endforeach
-          <a class="topsel-more" href="{{ route('products.index') }}">Browse all bestsellers <span aria-hidden="true">&#8594;</span></a>
+          <a class="topsel-more" href="{{ route('products.index') }}">Browse all products <span aria-hidden="true">&#8594;</span></a>
         </div>
       </div>
     @endif
@@ -457,6 +459,27 @@
     </div>
   </div>
 </section>
+@endif
+
+@if(isset($campaigns) && $campaigns->isNotEmpty())
+@foreach($campaigns as $campaign)
+<section class="home-section">
+  <div class="container">
+    <div class="hs-head" data-reveal>
+      <div>
+        <span class="sec-eyebrow">{{ $campaign->theme === 'flash' ? '⚡ Flash Deal' : 'Campaign' }}</span>
+        <h2>{{ $campaign->name }}</h2>
+        @if($campaign->description)<p class="sec-sub">{{ $campaign->description }}</p>@endif
+      </div>
+    </div>
+    <div class="prod-grid prod-grid--home">
+      @foreach($campaign->products->take(4) as $p)
+        @include('partials.product-card', ['product' => $p])
+      @endforeach
+    </div>
+  </div>
+</section>
+@endforeach
 @endif
 
 @if(!$guides->isEmpty())

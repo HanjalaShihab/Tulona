@@ -70,11 +70,18 @@ Products
         <option value="archive">Archive</option>
         <option value="delete">Delete permanently</option>
         <option value="category">Move to category&#8230;</option>
+        <option value="brand">Set brand&#8230;</option>
       </select>
       <select name="category_id" class="input" id="bulk-category" style="min-width:160px" disabled>
         <option value="">Select category&#8230;</option>
         @foreach($categories as $c)
           <option value="{{ $c->id }}">{{ $c->parent?->name.' → ' }}{{ $c->name }}</option>
+        @endforeach
+      </select>
+      <select name="brand_id" class="input" id="bulk-brand" style="min-width:160px" disabled>
+        <option value="">Select brand&#8230;</option>
+        @foreach($brands as $b)
+          <option value="{{ $b->id }}">{{ $b->name }}</option>
         @endforeach
       </select>
       <button class="btn btn-outline">Apply</button>
@@ -168,10 +175,12 @@ function updateCount() {
 document.querySelectorAll('.row-check').forEach(function (c) { c.addEventListener('change', updateCount); });
 
 var actionSel = document.getElementById('bulk-action'),
-    catSel = document.getElementById('bulk-category');
+    catSel = document.getElementById('bulk-category'),
+    brandSel = document.getElementById('bulk-brand');
 
 actionSel.addEventListener('change', function () {
   catSel.disabled = actionSel.value !== 'category';
+  brandSel.disabled = actionSel.value !== 'brand';
 });
 
 document.getElementById('bulk-form').addEventListener('submit', function (e) {
@@ -180,6 +189,7 @@ document.getElementById('bulk-form').addEventListener('submit', function (e) {
   if (!action) { e.preventDefault(); alert('Choose a bulk action.'); return; }
   if (!n) { e.preventDefault(); alert('Select at least one product.'); return; }
   if (action === 'category' && !catSel.value) { e.preventDefault(); alert('Choose a category.'); return; }
+  if (action === 'brand' && !brandSel.value) { e.preventDefault(); alert('Choose a brand.'); return; }
   if ((action === 'archive' || action === 'delete') && !confirm('Apply "' + action + '" to ' + n + ' product(s)?')) e.preventDefault();
 });
 </script>
