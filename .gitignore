@@ -31,3 +31,11 @@ Thumbs.db
 public/import.sql
 public/runimport.php
 .htaccess
+.claude/
+.mcp.json
+AGENTS.md
+CLAUDE.md
+Done.md
+FrontendRedesign.md
+boost.json
+deploy/
