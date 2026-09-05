@@ -24,7 +24,7 @@
   @if($products->isEmpty())
     @include('partials.empty', ['icon' => '&#128176;', 'text' => 'No active deals right now - check back soon or browse the catalog.'])
   @else
-    <div class="deals-index-grid" data-reveal>
+    <div class="deals-index-grid">
       @foreach($products as $p)
         @php
           $dImg = $p->images->firstWhere('is_main') ?: $p->images->first();
@@ -39,7 +39,7 @@
           $dStores = $p->offers_count ?? ($p->active_offers_count ?? $p->activeOffers->count());
           $dMerchantSlug = $dOffer?->merchant?->slug;
         @endphp
-        <article class="tcard" data-reveal data-delay="{{ ($loop->index % 4) * 50 }}">
+        <article class="tcard">
           <a class="tcard-img" href="{{ route('product.show', $p->slug) }}" aria-hidden="true" tabindex="-1">
             @if($dImg)
               <img src="{{ str_starts_with($dImg->path, 'http') ? $dImg->path : asset('storage/' . $dImg->path) }}" alt="{{ $dImg->alt_text ?: $p->name }}" loading="lazy">

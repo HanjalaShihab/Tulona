@@ -1320,3 +1320,6 @@ h4,.h4{font-size:1.05rem;font-weight:600;line-height:1.3}
 /* ── Shared View Deal button color (all pages) ── */
 .view-deal-btn{background:#155e4ebb!important;color:#fff!important;border-color:#155e4ebb!important}
 .view-deal-btn:hover{background:#155e4e!important;color:#fff!important}
+
+/* Fix white background inside product image containers — keep new-arrival marquee untouched */
+.card-img img, .pdp-media img, .tcard-img img, .pcard-img img, .topsel-thumb img, .topsel-fmedia img, .dc-img img, .hv-card-img img, .deals-index-grid .tcard-img img { mix-blend-mode: multiply; }

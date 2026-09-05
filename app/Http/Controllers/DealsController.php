@@ -30,17 +30,11 @@ class DealsController extends Controller
     public static function dealQuery(): Builder
     {
         return Product::query()
-            ->where('products.status', 'published')
-            ->join('offers', function ($j) {
-                $j->on('offers.product_id', '=', 'products.id')
-                    ->where('offers.status', 'active')
-                    ->whereNotNull('offers.current_price')
-                    ->whereColumn('offers.original_price', '>', 'offers.current_price');
-            })
-            ->groupBy('products.id')
-            ->selectRaw('products.*, MIN(offers.current_price) as best_price, MAX(offers.current_price/original_price) as best_ratio, MAX(offers.original_price) as max_original')
-            ->orderByRaw('MAX(offers.current_price/original_price) ASC')
+            ->where('status', 'published')
+            ->whereHas('offers', fn (Builder $q) => $q->where('status', 'active')->whereNotNull('current_price')->whereColumn('original_price', '>', 'current_price'))
             ->with(['brand', 'activeOffers.merchant', 'images', 'latestDrop'])
-            ->selectRaw('(SELECT COUNT(*) FROM offers WHERE offers.product_id = products.id AND offers.status = "active") AS offers_count');
+            ->withCount(['offers as offers_count' => fn (Builder $q) => $q->where('status', 'active')])
+            ->selectRaw('products.*, (SELECT MIN(current_price) FROM offers WHERE offers.product_id = products.id AND status = "active" AND current_price IS NOT NULL AND original_price > current_price) as best_price, (SELECT MAX(current_price*1.0/NULLIF(original_price,0)) FROM offers WHERE offers.product_id = products.id AND status = "active" AND current_price IS NOT NULL AND original_price > current_price) as best_ratio, (SELECT MAX(original_price) FROM offers WHERE offers.product_id = products.id AND status = "active" AND current_price IS NOT NULL AND original_price > current_price) as max_original')
+            ->orderBy('best_ratio', 'asc');
     }
 }
