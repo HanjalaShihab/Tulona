@@ -1,6 +1,6 @@
 # Tulona
 
-Live at **tulona.gt.tc** — a price-comparison platform for Bangladesh shoppers.
+Live at **https://tulona.gt.tc** — a price-comparison platform for Bangladesh shoppers.
 
 Tulona collects products across categories and brands, compares offers from multiple merchants, and tracks price history so you can find the best deal. It highlights trending products, daily deals and price drops, and lets you follow brands and merchants you trust.
 
