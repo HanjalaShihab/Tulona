@@ -17,8 +17,9 @@ class CategoryController extends Controller
     {
         $categories = Category::whereNull('parent_id')
             ->where('is_active', true)
-            ->orderBy('sort_order')
             ->withCount(['products as product_count' => fn ($q) => $q->where('status', 'published')])
+            ->orderByDesc('product_count')
+            ->orderBy('sort_order')
             ->get();
 
         return view('categories.index', [

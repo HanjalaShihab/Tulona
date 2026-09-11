@@ -15,6 +15,7 @@ class BrandController extends Controller
     public function index(): View
     {
         $brands = Brand::withCount(['products as product_count' => fn ($q) => $q->where('status', 'published')])
+            ->orderByDesc('product_count')
             ->orderBy('name')
             ->get();
 
