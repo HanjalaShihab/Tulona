@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -54,6 +55,45 @@ class CategoryController extends Controller
         cache()->forget('nav.categories');
 
         return redirect()->route('admin.categories.index')->with('status', 'Category deleted.');
+    }
+
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:categories,id',
+            'action' => 'required|in:delete',
+        ]);
+
+        $ids = $data['ids'];
+
+        // Only categories without products can be deleted — mirrors single destroy rule
+        $categories = Category::whereIn('id', $ids)->withCount('products')->get();
+        $deletable = $categories->filter(fn (Category $c) => $c->products_count === 0);
+        $skipped = $categories->count() - $deletable->count();
+
+        if ($deletable->isEmpty()) {
+            return back()->withErrors(['ids' => 'No categories were deleted — selected categor'.(count($ids) === 1 ? 'y has' : 'ies have').' products.']);
+        }
+
+        DB::transaction(function () use ($deletable) {
+            foreach ($deletable as $category) {
+                AuditLog::record('category.deleted', $category);
+                $category->delete();
+            }
+        });
+
+        cache()->forget('nav.categories');
+
+        $deleted = $deletable->count();
+
+        if ($skipped > 0) {
+            return redirect()->route('admin.categories.index')
+                ->with('status', "Deleted {$deleted} categor".($deleted === 1 ? 'y' : 'ies').", skipped {$skipped} with products.");
+        }
+
+        return redirect()->route('admin.categories.index')
+            ->with('status', "Deleted {$deleted} categor".($deleted === 1 ? 'y' : 'ies').".");
     }
 
     protected function validated(Request $request): array

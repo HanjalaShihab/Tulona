@@ -77,12 +77,38 @@ Product Drafts
     <div style="padding:10px 0;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px">
       <div style="min-width:0">
         <div style="font-weight:600">{{ $draft->productName() ?: '(untitled product)' }}</div>
-        @if($draft->status === 'posted')
-          <div style="color:#1a7f37;font-size:12.5px">✓ Posted</div>
-        @elseif(! empty($draft->data['merchant_id']))
-          <div style="color:var(--ink-3);font-size:12.5px">Price {{ $draft->data['current_price'] ?? '—' }} {{ $draft->data['currency'] ?? 'BDT' }}</div>
+        @php
+          $draftCat = null;
+          $draftCatLabel = null;
+          if(! empty($draft->data['category_id']) && isset($categoriesById[$draft->data['category_id']])){
+            $draftCat = $categoriesById[$draft->data['category_id']];
+          } elseif(! empty($draft->data['category_slug']) && isset($categoriesBySlug[$draft->data['category_slug']])){
+            $draftCat = $categoriesBySlug[$draft->data['category_slug']];
+          }
+          if($draftCat){
+            $draftCatLabel = ($draftCat->parent ? $draftCat->parent->name.' → ' : '') . $draftCat->name;
+            if(! empty($draft->data['subcategory']) && $draft->data['subcategory'] !== $draftCat->name){
+              $draftCatLabel .= ' → ' . $draft->data['subcategory'];
+            }
+          } elseif(! empty($draft->data['category_slug'])){
+            $draftCatLabel = $draft->data['category_slug'];
+          } elseif(! empty($draft->data['category'])){
+            $draftCatLabel = $draft->data['category'] . (! empty($draft->data['subcategory']) ? ' → '.$draft->data['subcategory'] : '');
+          }
+        @endphp
+        @if($draftCatLabel)
+          <div style="color:var(--ink-2);font-size:12px;margin-top:2px;display:flex;align-items:center;gap:6px">
+            <span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600;letter-spacing:.02em">📂 {{ $draftCatLabel }}</span>
+          </div>
         @else
-          <div style="color:var(--ink-3);font-size:12.5px">No merchant detected — pick one when you post.</div>
+          <div style="color:var(--danger);font-size:12px;margin-top:2px">No category — auto-detect on post or pick one in Review</div>
+        @endif
+        @if($draft->status === 'posted')
+          <div style="color:#1a7f37;font-size:12.5px;margin-top:2px">✓ Posted</div>
+        @elseif(! empty($draft->data['merchant_id']))
+          <div style="color:var(--ink-3);font-size:12.5px;margin-top:2px">Price {{ $draft->data['current_price'] ?? '—' }} {{ $draft->data['currency'] ?? 'BDT' }}</div>
+        @else
+          <div style="color:var(--ink-3);font-size:12.5px;margin-top:2px">No merchant detected — pick one when you post.</div>
         @endif
       </div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">

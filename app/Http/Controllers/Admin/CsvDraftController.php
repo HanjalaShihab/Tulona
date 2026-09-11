@@ -30,10 +30,21 @@ class CsvDraftController extends Controller
 
     public function index(): View
     {
+        $drafts = ProductDraft::latest()->paginate(50);
+
+        // Resolve category names for each draft (category_slug or category_id) to show below product name
+        $slugs = $drafts->getCollection()->pluck('data.category_slug')->filter()->unique()->values()->all();
+        $ids = $drafts->getCollection()->pluck('data.category_id')->filter()->unique()->values()->all();
+
+        $bySlug = Category::with('parent')->whereIn('slug', $slugs)->get()->keyBy('slug');
+        $byId = Category::with('parent')->whereIn('id', $ids)->get()->keyBy('id');
+
         return view('admin.csv-drafts.index', [
-            'drafts' => ProductDraft::latest()->paginate(50),
+            'drafts' => $drafts,
             'merchants' => Merchant::orderBy('name')->get(['id', 'name', 'slug']),
             'pendingCount' => ProductDraft::where('status', '!=', 'posted')->count(),
+            'categoriesBySlug' => $bySlug,
+            'categoriesById' => $byId,
         ]);
     }
 
@@ -103,16 +114,25 @@ class CsvDraftController extends Controller
         return redirect()->route('admin.csv-drafts.index')->with('status', $status);
     }
 
-    /** Step 4 (bulk) — post every not-yet-posted draft in one go. */
+    /** Step 4 (bulk) — post every not-yet-posted draft in one go. Handles large CSVs without hitting 60s timeout. */
     public function postAll(ProductPublishService $publisher): RedirectResponse
     {
         $this->authorize('manage-products');
 
-        $drafts = ProductDraft::where('status', '!=', 'posted')->get();
+        // InfinityFree caps at 60s; extend if allowed and process in small batches
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+        @ini_set('memory_limit', '256M');
 
-        if ($drafts->isEmpty()) {
+        $pendingCount = ProductDraft::where('status', '!=', 'posted')->count();
+        if ($pendingCount === 0) {
             return back()->with('status', 'Nothing to post — no drafts awaiting publication.');
         }
+
+        // Process at most 12 drafts per request to stay under 60s on shared hosting.
+        // If more remain, the user can hit "Post all" again; each run picks up where the last left off.
+        $batchSize = 12;
+        $drafts = ProductDraft::where('status', '!=', 'posted')->limit($batchSize)->get();
 
         $posted = 0;
         $failed = 0;
@@ -131,14 +151,27 @@ class CsvDraftController extends Controller
                 $draft->update(['status' => 'posted']);
                 $posted++;
             } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('csv-draft postAll failed for draft '.$draft->id.': '.$e->getMessage(), ['exception' => $e]);
                 $draft->update(['status' => 'error', 'error' => $e->getMessage()]);
                 $failed++;
             }
+
+            // If we are close to the 50s mark, stop early and let the next request continue
+            if (microtime(true) - LARAVEL_START > 50) {
+                break;
+            }
         }
 
+        $remaining = ProductDraft::where('status', '!=', 'posted')->where('status', '!=', 'error')->count();
+        // Also count errors as remaining to be fixed manually, but not auto-retried
         $message = "Posted {$posted} product(s).";
         if ($failed) {
             $message .= " {$failed} draft(s) failed — open each one to fix and post individually.";
+        }
+        if ($remaining > 0) {
+            $message .= " {$remaining} draft(s) still pending — hit \"Post all pending drafts\" again to continue (process runs in batches of {$batchSize} to avoid timeout).";
+        } elseif ($posted > 0 && $failed === 0) {
+            $message .= " All pending drafts have been posted.";
         }
 
         return redirect()->route('admin.csv-drafts.index')->with('status', $message);

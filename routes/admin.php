@@ -46,6 +46,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active.admin'])->gr
         Route::post('images/{image}/move', [ProductController::class, 'moveImage'])->name('images.move');
         Route::delete('images/{image}', [ProductController::class, 'destroyImage'])->name('images.destroy');
         Route::post('products/bulk', [ProductController::class, 'bulkAction'])->name('products.bulk');
+        Route::post('categories/bulk', [CategoryController::class, 'bulkAction'])->name('categories.bulk');
         Route::resource('categories', CategoryController::class)->except('show');
         Route::resource('brands', BrandController::class)->except('show');
     });
