@@ -5,11 +5,11 @@
   --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", sans-serif;
   --font-mono: "Space Grotesk", "SF Mono", "Fira Code", monospace;
 
-  --color-paper: #F5F3EE;
-  --color-paper-2: #EEEBE3;
-  --color-paper-3: #E7E3D9;
-  --color-surface: #FBFAF7;
-  --color-surface-2: #F1EEE7;
+  --color-paper: #FFFFFF;
+  --color-paper-2: #F6F7F8;
+  --color-paper-3: #E9EBED;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #F4F5F6;
 
   --color-ink: #1E1B16;
   --color-ink-2: #55503F;
@@ -38,8 +38,8 @@
   --color-deep: #171511;
   --color-deep-2: #242019;
 
-  --color-line: #DCD7CA;
-  --color-line-light: #E8E4D9;
+  --color-line: #E2E4E7;
+  --color-line-light: #EDEFF1;
 }
 
 /* ─ Backwards-compatible token aliases ───────────
@@ -47,10 +47,10 @@
    --brand, --accent, --radius, --bg, …) in inline styles and class presets.
    These are declared here so existing markup keeps working. */
 :root{
-  --line:#DCD7CA; --line-2:#DCD7CA; --line-light:#E8E4D9;
+  --line:#E2E4E7; --line-2:#E2E4E7; --line-light:#EDEFF1;
   --ink:#1E1B16; --ink-2:#55503F; --ink-3:#8B8570; --ink-4:#B4AD98; --ink-deep:#171511;
-  --surface:#FBFAF7; --surface-2:#F1EEE7; --surface-3:#E7E3D9;
-  --bg:#F5F3EE; --bg-2:#EEEBE3;
+  --surface:#FFFFFF; --surface-2:#F4F5F6; --surface-3:#E9EBED;
+  --bg:#FFFFFF; --bg-2:#F6F7F8;
   --brand:#155E4E; --brand-hover:#0E4A3D; --brand-light:#E9F0EA; --brand-50:#D3E4DA; --brand-glow:rgba(21,94,78,.14);
   --accent:#B4551D; --accent-hover:#93430F; --accent-light:#F8EFE7; --accent-glow:rgba(180,85,29,.14);
   --danger:#A93A2E; --danger-hover:#8C2E23; --danger-light:#F9EDEA;
@@ -155,8 +155,8 @@ h4,.h4{font-size:1.05rem;font-weight:600;line-height:1.3}
 .ticker-item{white-space:nowrap;opacity:.75}
 @keyframes ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-.site-header{position:sticky;top:0;z-index:100;background:rgba(245,243,238,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--color-line);transition:all 400ms cubic-bezier(.4,0,.2,1)}
-.site-header.scrolled,.site-header.is-scrolled{background:rgba(245,243,238,.96);box-shadow:0 1px 3px rgba(30,27,22,.04)}
+.site-header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--color-line);transition:all 400ms cubic-bezier(.4,0,.2,1)}
+.site-header.scrolled,.site-header.is-scrolled{background:rgba(255,255,255,.96);box-shadow:0 1px 3px rgba(30,27,22,.04)}
 .header-in{max-width:1240px;margin:0 auto;padding:0 32px;display:flex;align-items:center;gap:28px;height:64px}
 
 .logo{display:flex;align-items:baseline;gap:1px;font-family:var(--font-display);font-weight:600;font-size:1.5rem;color:var(--color-ink);letter-spacing:-.03em;transition:all 180ms cubic-bezier(.4,0,.2,1)}
@@ -916,7 +916,7 @@ h4,.h4{font-size:1.05rem;font-weight:600;line-height:1.3}
 .admin-scrim{position:fixed;inset:0;background:rgba(23,21,17,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);z-index:90;opacity:0;visibility:hidden;transition:opacity 180ms cubic-bezier(.4,0,.2,1),visibility 180ms}
 .admin-scrim.show{opacity:1;visibility:visible}
 
-.admin-topbar{display:flex;align-items:center;gap:16px;padding:14px 28px;border-bottom:1px solid var(--color-line);background:rgba(245,243,238,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);position:sticky;top:0;z-index:50}
+.admin-topbar{display:flex;align-items:center;gap:16px;padding:14px 28px;border-bottom:1px solid var(--color-line);background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);position:sticky;top:0;z-index:50}
 .admin-topbar h1{font-size:1.1rem;font-weight:600;color:var(--color-ink);margin:0}
 .admin-topbar .spacer{flex:1}
 .burger{display:inline-grid;place-items:center;width:38px;height:38px;font-size:1.2rem;color:var(--color-ink-2);border:1px solid var(--color-line);border-radius:4px;background:var(--color-surface);transition:all 180ms cubic-bezier(.4,0,.2,1);flex-shrink:0}

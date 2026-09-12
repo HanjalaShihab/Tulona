@@ -15,12 +15,57 @@ class CategoryController extends Controller
 {
     public function index(): View
     {
-        $categories = Category::whereNull('parent_id')
+        // product_count must include the whole subtree (products live in
+        // subcategories, so a direct withCount on the parent is 0).
+        // This matches categories.show which queries whereIn descendantsAndSelf.
+        $parents = Category::whereNull('parent_id')
             ->where('is_active', true)
-            ->withCount(['products as product_count' => fn ($q) => $q->where('status', 'published')])
-            ->orderByDesc('product_count')
             ->orderBy('sort_order')
             ->get();
+
+        $childrenMap = [];
+        foreach (Category::select('id', 'parent_id')->get() as $c) {
+            if ($c->parent_id !== null) {
+                $childrenMap[$c->parent_id][] = $c->id;
+            }
+        }
+
+        $directCounts = Product::where('status', 'published')
+            ->selectRaw('category_id, COUNT(*) as c')
+            ->groupBy('category_id')
+            ->pluck('c', 'category_id');
+
+        foreach ($parents as $p) {
+            $ids = [$p->id];
+            $queue = $childrenMap[$p->id] ?? [];
+            $visited = [$p->id => true];
+            while (! empty($queue)) {
+                $id = array_pop($queue);
+                if (isset($visited[$id])) {
+                    continue;
+                }
+                $visited[$id] = true;
+                $ids[] = $id;
+                foreach ($childrenMap[$id] ?? [] as $child) {
+                    if (! isset($visited[$child])) {
+                        $queue[] = $child;
+                    }
+                }
+            }
+            $total = 0;
+            foreach ($ids as $id) {
+                $total += (int) ($directCounts[$id] ?? 0);
+            }
+            $p->setAttribute('product_count', $total);
+        }
+
+        $categories = $parents->sort(function ($a, $b) {
+            if ($b->product_count !== $a->product_count) {
+                return $b->product_count <=> $a->product_count;
+            }
+
+            return $a->sort_order <=> $b->sort_order;
+        })->values();
 
         return view('categories.index', [
             'categories' => $categories,
