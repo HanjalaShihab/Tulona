@@ -107,5 +107,50 @@ Route::get('/tulona/migrate/{token}', function (string $token) {
     return response("migrate done\n".Artisan::output(), 200)->header('Content-Type', 'text/plain');
 });
 
+// Temporary export: Rokomari product names + original links (token protected).
+Route::get('/tulona/export-rokomari/{token}', function (string $token) {
+    $expected = config('services.scheduler_token');
+    abort_unless(is_string($expected) && $expected !== '', 404);
+    abort_unless(hash_equals($expected, $token), 403);
+
+    $merchant = \App\Models\Merchant::where('slug', 'rokomari')->first();
+    abort_unless($merchant, 404, 'No Rokomari merchant');
+
+    $offers = \App\Models\Offer::where('merchant_id', $merchant->id)
+        ->with('product:id,name,slug,status')
+        ->orderBy('id')
+        ->get()
+        ->map(fn ($o) => [
+            'product' => $o->product?->name,
+            'status' => $o->product?->status,
+            'original_link' => $o->external_url,
+            'affiliate_link' => $o->affiliate_url,
+            'price' => $o->current_price,
+            'currency' => $o->currency,
+        ]);
+
+    $drafts = \App\Models\ProductDraft::where('status', '!=', 'posted')
+        ->where(function ($q) use ($merchant) {
+            $q->where('merchant_id', $merchant->id)
+              ->orWhere('data->merchant_id', $merchant->id);
+        })
+        ->orderBy('id')
+        ->get()
+        ->map(fn ($d) => [
+            'product' => $d->data['name'] ?? null,
+            'draft_status' => $d->status,
+            'original_link' => $d->data['external_url'] ?? null,
+            'affiliate_link' => $d->data['affiliate_url'] ?? null,
+        ]);
+
+    return response()->json([
+        'merchant' => $merchant->name,
+        'posted_offers_count' => $offers->count(),
+        'posted_offers' => $offers,
+        'pending_drafts_count' => $drafts->count(),
+        'pending_drafts' => $drafts,
+    ]);
+});
+
 // ── Admin (only admins authenticate; public browsing is anonymous §6) ───────
 require __DIR__.'/admin.php';
