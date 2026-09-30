@@ -568,7 +568,7 @@ class ScrapePostTest extends TestCase
     {
         $this->actingManager();
         $amazon = Merchant::create([
-            'name' => 'Amazon Global', 'slug' => 'amazon', 'connector_type' => 'url',
+            'name' => 'Amazon', 'slug' => 'amazon', 'connector_type' => 'url',
             'product_import_method' => 'html', 'status' => 'active',
         ]);
 

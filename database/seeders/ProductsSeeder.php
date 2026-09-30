@@ -15,7 +15,7 @@ class ProductsSeeder extends Seeder
     {
         $merchants = collect([
             ['Daraz BD', 'daraz', 'BD', 'BDT', 'daraz-affiliate'],
-            ['Amazon Global', 'amazon', 'US', 'USD', 'amazon'],
+            ['Amazon', 'amazon', 'US', 'USD', 'amazon'],
             ['AliExpress', 'aliexpress', 'CN', 'USD', 'aliexpress'],
             ['Star Tech', 'star-tech', 'BD', 'BDT', null],
             ['Rokomari', 'rokomari', 'BD', 'BDT', null, true, 'html'],

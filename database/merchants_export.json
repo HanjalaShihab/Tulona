@@ -31,10 +31,10 @@
   {
     "id": 2,
     "affiliate_network_id": 1,
-    "name": "Amazon Global",
+    "name": "Amazon",
     "slug": "amazon",
     "logo_path": null,
-    "description": "Amazon Global offers on Tulona. Purchases happen on the merchant's own website.",
+    "description": "Amazon offers on Tulona. Purchases happen on the merchant's own website.",
     "website_url": "https://www.amazon.com",
     "country": "US",
     "region": null,
