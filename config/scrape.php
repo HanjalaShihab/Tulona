@@ -41,5 +41,9 @@ return [
     'rules' => array_filter([
         // '^api\.rokomari\.com$' => env('SCRAPE_PROXY_ROKOMARI'),
         // '(^|\.)rokomari\.com$' => env('SCRAPE_PROXY_ROKOMARI'),
+        // Every Amazon storefront (amazon.com, .co.uk, .in, .de, …). Amazon
+        // bot-checks datacenter/server IPs, so route only Amazon through a
+        // residential/business proxy while scraping every other merchant direct:
+        // '(^|\.)amazon\.[a-z.]+$' => env('SCRAPE_PROXY_AMAZON'),
     ]),
 ];
