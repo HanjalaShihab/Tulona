@@ -95,6 +95,7 @@ class UrlDraftService
                 $categorySlug = $detected->slug;
             }
         }
+
         return [
             'name' => (string) ($n['name'] ?? ''),
             'description' => (string) ($n['description'] ?? ''),
@@ -149,6 +150,11 @@ class UrlDraftService
                 }
             }
             if (str_contains($host, 'startech') && (str_contains(strtolower($merchant->slug ?? ''), 'startech') || str_contains(strtolower($merchant->name ?? ''), 'star tech'))) {
+                return $merchant->id;
+            }
+            // Every regional Amazon storefront (amazon.com, .co.uk, .in, .de, …)
+            // maps to the Amazon merchant regardless of the exact domain.
+            if (preg_match('/(^|\.)amazon\.[a-z.]+$/i', $host) && (str_contains(strtolower($merchant->slug ?? ''), 'amazon') || str_contains(strtolower($merchant->name ?? ''), 'amazon'))) {
                 return $merchant->id;
             }
         }

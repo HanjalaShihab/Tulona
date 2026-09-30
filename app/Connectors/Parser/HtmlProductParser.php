@@ -321,6 +321,36 @@ class HtmlProductParser implements ProductParser
             // <del> original. Recommendation containers are excluded so the main
             // product's prices don't leak from "related products" blocks.
             [$domPrice, $domOriginal] = $this->detailPrices($xpath);
+
+            // Amazon storefronts expose no product JSON-LD or OpenGraph product
+            // tags, so the sources above find nothing on an Amazon product page.
+            // When the page is an Amazon detail page, read its canonical DOM
+            // fields directly and let Amazon's own price block + gallery win.
+            if ($this->isAmazonPage($xpath)) {
+                $amazon = $this->extractAmazonDetails($xpath, $baseUrl);
+
+                foreach (['name', 'description', 'brand_slug', 'sku', 'model_number', 'availability', 'currency', 'gtin'] as $k) {
+                    if (($amazon[$k] ?? null) !== null && $amazon[$k] !== '') {
+                        $details[$k] = $amazon[$k];
+                    }
+                }
+                if (($amazon['price'] ?? null) !== null) {
+                    $details['price'] = $amazon['price'];
+                    $domPrice = $amazon['price'];
+                }
+                if (($amazon['original_price'] ?? null) !== null) {
+                    $details['original_price'] = $amazon['original_price'];
+                    $domOriginal = $amazon['original_price'];
+                }
+                if (! empty($amazon['images'])) {
+                    $details['images'] = array_values(array_unique(array_merge($amazon['images'], $details['images'] ?? [])));
+                }
+                foreach (['rating', 'rating_count'] as $k) {
+                    if (isset($amazon[$k])) {
+                        $details[$k] = $amazon[$k];
+                    }
+                }
+            }
         }
 
         // A visible discounted + <del> original pair in the DOM is what the
@@ -716,6 +746,7 @@ class HtmlProductParser implements ProductParser
                             return $json[$k];
                         }
                     }
+
                     return null;
                 })();
 
@@ -767,6 +798,321 @@ class HtmlProductParser implements ProductParser
         }
 
         return [];
+    }
+
+    /**
+     * Detect an Amazon product detail page from its canonical DOM ids. Amazon
+     * storefronts (amazon.com, amazon.co.uk, amazon.in, …) ship no product
+     * JSON-LD/OpenGraph tags, so the page is recognised structurally instead.
+     */
+    protected function isAmazonPage(DOMXPath $xpath): bool
+    {
+        foreach ([
+            '//*[@id="productTitle"]',
+            '//*[@id="dp-container"]',
+            '//*[@id="ppd"]',
+            '//*[@id="imgTagWrapperId"]',
+            '//*[@id="corePriceDisplay_desktop_feature_div"]',
+            '//input[@id="ASIN"]',
+        ] as $expr) {
+            $nodes = @$xpath->query($expr);
+            if ($nodes && $nodes->length > 0) {
+                return true;
+            }
+        }
+
+        $site = @$xpath->query('//meta[@property="og:site_name"]');
+        if ($site && $site->length > 0 && str_contains(strtolower($site->item(0)->getAttribute('content')), 'amazon')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Extract the fields Tulona needs from an Amazon product page DOM. Every
+     * lookup is anchored on Amazon's stable ids (#productTitle, #availability,
+     * the core price block, the landing image …) so it works on any Amazon
+     * storefront and on any product link shape (dp / gp-product / title-dp /
+     * ref-suffixed / regional domain).
+     *
+     * @return array{name?: string, price?: float, original_price?: float, currency?: string, images?: list<string>, description?: string, brand_slug?: string, sku?: string, availability?: string, rating?: float, rating_count?: int}
+     */
+    protected function extractAmazonDetails(DOMXPath $xpath, ?string $baseUrl): array
+    {
+        $out = [];
+
+        // Name — the canonical #productTitle, then the document <title> with the
+        // "Amazon.<tld>: … : <category>" chrome stripped.
+        $name = $this->firstAmazonText($xpath, ['//*[@id="productTitle"]', '//*[@id="title"]']);
+        if ($name === '') {
+            $name = $this->firstAmazonText($xpath, ['//title']);
+            $name = preg_replace('/^\s*Amazon\.[a-z.]+\s*:\s*/i', '', $name);
+            $name = preg_replace('/\s*[:|]\s*[^:|]*$/', '', (string) $name); // drop trailing category
+            $name = trim((string) $name);
+        }
+        if ($name !== '') {
+            $out['name'] = $name;
+        }
+
+        // Current price: the first ".a-offscreen" inside the core price block is
+        // the price the shopper pays; the struck-through list price follows it.
+        $priceRaw = $this->firstAmazonText($xpath, [
+            '//*[@id="corePriceDisplay_desktop_feature_div"]//span[contains(@class,"a-offscreen")]',
+            '//*[@id="corePrice_feature_div"]//span[contains(@class,"a-offscreen")]',
+            '//*[@id="apex_desktop"]//span[contains(@class,"a-offscreen")]',
+            '//*[@id="priceblock_ourprice"]',
+            '//*[@id="priceblock_dealprice"]',
+            '//*[@id="priceblock_saleprice"]',
+            '//*[@id="price_inside_buybox"]',
+        ]);
+        if (($amount = $this->parseAmazonAmount($priceRaw)) !== null) {
+            $out['price'] = $amount;
+        }
+
+        // List/strike-through price (only present when the item is discounted).
+        $originalRaw = $this->firstAmazonText($xpath, [
+            '//*[@id="corePriceDisplay_desktop_feature_div"]//*[contains(@class,"basisPrice")]//span[contains(@class,"a-offscreen")]',
+            '//*[@id="corePriceDisplay_desktop_feature_div"]//span[contains(@class,"a-text-price")]//span[contains(@class,"a-offscreen")]',
+            '//*[@id="apex_desktop"]//*[contains(@class,"basisPrice")]//span[contains(@class,"a-offscreen")]',
+            '//*[@id="listPrice"]',
+            '//*[contains(@class,"priceBlockStrikePriceString")]',
+        ]);
+        if (($original = $this->parseAmazonAmount($originalRaw)) !== null && $original !== ($out['price'] ?? null)) {
+            $out['original_price'] = $original;
+        }
+
+        $symbol = $priceRaw !== '' ? $priceRaw : $originalRaw;
+        if (($currency = $this->currencyFromAmazonSymbol($symbol)) !== null) {
+            $out['currency'] = $currency;
+        }
+
+        return $out + $this->extractAmazonGallery($xpath, $baseUrl)
+            + $this->extractAmazonText($xpath)
+            + $this->extractAmazonIdentifiers($xpath);
+    }
+
+    /**
+     * Amazon image gallery: the JSON map in data-a-dynamic-image holds the hi-res
+     * shots; fall back to landingImage src/old-hires and the alt thumbnails
+     * (upgraded to their full-size URL).
+     *
+     * @return array{images?: list<string>}
+     */
+    protected function extractAmazonGallery(DOMXPath $xpath, ?string $baseUrl): array
+    {
+        $images = [];
+
+        $landing = @$xpath->query('//img[@id="landingImage"]');
+        if ($landing && $landing->length > 0 && $landing->item(0) instanceof DOMElement) {
+            $img = $landing->item(0);
+            $dynamic = $img->getAttribute('data-a-dynamic-image');
+            if ($dynamic !== '') {
+                $map = json_decode($dynamic, true);
+                if (is_array($map)) {
+                    // Highest-resolution variant first for each shot.
+                    uasort($map, static fn ($a, $b) => (int) (is_array($b) ? ($b[0] ?? 0) : 0) <=> (int) (is_array($a) ? ($a[0] ?? 0) : 0));
+                    foreach (array_keys($map) as $url) {
+                        $images[] = (string) $url;
+                    }
+                }
+            }
+            foreach (['data-old-hires', 'src'] as $attr) {
+                $v = trim($img->getAttribute($attr));
+                if ($v !== '') {
+                    $images[] = $v;
+                }
+            }
+        }
+
+        foreach ((@$xpath->query('//*[@id="altImages"]//img') ?: []) as $thumb) {
+            if ($thumb instanceof DOMElement) {
+                $src = trim($thumb->getAttribute('data-old-hires') ?: $thumb->getAttribute('src'));
+                if ($src !== '') {
+                    $images[] = $this->amazonFullSizeImage($src);
+                }
+            }
+        }
+
+        $images = array_values(array_unique(array_filter($images)));
+        if ($images === []) {
+            return [];
+        }
+
+        return ['images' => $baseUrl ? array_map(fn ($u) => $this->resolveUrl($u, $baseUrl) ?: $u, $images) : $images];
+    }
+
+    /**
+     * Amazon name description text: feature bullets, then the long description.
+     *
+     * @return array{description?: string}
+     */
+    protected function extractAmazonText(DOMXPath $xpath): array
+    {
+        $bullets = [];
+        foreach ((@$xpath->query('//*[@id="feature-bullets"]//li//*[contains(@class,"a-list-item")]') ?: []) as $li) {
+            if ($li instanceof DOMElement) {
+                $t = trim(preg_replace('/\s+/u', ' ', (string) $li->textContent));
+                if ($t !== '') {
+                    $bullets[] = $t;
+                }
+            }
+        }
+
+        if ($bullets === []) {
+            $desc = $this->firstAmazonText($xpath, ['//*[@id="productDescription"]', '//*[@id="bookDescription_feature_div"]', '//*[@id="productDescription_feature_div"]']);
+            if ($desc !== '') {
+                $bullets[] = $desc;
+            }
+        }
+
+        return $bullets === [] ? [] : ['description' => implode("\n", array_slice($bullets, 0, 20))];
+    }
+
+    /**
+     * Amazon brand, SKU/ASIN, availability, rating and review count.
+     *
+     * @return array{brand_slug?: string, sku?: string, availability?: string, rating?: float, rating_count?: int}
+     */
+    protected function extractAmazonIdentifiers(DOMXPath $xpath): array
+    {
+        $out = [];
+
+        // Brand — from the byline ("Visit the Anker Store" / "Brand: Anker").
+        $brand = $this->firstAmazonText($xpath, ['//*[@id="bylineInfo"]', '//*[@id="brand"]']);
+        if ($brand !== '') {
+            $brand = preg_replace('/^\s*(Visit the|Brand:)\s*/i', '', $brand);
+            $brand = preg_replace('/\s+(Store|Brand)\s*$/i', '', (string) $brand);
+            $brand = trim((string) $brand);
+            if ($brand !== '') {
+                $out['brand_slug'] = $brand;
+            }
+        }
+
+        // ASIN doubles as the SKU; also read the canonical /dp/<ASIN> link.
+        $asin = '';
+        $asinNode = @$xpath->query('//input[@id="ASIN"]/@value | //*[@id="ASIN"]/@value');
+        if ($asinNode && $asinNode->length > 0) {
+            $asin = trim((string) $asinNode->item(0)->nodeValue);
+        }
+        if ($asin === '') {
+            $canonical = @$xpath->query('//link[@rel="canonical"]/@href');
+            if ($canonical && $canonical->length > 0 && preg_match('~/dp/([A-Z0-9]{10})~', (string) $canonical->item(0)->nodeValue, $m)) {
+                $asin = $m[1];
+            }
+        }
+        if ($asin !== '') {
+            $out['sku'] = $asin;
+        }
+
+        // Availability.
+        $availRaw = strtolower($this->firstAmazonText($xpath, ['//*[@id="availability"]', '//*[@id="availability_feature_div"]']));
+        if ($availRaw !== '') {
+            if (preg_match('~pre-?order~', $availRaw)) {
+                $out['availability'] = 'preorder';
+            } elseif (preg_match('~unavailable|out of stock|temporarily out~', $availRaw)) {
+                $out['availability'] = 'out_of_stock';
+            } elseif (str_contains($availRaw, 'in stock')) {
+                $out['availability'] = 'in_stock';
+            }
+        }
+
+        // Rating + review count.
+        $ratingRaw = '';
+        $ratingNode = @$xpath->query('//*[@id="acrPopover"]/@title');
+        if ($ratingNode && $ratingNode->length > 0) {
+            $ratingRaw = (string) $ratingNode->item(0)->nodeValue;
+        }
+        if ($ratingRaw === '') {
+            $ratingRaw = $this->firstAmazonText($xpath, ['//*[@id="averageCustomerReviews"]//*[contains(@class,"a-icon-alt")]']);
+        }
+        if ($ratingRaw !== '' && preg_match('/([0-9]+(?:\.[0-9]+)?)\s*out of\s*5/i', $ratingRaw, $m)) {
+            $out['rating'] = (float) $m[1];
+        }
+        $countRaw = $this->firstAmazonText($xpath, ['//*[@id="acrCustomerReviewText"]']);
+        if ($countRaw !== '' && preg_match('/[0-9][0-9,]*/', $countRaw, $m)) {
+            $out['rating_count'] = (int) str_replace(',', '', $m[0]);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Return the first non-empty text matched by any of the given XPath
+     * expressions, or an empty string when none match.
+     *
+     * @param  list<string>  $exprs
+     */
+    protected function firstAmazonText(DOMXPath $xpath, array $exprs): string
+    {
+        foreach ($exprs as $expr) {
+            $nodes = @$xpath->query($expr);
+            if (! $nodes) {
+                continue;
+            }
+            foreach ($nodes as $node) {
+                if ($node instanceof DOMElement) {
+                    $text = trim(preg_replace('/\s+/u', ' ', (string) $node->textContent));
+                    if ($text !== '') {
+                        return $text;
+                    }
+                }
+            }
+        }
+
+        return '';
+    }
+
+    /** Normalise an Amazon price string ("$49.99", "49,99 €", "₹1,299.00") to a float. */
+    protected function parseAmazonAmount(string $raw): ?float
+    {
+        $num = preg_replace('/[^0-9.,]/', '', trim($raw));
+        if ($num === '') {
+            return null;
+        }
+
+        $lastDot = strrpos($num, '.');
+        $lastComma = strrpos($num, ',');
+        $decPos = max($lastDot === false ? -1 : $lastDot, $lastComma === false ? -1 : $lastComma);
+
+        if ($decPos >= 0 && (strlen($num) - $decPos - 1) <= 2) {
+            $intPart = preg_replace('/[^0-9]/', '', substr($num, 0, $decPos));
+            $value = (float) ($intPart.'.'.substr($num, $decPos + 1));
+        } else {
+            $value = (float) preg_replace('/[^0-9]/', '', $num);
+        }
+
+        return $value > 0 ? $value : null;
+    }
+
+    /** Map the currency symbol Amazon renders beside a price to an ISO code. */
+    protected function currencyFromAmazonSymbol(string $raw): ?string
+    {
+        if ($raw === '') {
+            return null;
+        }
+
+        $map = [
+            'US$' => 'USD', 'CA$' => 'CAD', 'C$' => 'CAD', 'AU$' => 'AUD', 'A$' => 'AUD',
+            'S$' => 'SGD', 'HK$' => 'HKD', 'NZ$' => 'NZD', 'R$' => 'BRL', 'MX$' => 'MXN',
+            '$' => 'USD', '£' => 'GBP', '€' => 'EUR', '₹' => 'INR', '¥' => 'JPY', '￥' => 'JPY',
+            '₺' => 'TRY', '৳' => 'BDT', 'zł' => 'PLN', 'kr' => 'SEK', 'CHF' => 'CHF',
+            'د.إ' => 'AED', '﷼' => 'SAR', 'Kč' => 'CZK',
+        ];
+
+        foreach ($map as $symbol => $code) {
+            if (str_contains($raw, $symbol)) {
+                return $code;
+            }
+        }
+
+        return null;
+    }
+
+    /** Upgrade an Amazon thumbnail URL ("…/I/xx._AC_US40_.jpg") to its full-size form. */
+    protected function amazonFullSizeImage(string $url): string
+    {
+        return preg_replace('/\._[^.\/]*_(?=\.(?:jpe?g|png|gif|webp))/i', '', $url) ?? $url;
     }
 
     public function defaultHtmlConfig(): array

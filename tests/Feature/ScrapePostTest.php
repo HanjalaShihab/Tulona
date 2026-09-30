@@ -508,4 +508,96 @@ class ScrapePostTest extends TestCase
         $product = Product::first();
         $this->assertTrue((bool) $product->is_top_selling);
     }
+
+    /** A trimmed but structurally faithful Amazon product detail page. */
+    private function amazonPage(): string
+    {
+        return <<<'HTML'
+        <!DOCTYPE html><html lang="en-us"><head>
+          <meta property="og:site_name" content="Amazon.com">
+          <title>Amazon.com: Echo Dot (5th Gen) | Smart speaker with Alexa : Amazon Devices</title>
+          <link rel="canonical" href="https://www.amazon.com/dp/B09B8V1LZ3">
+        </head><body>
+          <div id="dp-container">
+            <div id="centerCol">
+              <span id="productTitle" class="a-size-large product-title-word-break">Echo Dot (5th Gen) | Smart speaker with Alexa</span>
+              <a id="bylineInfo" href="/stores/Amazon">Visit the Amazon Store</a>
+              <div id="corePriceDisplay_desktop_feature_div">
+                <span class="a-price aok-align-center" data-a-color="base"><span class="a-offscreen">$49.99</span></span>
+                <span class="a-price a-text-price" data-a-strike="true"><span class="a-offscreen">$59.99</span></span>
+              </div>
+              <div id="availability"><span class="a-color-success">In Stock</span></div>
+              <div id="feature-bullets"><ul class="a-unordered-list a-vertical a-spacing-mini">
+                <li><span class="a-list-item">OUR BEST SOUNDING ECHO DOT YET &#8211; Enjoy an improved audio experience.</span></li>
+                <li><span class="a-list-item">CONTROL YOUR SMART HOME &#8211; Use your voice to control devices.</span></li>
+              </ul></div>
+              <span id="acrCustomerReviewText" class="a-size-base">123,456 ratings</span>
+            </div>
+            <input type="hidden" id="ASIN" name="ASIN" value="B09B8V1LZ3">
+            <div id="imgTagWrapperId"><img id="landingImage" data-old-hires="https://m.media-amazon.com/images/I/71xoR4A6q-L._AC_SL1500_.jpg" data-a-dynamic-image="{&quot;https://m.media-amazon.com/images/I/71xoR4A6q-L._AC_SL1000_.jpg&quot;:[1000,1000],&quot;https://m.media-amazon.com/images/I/71xoR4A6q-L._AC_SL1500_.jpg&quot;:[1500,1500]}" src="https://m.media-amazon.com/images/I/71xoR4A6q-L._AC_SL1000_.jpg"></div>
+            <div id="altImages"><ul><li><img src="https://m.media-amazon.com/images/I/61abcDEFghL._AC_US40_.jpg"></li></ul></div>
+          </div>
+        </body></html>
+        HTML;
+    }
+
+    public function test_scrape_amazon_product_extracts_dom_fields(): void
+    {
+        $this->actingManager();
+        Http::fake(['https://www.amazon.com/dp/B09B8V1LZ3' => Http::response($this->amazonPage(), 200, ['Content-Type' => 'text/html'])]);
+
+        $this->post(route('admin.scrape-post.scrape'), [
+            'source_url' => 'https://www.amazon.com/dp/B09B8V1LZ3',
+        ])->assertRedirect(route('admin.scrape-post.edit'))->assertSessionHas('status');
+
+        $draft = session('scrape_post.draft');
+        $this->assertIsArray($draft);
+        $this->assertSame('Echo Dot (5th Gen) | Smart speaker with Alexa', $draft['name']);
+        $this->assertEquals(49.99, $draft['price']);
+        $this->assertEquals(59.99, $draft['original_price']);
+        $this->assertSame('USD', $draft['currency']);
+        $this->assertSame('B09B8V1LZ3', $draft['sku']);
+        $this->assertSame('in_stock', $draft['availability']);
+        $this->assertStringContainsString('OUR BEST SOUNDING ECHO DOT YET', $draft['description']);
+        $this->assertContains('https://m.media-amazon.com/images/I/71xoR4A6q-L._AC_SL1500_.jpg', $draft['images']);
+        // The low-res alt-image thumbnail is upgraded to its full-size URL.
+        $this->assertContains('https://m.media-amazon.com/images/I/61abcDEFghL.jpg', $draft['images']);
+    }
+
+    public function test_amazon_regional_link_auto_detects_amazon_merchant(): void
+    {
+        $this->actingManager();
+        $amazon = Merchant::create([
+            'name' => 'Amazon Global', 'slug' => 'amazon', 'connector_type' => 'url',
+            'product_import_method' => 'html', 'status' => 'active',
+        ]);
+
+        Http::fake(['https://www.amazon.in/*' => Http::response($this->amazonPage(), 200, ['Content-Type' => 'text/html'])]);
+
+        $this->post(route('admin.scrape-post.scrape'), [
+            'source_url' => 'https://www.amazon.in/dp/B09B8V1LZ3/ref=sr_1_1?keywords=echo+dot',
+        ])->assertRedirect(route('admin.scrape-post.edit'));
+
+        $this->assertSame($amazon->id, session('scrape_post.draft')['merchant_id']);
+    }
+
+    public function test_scrape_reports_amazon_bot_check_with_actionable_message(): void
+    {
+        $this->actingManager();
+
+        $captcha = '<!DOCTYPE html><html><head><title dir="ltr">Amazon.com</title></head><body>'
+            .'<form method="get" action="/errors_page/validateCaptcha"><button>Continue shopping</button></form>'
+            .'<!-- To discuss automated access to Amazon data please contact api-services-support@amazon.com. -->'
+            .'</body></html>';
+
+        Http::fake(['https://www.amazon.com/dp/B09B8V1LZ3' => Http::response($captcha, 200, ['Content-Type' => 'text/html'])]);
+
+        $response = $this->post(route('admin.scrape-post.scrape'), [
+            'source_url' => 'https://www.amazon.com/dp/B09B8V1LZ3',
+        ])->assertRedirect();
+
+        $response->assertSessionHasErrors('scrape');
+        $this->assertStringContainsString('bot check', session('errors')->first('scrape'));
+        $this->assertNull(session('scrape_post.draft'));
+    }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Services\Scraping;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as Http;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -52,7 +54,7 @@ class UrlFetcher
         }
 
         if ($response === null) {
-            abort(422, "Merchant source is unreachable (TLS/connection failure).");
+            abort(422, 'Merchant source is unreachable (TLS/connection failure).');
         }
 
         if ($response->failed()) {
@@ -60,7 +62,29 @@ class UrlFetcher
             abort(422, "Merchant source returned HTTP {$response->status()}.");
         }
 
-        return $response->body();
+        $body = $response->body();
+
+        // Amazon (and a few other large merchants) answer suspected bots with an
+        // HTTP 200 "Robot Check" interstitial instead of the page. Surface it as
+        // an actionable error rather than silently parsing an empty draft.
+        if ($this->isBotCheckInterstitial($body)) {
+            Log::warning('Scrape hit a bot-check interstitial', ['url' => $url]);
+            abort(422, 'The merchant served a bot check instead of the page (common from datacenter/server IPs). Set SCRAPE_PROXY to route scraping through a residential/business proxy, then retry.');
+        }
+
+        return $body;
+    }
+
+    /**
+     * Detect a "Robot Check" / captcha interstitial served with HTTP 200 — most
+     * notably Amazon's `errors_page/validateCaptcha` page — so callers get a
+     * clear message rather than an empty product draft.
+     */
+    protected function isBotCheckInterstitial(string $body): bool
+    {
+        return str_contains($body, 'errors_page/validateCaptcha')
+            || str_contains($body, 'To discuss automated access to Amazon data')
+            || (str_contains($body, 'Enter the characters you see below') && str_contains($body, 'Sorry, we just need to make sure you'));
     }
 
     /**
@@ -70,7 +94,7 @@ class UrlFetcher
      * decide to retry with a looser trust policy. Never raises for an HTTP
      * error; only for transport-level failures.
      */
-    protected function attempt(string $url, bool $verifyPeer): ?\Illuminate\Http\Client\Response
+    protected function attempt(string $url, bool $verifyPeer): ?Response
     {
         try {
             return $this->http->timeout($this->timeout)
@@ -91,7 +115,7 @@ class UrlFetcher
                     'allow_redirects' => ['max' => 3, 'strict' => true],
                 ], $this->proxyOptions($url)))
                 ->get($url);
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             Log::warning('Scrape transport error', ['url' => $url, 'verify' => $verifyPeer, 'error' => $e->getMessage()]);
 
             return null;
